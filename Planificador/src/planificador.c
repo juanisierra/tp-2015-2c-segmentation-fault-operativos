@@ -30,7 +30,7 @@ char ingresado[TAMANOCONSOLA];
 	struct sockaddr_in addr;
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones.. \n");
-	int socketCliente = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
+	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 
 	int estado_consola = 1;
 
@@ -46,9 +46,9 @@ char ingresado[TAMANOCONSOLA];
 			mensaje[1]=2;
 			mensaje[2]=1;
 		}
-		if (estado_consola) send(socketCliente, mensaje, strlen(mensaje)+1, 0); 	// Solo envio si el usuario no quiere salir.
+		if (estado_consola) send(socketCPU, mensaje, strlen(mensaje)+1, 0); 	// Solo envio si el usuario no quiere salir.
 	}
-	close(socketCliente);
+	close(socketCPU);
 	close(socketEscucha);
 	return 0;
 }
