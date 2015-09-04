@@ -25,11 +25,19 @@ int crearSocketEscucha (int cantidadConexiones, char puerto[]) {
 	getaddrinfo(NULL, puerto, &hints, &serverInfo); // Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
 	int socketEscucha;
 		socketEscucha = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
-		bind(socketEscucha,serverInfo->ai_addr, serverInfo->ai_addrlen);
+		if(socketEscucha < 0)
+			{
+			return socketEscucha;
+			}
+		if(bind(socketEscucha,serverInfo->ai_addr, serverInfo->ai_addrlen) <0)
+			{
+			return socketEscucha;
+			}
 		freeaddrinfo(serverInfo);
 		return socketEscucha;
 }
-int crearSocketCliente (char IP[], char PUERTO[]) {
+int crearSocketCliente (char IP[], char PUERTO[])
+{ //Si retorna -2 es error de conexion
 	struct addrinfo hints;
 		struct addrinfo *serverInfo;
 
@@ -40,5 +48,15 @@ int crearSocketCliente (char IP[], char PUERTO[]) {
 		getaddrinfo(IP, PUERTO, &hints, &serverInfo);	// Carga en serverInfo los datos de la conexion
 		int serverSocket;
 			serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+			if(serverSocket < 0)
+					{
+					return serverSocket;
+					}
+
+			if(connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)<0)
+			{
+				return -2;
+			}
+			freeaddrinfo(serverInfo);	// No lo necesitamos mas
 			return serverSocket;
 }
