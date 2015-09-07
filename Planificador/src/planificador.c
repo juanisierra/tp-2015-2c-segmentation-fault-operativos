@@ -1,35 +1,49 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
+#include <librerias-sf/config.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
 #define TAMANOCONSOLA 1024
-#define PUERTO "6575"
-
+#define RUTACONFIG "configuracion"
 
 int main()
-{	char mensaje[3];
-char ingresado[TAMANOCONSOLA];
+{
+	char mensaje[3];
+	char ingresado[TAMANOCONSOLA];
+	config_pl configuracion;
+	configuracion= cargarConfiguracionPL(RUTACONFIG);
+	if(configuracion.estado==0 || configuracion.estado==-1){
+		printf("Error de configuracion, cerrando proceso..");
+		return -1;
+	}
+	if (configuracion.estado==1){
+			printf("Configuracion cargada correctamente: \n");
+			printf("Puerto Escucha: %s\n",configuracion.PUERTO_ESCUCHA);
+			printf("Codigo del Algoritmo de Planificacion: %d\n",configuracion.ALGORITMO_PLANIFICACION);
+			printf("Quantum: %d\n\n",configuracion.QUANTUM);
+
+		}
 	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
 
 	int socketEscucha;
-	socketEscucha= crearSocketEscucha(10,PUERTO);
+	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
 	if(socketEscucha < 0)
 	{
-		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Planificador \n",PUERTO);
+		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Planificador \n",configuracion.PUERTO_ESCUCHA);
 		return -1;
 	}
 
 	if(listen(socketEscucha,10)< 0)
 	{
-		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Planificador \n",PUERTO);
+		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Planificador \n",configuracion.PUERTO_ESCUCHA);
 		return -1;
 	}
 	struct sockaddr_in addr;
 	socklen_t addrlen = sizeof(addr);
-	printf("Esperando conexiones.. \n");
+	printf("Esperando conexiones en puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 
 	int estado_consola = 1;
