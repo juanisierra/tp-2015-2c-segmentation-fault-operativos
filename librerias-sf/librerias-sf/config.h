@@ -50,7 +50,7 @@ typedef struct {
 	int TAMANIO_PAGINA;
 	int RETARDO_COMPACTACION;
 } config_SWAP;
-
+void separarCampoYValor(char*linea,char* campo, char* valor);
 config_pl cargarConfiguracionPL(char * ruta);
 config_CPU cargarConfiguracionCPU(char * ruta);
 config_ADM cargarConfiguracionADM(char * ruta);

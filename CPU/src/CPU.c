@@ -7,33 +7,35 @@
 #include <unistd.h>
 #include <librerias-sf/config.h>
 #define TAMANOPAQUETE 4
-#define IPADM "127.0.0.1"
-#define IPPL "127.0.0.1"
-#define PUERTOPL "6575"
-#define PUERTOADM "6576"
 #define RUTACONFIG "configuracion"
+int iniciarConfiguracion(config_CPU* configuracion)
+{
+	printf("Iniciando CPU.. \n");
+	printf("Cargando configuracion.. \n");
+	(*configuracion) =  cargarConfiguracionCPU(RUTACONFIG);
+	if (configuracion->estado!=1){
+		printf("Error en el archivo de configuracion, cerrando CPU.. \n");
+		return -1;
+	}
+	if (configuracion->estado==1){
+		printf("Configuracion cargada correctamente: \n");
+		printf("Puerto del Planificador: %s\n",configuracion->PUERTO_PLANIFICADOR);
+		printf("IP del Planificador: %s\n",configuracion->IP_PLANIFICADOR);
+		printf("IP del ADM: %s\n",configuracion->IP_MEMORIA);
+		printf("Puerto del ADM: %s\n",configuracion->PUERTO_MEMORIA);
+		printf("Cantidad de Hilos: %d\n",configuracion->CANTIDAD_HILOS);
+		printf("Tiempo de Retardo: %d\n\n",configuracion->RETARDO);
+		return 0;
+	}
+	return -1;
+}
 int main(void)
 {	char mensaje[50];
 	int socketPL;
 	int socketADM;
 	config_CPU configuracion;
+	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 
-	printf("Iniciando CPU.. \n");
-	printf("Cargando configuracion.. \n");
-	configuracion =  cargarConfiguracionCPU(RUTACONFIG);
-	if (configuracion.estado!=1){
-		printf("Error en el archivo de configuracion, cerrando CPU.. \n");
-		return -1;
-	}
-	if (configuracion.estado==1){
-		printf("Configuracion cargada correctamente: \n");
-		printf("Puerto del Planificador: %s\n",configuracion.PUERTO_PLANIFICADOR);
-		printf("IP del Planificador: %s\n",configuracion.IP_PLANIFICADOR);
-		printf("IP del ADM: %s\n",configuracion.IP_MEMORIA);
-		printf("Puerto del ADM: %s\n",configuracion.PUERTO_MEMORIA);
-		printf("Cantidad de Hilos: %d\n",configuracion.CANTIDAD_HILOS);
-		printf("Tiempo de Retardo: %d\n\n",configuracion.RETARDO);
-	}
 	if((socketPL = crearSocketCliente(configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR))<0)
 	{
 		printf("No se pudo crear socket en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA

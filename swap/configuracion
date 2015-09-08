@@ -1,4 +1,4 @@
-[Archivo de Configuracion del Administrador de SWAP]
+#[Archivo de Configuracion del Administrador de SWAP]
 PUERTO_ESCUCHA = "6577"
 NOMBRE_SWAP= "swap"
 CANTIDAD_PAGINAS = "3"

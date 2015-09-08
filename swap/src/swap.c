@@ -8,26 +8,31 @@
 #include <unistd.h>
 #define TAMANOCONSOLA 1024
 #define TAMANOPAQUETE 4
-#define PUERTO "6577"
 #define RUTACONFIG "configuracion"
-
-int main()
-{	char mensaje[3];
-	config_SWAP configuracion;
-	printf("Iniciando Administrador de SWAP.. \n");
+int iniciarConfiguracion(config_SWAP* configuracion)
+{
 	printf("Cargando configuracion.. \n \n");
-	configuracion =  cargarConfiguracionSWAP(RUTACONFIG);
-	if (configuracion.estado!=1){
+	(*configuracion) =  cargarConfiguracionSWAP(RUTACONFIG);
+	if (configuracion->estado!=1){
 		printf("Error en el archivo de configuracion, cerrando Administrador de SWAP.. \n");
 		return -1;
 	}
-	if(configuracion.estado==1){
-		printf("Configuracion cargada correctamente: \nPuerto Escucha: %s \n",configuracion.PUERTO_ESCUCHA);
-		printf("Nombre del Archivo de SWAP: %s \n",configuracion.NOMBRE_SWAP);
-		printf("Cantidad de Paginas: %d \n",configuracion.CANTIDAD_PAGINAS);
-		printf("Tamanio de Pagina: %d \n",configuracion.TAMANIO_PAGINA);
-		printf("Retardo de Compactacion: %d \n \n",configuracion.RETARDO_COMPACTACION);
+	if(configuracion->estado==1){
+		printf("Configuracion cargada correctamente: \nPuerto Escucha: %s \n",configuracion->PUERTO_ESCUCHA);
+		printf("Nombre del Archivo de SWAP: %s \n",configuracion->NOMBRE_SWAP);
+		printf("Cantidad de Paginas: %d \n",configuracion->CANTIDAD_PAGINAS);
+		printf("Tamanio de Pagina: %d \n",configuracion->TAMANIO_PAGINA);
+		printf("Retardo de Compactacion: %d \n \n",configuracion->RETARDO_COMPACTACION);
+		return 0;
 	}
+	return -1;
+}
+int main()
+{	char mensaje[3];
+	config_SWAP configuracion;
+	if(iniciarConfiguracion(&configuracion)==-1) return -1;
+	printf("Iniciando Administrador de SWAP.. \n");
+
 	printf("Estableciendo conexion.. \n");
 
 	int socketEscucha;

@@ -8,24 +8,28 @@
 #include <unistd.h>
 #define TAMANOCONSOLA 1024
 #define RUTACONFIG "configuracion"
-
+int iniciarConfiguracion(config_pl* configuracion){
+	(*configuracion)= cargarConfiguracionPL(RUTACONFIG);
+	if(configuracion->estado==0 || configuracion->estado==-1){
+		printf("Error de configuracion, cerrando proceso..");
+		return -1;
+	}
+	if (configuracion->estado==1){
+			printf("Configuracion cargada correctamente: \n");
+			printf("Puerto Escucha: %s\n",configuracion->PUERTO_ESCUCHA);
+			printf("Codigo del Algoritmo de Planificacion: %d\n",configuracion->ALGORITMO_PLANIFICACION);
+			printf("Quantum: %d\n\n",configuracion->QUANTUM);
+			return 0;
+		}
+	return -1;
+}
 int main()
 {
 	char mensaje[3];
 	char ingresado[TAMANOCONSOLA];
 	config_pl configuracion;
-	configuracion= cargarConfiguracionPL(RUTACONFIG);
-	if(configuracion.estado==0 || configuracion.estado==-1){
-		printf("Error de configuracion, cerrando proceso..");
-		return -1;
-	}
-	if (configuracion.estado==1){
-			printf("Configuracion cargada correctamente: \n");
-			printf("Puerto Escucha: %s\n",configuracion.PUERTO_ESCUCHA);
-			printf("Codigo del Algoritmo de Planificacion: %d\n",configuracion.ALGORITMO_PLANIFICACION);
-			printf("Quantum: %d\n\n",configuracion.QUANTUM);
+	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 
-		}
 	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
 
 	int socketEscucha;

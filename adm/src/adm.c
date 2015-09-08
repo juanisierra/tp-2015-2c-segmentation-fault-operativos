@@ -8,31 +8,35 @@
 #include <unistd.h>
 #define TAMANOCONSOLA 1024
 #define TAMANOPAQUETE 4
-#define PUERTOSERVER "6576"
-#define PUERTOSWAP	"6577"
-#define IP "127.0.0.1"
+#define RUTACONFIG "configuracion"
+int iniciarConfiguracion(config_ADM* configuracion)
+{
+	printf("Cargando Configuracion..\n");
+	(*configuracion) = cargarConfiguracionADM(RUTACONFIG);
+	if(configuracion->estado==-1 || configuracion->estado==0){
+		printf("Cerrando ADM..\n");
+		return -1;
+	}
+	if (configuracion->estado==1){
+			printf("Configuracion cargada correctamente: \n");
+			printf("Puerto Escucha: %s\n",configuracion->PUERTO_ESCUCHA);
+			printf("IP del SWAP: %s\n",configuracion->IP_SWAP);
+			printf("Puerto del SWAP: %s\n",configuracion->PUERTO_SWAP);
+			printf("Maximo de Marcos por Proceso: %d\n",configuracion->MAXIMO_MARCOS_POR_PROCESO);
+			printf("Cantidad de Marcos: %d\n",configuracion->CANTIDAD_MARCOS);
+			printf("Tamanio Marco: %d\n",configuracion->TAMANIO_MARCO);
+			printf("Entradas TLB: %d\n",configuracion->ENTRADAS_TLB);
+			printf("TLB Habilitada: %d\n",configuracion->TLB_HABILITADA);
+			printf("Retardo Memoria: %d\n\n",configuracion->RETARDO_MEMORIA);
+			return 0;
+		}
+	return -1;
+}
 #define RUTACONFIG "configuracion"
 int main()
 {	char mensaje[3];
 	config_ADM configuracion;
-	printf("Cargando Configuracion..\n");
-	configuracion = cargarConfiguracionADM(RUTACONFIG);
-	if(configuracion.estado==-1 || configuracion.estado==0){
-		printf("Cerrando ADM..\n");
-		return -1;
-	}
-	if (configuracion.estado==1){
-			printf("Configuracion cargada correctamente: \n");
-			printf("Puerto Escucha: %s\n",configuracion.PUERTO_ESCUCHA);
-			printf("IP del SWAP: %s\n",configuracion.IP_SWAP);
-			printf("Puerto del SWAP: %s\n",configuracion.PUERTO_SWAP);
-			printf("Maximo de Marcos por Proceso: %d\n",configuracion.MAXIMO_MARCOS_POR_PROCESO);
-			printf("Cantidad de Marcos: %d\n",configuracion.CANTIDAD_MARCOS);
-			printf("Tamanio Marco: %d\n",configuracion.TAMANIO_MARCO);
-			printf("Entradas TLB: %d\n",configuracion.ENTRADAS_TLB);
-			printf("TLB Habilitada: %d\n",configuracion.TLB_HABILITADA);
-			printf("Retardo Memoria: %d\n\n",configuracion.RETARDO_MEMORIA);
-		}
+	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Administrador de Memoria \nEstableciendo conexion.. \n");
 	int socketSWAP;
 	int socketEscucha;

@@ -1,4 +1,4 @@
-[Archivo de Configuracion del Administrador de Memoria]
+#[Archivo de Configuracion del Administrador de Memoria]
 PUERTO_ESCUCHA = "6576"
 IP_SWAP= "127.0.0.1"
 PUERTO_SWAP="6577"
