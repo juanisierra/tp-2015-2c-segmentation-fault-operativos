@@ -11,7 +11,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
-
+#include "tiposDato.h"
 
 int crearSocketEscucha (int cantidadConexiones, char puerto[]) {
 	struct addrinfo hints;
@@ -59,4 +59,32 @@ int crearSocketCliente (char IP[], char PUERTO[])
 			}
 			freeaddrinfo(serverInfo);	// No lo necesitamos mas
 			return serverSocket;
+}
+int enviarPCB(int socket,pcb PCB, uint32_t quantum)
+{	int resultado;
+	mensaje_PL_CPU* mensaje;
+	mensaje = malloc(sizeof(mensaje_PL_CPU));
+	memcpy(&(mensaje->pid),&PCB.pid,sizeof(uint32_t));
+	memcpy(&(mensaje->ip),&PCB.ip,sizeof(uint32_t));
+	memcpy(&(mensaje->path),&PCB.path,51*sizeof(char));
+	memcpy(&(mensaje->quantum),&quantum,sizeof(uint32_t));
+
+
+	resultado = send(socket,(void*) mensaje,sizeof(mensaje_PL_CPU),0);
+	free(mensaje);
+	return resultado;
+}
+
+int recibirPCB(int socket, proceso_CPU* proceso,int *quantum)
+{	int resultado;
+	mensaje_PL_CPU* mensajeRecibido;
+	mensajeRecibido=malloc(sizeof(mensaje_PL_CPU));
+	resultado = recv(socket,(void*) mensajeRecibido,sizeof(mensaje_PL_CPU),0);
+	memcpy(&(proceso->pid),&(mensajeRecibido->pid),sizeof(uint32_t));
+	memcpy(&(proceso->ip),&(mensajeRecibido->ip),sizeof(uint32_t));
+	memcpy(&(proceso->path),&(mensajeRecibido->path),51*sizeof(char));
+	memcpy(quantum,&(mensajeRecibido->quantum),sizeof(uint32_t));
+	free(mensajeRecibido);
+	return resultado;
+
 }

@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <librerias-sf/tiposDato.h>
 #define TAMANOCONSOLA 1024
 #define RUTACONFIG "configuracion"
 int iniciarConfiguracion(config_pl* configuracion){
@@ -28,6 +29,11 @@ int main()
 	char mensaje[3];
 	char ingresado[TAMANOCONSOLA];
 	config_pl configuracion;
+	uint32_t quantum;
+	pcb PCB;
+	PCB.pid=20;
+	PCB.ip=10;
+	strcpy(PCB.path,"HOLAHOLA");
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 
 	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
@@ -63,7 +69,8 @@ int main()
 			mensaje[0]=1;
 			mensaje[1]=2;
 			mensaje[2]=1;
-			if (estado_consola) send(socketCPU, mensaje, strlen(mensaje)+1, 0);// Solo envio si el usuario no quiere salir.
+			printf("PID: %d \n",PCB.pid);
+			if (estado_consola) enviarPCB(socketCPU,PCB,quantum);// Solo envio si el usuario no quiere salir.
 		}
 
 	}

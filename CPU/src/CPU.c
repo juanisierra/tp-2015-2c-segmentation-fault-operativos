@@ -5,10 +5,14 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <librerias-sf/config.h>
+#include <librerias-sf/tiposDato.h>
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
+
 int iniciarConfiguracion(config_CPU* configuracion)
+
 {
 	printf("Iniciando CPU.. \n");
 	printf("Cargando configuracion.. \n");
@@ -29,10 +33,13 @@ int iniciarConfiguracion(config_CPU* configuracion)
 	}
 	return -1;
 }
+
 int main(void)
 {	char mensaje[50];
 	int socketPL;
 	int socketADM;
+	int quantum;
+	proceso_CPU proceso;
 	config_CPU configuracion;
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 
@@ -53,32 +60,13 @@ int main(void)
 
 	while (status != 0)
 	{
-		status = recv(socketPL, (void*) mensaje, TAMANOPAQUETE, 0);
-		if(mensaje[0]!=1)
-		{
-			printf("El mensaje recibido por el socket del planificador no pertenece al mismo \n");
-			close(socketADM);
-			close(socketPL);
-			return -1;
-		}
-		if(mensaje[1]!=2)
-				{
-					printf("El mensaje recibido por el socket del planificador no tiene como destino una CPU \n");
-					close(socketADM);
-					close(socketPL);
-					return -1;
-				}
-		if(mensaje[2]==1)
-		{
-			printf("Mensaje Recibido\n");
-			mensaje[0]=2;
-			mensaje[1]=3;
-			send(socketADM, mensaje, strlen(mensaje)+1, 0);
+			status = recibirPCB(socketPL,&proceso,&quantum);
+
+			printf("Mensaje Recibido %d \n %d \n %s \n",proceso.ip,proceso.pid,proceso.path);
 			close(socketADM);
 			close(socketPL);
 			return 0;
 		}
-	}
 	close(socketADM);
 	close(socketPL);
 	return 0;

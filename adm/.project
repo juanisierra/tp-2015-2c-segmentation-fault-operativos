@@ -3,7 +3,6 @@
 	<name>adm</name>
 	<comment></comment>
 	<projects>
-		<project>commons</project>
 		<project>librerias-sf</project>
 	</projects>
 	<buildSpec>
