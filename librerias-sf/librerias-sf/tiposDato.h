@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-
   typedef struct pcb_t
     {
         uint32_t pid;
@@ -36,8 +35,36 @@
   {
 	  uint32_t ip;
 	  uint32_t tamMensaje;
-	  char*retornos;
+	  char*payload;
   } mensaje_CPU_PL;
+  typedef struct mensaje_CPU_ADM_t
+  {	uint32_t tipoInst; // 1 iniciar 2 leer 3 escribir 5 finalizar
+	  uint32_t pid;
+	 uint32_t parametro; // cant paginas, nunero pagina,
+	  char* texto;
+  }mensaje_CPU_ADM;
+  typedef struct mensaje_ADM_CPU_T
+  {
+	  uint32_t parametro; // 0 ok 1 no ok
+	  char*texto;
+  }mensaje_ADM_CPU;
+  typedef struct mensaje_ADM_SWAP_t
+  {
+	  uint32_t tipoInst; //1 iniciar 2 leer pagina 3 escribir pagina 5 finaliza
+	  uint32_t pid;
+	  char*texto;
+  }mensaje_ADM_SWAP;
+  typedef struct mensaje_SWAP_ADM_t
+  {
+	  int estado; //0 ok 1 no ok
+	  char*texto;
+  } mensaje_SWAP_ADM;
+typedef struct retornoInstruccion_t
+{
+	uint32_t tipoInst; //1 iniciar 2 leer 3 escribir 4 e/s 5 finalizar
+	uint32_t parametro; // 0 bien 1 mal , cant paginas, numero pagina, tiempo e/s, 0 bien 1 mal
+	char*texto; //texto escrito
+} retornoInstruccion;
 typedef struct proceso_CPU_t
 {
 	uint32_t pid;

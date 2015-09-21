@@ -7,8 +7,29 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <librerias-sf/tiposDato.h>
+#include <pthread.h>
+#include <librerias-sf/strings.h>
+#include <semaphore.h>
 #define TAMANOCONSOLA 1024
 #define RUTACONFIG "configuracion"
+typedef struct nodo_CPU_t
+{
+	struct nodo_Lista_CPU_t*sgte;
+	struct nodo_Lista_CPU_t*ant;
+	int id;
+	int socket;
+	pthread_t thread;
+	pcb ejecutando;
+} nodo_CPU;
+
+config_pl configuracion;
+nodo_CPU CPU1; //Va a ser lista
+nodoPCB raizListos;
+int status;
+pthread_mutex_t MUTEXLISTOS;
+status = pthread_mutex_init(&MUTEXLISTOS,NULL);
+sem_t SEMAFOROLISTOS;
+status = sem_init(&SEMAFOROLISTOS,0,0);
 int iniciarConfiguracion(config_pl* configuracion){
 	(*configuracion)= cargarConfiguracionPL(RUTACONFIG);
 	if(configuracion->estado==0 || configuracion->estado==-1){
@@ -24,20 +45,39 @@ int iniciarConfiguracion(config_pl* configuracion){
 		}
 	return -1;
 }
-int main()
+void hiloConsola(void)
 {
-	char mensaje[3];
-	char ingresado[TAMANOCONSOLA];
-	config_pl configuracion;
-	uint32_t quantum;
-	pcb PCB;
-	PCB.pid=20;
-	PCB.ip=10;
-	strcpy(PCB.path,"HOLAHOLA");
-	if(iniciarConfiguracion(&configuracion)==-1) return -1;
+int estado_consola = 1;
+char ingresado[TAMANOCONSOLA];
+char instruccion[20];
+char parametro[50];
+int pid_cuenta =0; //PID ACTUAL
+pcb auxPCB;
+printf("Conectado al CPU, ya puede enviar mensajes. Escriba 'salir' para salir\n");
+while(estado_consola)
+{
+	fgets(ingresado, TAMANOCONSOLA, stdin);			// Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
+	separarInstruccionParametro(ingresado,instruccion,parametro);
+	if (strcmp(instruccion,"salir")==0) estado_consola = 0;			// Chequeo que el usuario no quiera salir
+	if(strcmp(instruccion,"correr")==0)
+	{
+		auxPCB.pid=pid_cuenta;
+		pid_cuenta++;
+		auxPCB.ip=0;
+		auxPCB.estado=1;
+		auxPCB.path=parametro;
+		pthread_mutex_lock(&MUTEXLISTOS);
+		agregarNodoPCB(raizListos,auxPCB);
+		pthread_mutex_unlock(&MUTEXLISTOS);
+		sem_post(SEMAFOROLISTOS);
+	}
 
-	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
 
+}
+return;
+}
+int hiloServidor(void)
+{
 	int socketEscucha;
 	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
 	if(socketEscucha < 0)
@@ -54,27 +94,40 @@ int main()
 	struct sockaddr_in addr;
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones en puerto %s \n",configuracion.PUERTO_ESCUCHA);
-	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
+	CPU1.id = 1;
+	CPU1.socket = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
+	pthread_create(&(CPU1.thread),NULL,manejadorCPU,NULL);
 
-	int estado_consola = 1;
-
-	printf("Conectado al CPU, ya puede enviar mensajes. Escriba 'salir' para salir\n");
-
-	while(estado_consola)
-	{
-		fgets(ingresado, TAMANOCONSOLA, stdin);			// Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
-		if (strcmp(ingresado,"salir\n")==0) estado_consola = 0;			// Chequeo que el usuario no quiera salir
-		if(strcmp(ingresado,"correr programa\n")==0)
-		{
-			mensaje[0]=1;
-			mensaje[1]=2;
-			mensaje[2]=1;
-			printf("PID: %d \n",PCB.pid);
-			if (estado_consola) enviarPCB(socketCPU,PCB,quantum);// Solo envio si el usuario no quiere salir.
-		}
-
-	}
-	close(socketCPU);
 	close(socketEscucha);
+	return 0;
+}
+int manejadorCPU(int id) //id Que CPU SOS
+{	//mensaje_CPU_PL buffer; // VER IMPORTAR
+	while(1) // AGEGAR CORTE
+{
+	sem_wait(&SEMAFOROLISTOS);
+	pthread_mutex_lock(&MUTEXLISTOS);
+	CPU1.ejecutando=sacarNodoPCB(raizListos);
+	pthread_mutex_unlock(&MUTEXLISTOS);
+	enviarPCB(CPU1.socket,CPU1.ejecutando,-1);
+	recibirDeCPU(CPU1.socket); //DEFINIR y cuidado con IP al finalziar
+}
+close(CPU1.socket);
+	return 0;
+}
+int main()
+{
+	pthread_t hConsola;
+	pthread_t hServer;
+	if(iniciarConfiguracion(&configuracion)==-1) return -1;
+
+	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
+
+	pthread_create(&hConsola,NULL,hiloConsola,NULL);
+	pthread_create(&hServer,NULL,hiloServidor,NULL);
+	pthread_join(hServer,NULL);
+	pthread_join(hConsola,NULL);
+	pthread_mutex_destroy(&MUTEXLISTOS);
+	sem_destroy(&SEMAFOROLISTOS);
 	return 0;
 }

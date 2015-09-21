@@ -74,7 +74,6 @@ int enviarPCB(int socket,pcb PCB, uint32_t quantum)
 	free(mensaje);
 	return resultado;
 }
-
 int recibirPCB(int socket, proceso_CPU* proceso,int *quantum)
 {	int resultado;
 	mensaje_PL_CPU* mensajeRecibido;
