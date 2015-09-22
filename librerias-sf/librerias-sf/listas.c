@@ -23,9 +23,9 @@ int agregarNodoPCB(nodoPCB* raiz, pcb nuevoPcb)
 {
     if(!raiz)
     {
-	raiz= malloc(sizeof(nodoPCB));
-	if(!raiz) return -1;
-        raiz->info=nuevoPcb;
+    	raiz= malloc(sizeof(nodoPCB));
+    	if(!raiz) return -1;
+    	raiz->info=nuevoPcb;
         raiz->ant=NULL;
         raiz->sgte=NULL;
         return 0;
@@ -42,7 +42,6 @@ int agregarNodoPCB(nodoPCB* raiz, pcb nuevoPcb)
         ultimo_p->sgte=(aMeter);
         return 0;
     }
-    //_p por puntero
 }
 
 

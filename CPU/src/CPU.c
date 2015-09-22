@@ -12,16 +12,17 @@
 #define RUTACONFIG "configuracion"
 
 int iniciarConfiguracion(config_CPU* configuracion)
-
 {
 	printf("Iniciando CPU.. \n");
 	printf("Cargando configuracion.. \n");
 	(*configuracion) =  cargarConfiguracionCPU(RUTACONFIG);
-	if (configuracion->estado!=1){
+	if (configuracion->estado!=1)
+	{
 		printf("Error en el archivo de configuracion, cerrando CPU.. \n");
 		return -1;
 	}
-	if (configuracion->estado==1){
+	if (configuracion->estado==1)
+	{
 		printf("Configuracion cargada correctamente: \n");
 		printf("Puerto del Planificador: %s\n",configuracion->PUERTO_PLANIFICADOR);
 		printf("IP del Planificador: %s\n",configuracion->IP_PLANIFICADOR);
@@ -59,9 +60,8 @@ int main(void)
 	printf("Conectado al Planificador en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR);
 
 	while (status != 0)
-	{
+		{
 			status = recibirPCB(socketPL,&proceso,&quantum);
-
 			printf("Mensaje Recibido %d \n %d \n %s \n",proceso.ip,proceso.pid,proceso.path);
 			close(socketADM);
 			close(socketPL);

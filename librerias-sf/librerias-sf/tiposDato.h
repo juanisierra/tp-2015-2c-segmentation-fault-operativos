@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+
+// typedef enum{LISTO, EJECUTANDO, BLOQUEADO }estado;
+
   typedef struct pcb_t
     {
         uint32_t pid;
