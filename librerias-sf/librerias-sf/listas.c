@@ -20,43 +20,49 @@ nodoPCB* ultimoNodoPCB(nodoPCB* raiz)
 	}
     return aux;
 }
-nodoPCB* crearNodoPCB(pcb informacion)
+nodoPCB* crearNodoPCB(int pid,char path[])
 {
 	nodoPCB* nuevoNodo=malloc(sizeof(nodoPCB));
 	nuevoNodo->sgte=NULL;
 	nuevoNodo->ant=NULL;
-	nuevoNodo->info=informacion;
+	nuevoNodo->info.bloqueo=0;
+	nuevoNodo->info.estado=1;
+	nuevoNodo->info.ip=0;
+	nuevoNodo->info.pid=pid;
+	strcpy(nuevoNodo->info.path,path);
 	return nuevoNodo;
 }
-void agregarNodoPCB(nodoPCB* raiz,nodoPCB* nuevoPCB)
+void agregarNodoPCB(nodoPCB** raiz,nodoPCB* nuevoPCB)
 {
-	nodoPCB* ultimo=ultimoNodoPCB(raiz);
+	nodoPCB* ultimo=ultimoNodoPCB(*raiz);
 	if(ultimo!=NULL){
 	ultimo->ant=nuevoPCB;
 	nuevoPCB->sgte=ultimo;
 	nuevoPCB->ant=NULL;
 	} else {
-		raiz=nuevoPCB;
+		*raiz=nuevoPCB;
 		nuevoPCB->sgte=ultimo;
 		nuevoPCB->ant=NULL;
 	}
 	return;
 }
-nodoPCB* sacarNodoPCB(nodoPCB*raiz)
+nodoPCB* sacarNodoPCB(nodoPCB**raiz)
 {	nodoPCB*sacado;
-	if(raiz==NULL){
+	if(*raiz==NULL){
 		return NULL;
 	}
-	sacado=raiz;
-	if(raiz->ant!=NULL){
-	raiz->ant->sgte=NULL;
-	raiz=raiz->ant;
+	sacado=*raiz;
+	if((*raiz)->ant!=NULL){
+	(*raiz)->ant->sgte=NULL;
+	(*raiz)=(*raiz)->ant;
 	sacado->ant=NULL;
 	sacado->sgte=NULL;
 	}
 	else
 	{
-		raiz=NULL;
+		*raiz=NULL;
+
+
 	}
 	return sacado;
 }

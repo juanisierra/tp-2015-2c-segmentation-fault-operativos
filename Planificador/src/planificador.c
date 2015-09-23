@@ -17,11 +17,13 @@
 
 config_pl configuracion;
 nodo_CPU CPU1; //Va a ser lista
-nodoPCB* raizListos;
 pthread_mutex_t MUTEXLISTOS;
+pthread_mutex_t MUTEXPANTALLA;
 pthread_t hConsola;
-	pthread_t hServer;
+nodoPCB* raizListos;
+pthread_t hServer;
 sem_t SEMAFOROLISTOS;
+int socketEscucha;
 
 int iniciarConfiguracion(config_pl* configuracion)
 {
@@ -48,7 +50,7 @@ void hiloConsola(void)
 	char instruccion[20];
 	char parametro[50];
 	int pid_cuenta =0; //PID ACTUAL
-	pcb auxPCB;
+	raizListos=NULL;
 	printf("Conectado al CPU, ya puede enviar mensajes. Escriba 'salir' para salir\n");
 	while(estado_consola)
 	{
@@ -58,42 +60,34 @@ void hiloConsola(void)
 		if (strcmp(instruccion,"salir")==0) estado_consola = 0;// Chequeo que el usuario no quiera salir
 		if(strcmp(instruccion,"correr")==0)//el usuario corre un programa
 		{
-			auxPCB.pid=pid_cuenta;//le damos pid's a los PCB desde 0
-			pid_cuenta++;
-			auxPCB.ip=0;//el puntero apunta a la primera instruccion
-			auxPCB.estado=1;
-			strcpy(auxPCB.path,parametro);
-			printf("Por agregar un nodo al pcb");//************************
-			raizListos=NULL;
 			pthread_mutex_lock(&MUTEXLISTOS);
-			agregarNodoPCB(raizListos,crearNodoPCB(auxPCB));//agregamos el PCB a la lista de listos, uno a la vez.
+			agregarNodoPCB(&raizListos,crearNodoPCB(pid_cuenta,parametro));//agregamos el PCB a la lista de listos, uno a la vez.
+			pid_cuenta++; //Aumenta PID
 			pthread_mutex_unlock(&MUTEXLISTOS);
 			sem_post(&SEMAFOROLISTOS);
-			printf("NODO AGREGADO");//************************
 		}
 	}
+	close(CPU1.socket); // Al terminar la consola no hace mas falta el cpu.
+	printf("cierro socket cpu\n");
 	return;
 }
 
-int manejadorCPU(void) //id Que CPU SOS
+void manejadorCPU(void) //id Que CPU SOS
 {	//mensaje_CPU_PL buffer; // VER IMPORTAR
 	while(1) // AGEGAR CORTE
-	{
+	{	sleep(4);
 		sem_wait(&SEMAFOROLISTOS);
-		printf("Corro el hilo manejador de cpu\n");//******************************* * * * *
 		pthread_mutex_lock(&MUTEXLISTOS);
-		CPU1.ejecutando=sacarNodoPCB(raizListos);
+		CPU1.ejecutando=sacarNodoPCB(&raizListos);
+		printf("\nPor enviar a ejecutar: Path: %s Pid: %d\n",CPU1.ejecutando->info.path,CPU1.ejecutando->info.pid);
 		pthread_mutex_unlock(&MUTEXLISTOS);
-		printf("Salio el pcb\n"); //**************************************************
-		//enviarPCB(CPU1.socket,&(CPU1.ejecutando->info),-1); FALLA ACAAAAAAAAAAAAAAAAAAAAAAA
+		enviarPCB(CPU1.socket,CPU1.ejecutando,-1);
 		//recibirDeCPU(CPU1.socket); //DEFINIR y cuidado con IP al finalziar
 	}
-	close(CPU1.socket);
-	return 0;
+	return;
 }
 int hiloServidor(void)
 {
-	int socketEscucha;
 	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
 	if(socketEscucha < 0)
 	{
@@ -109,23 +103,25 @@ int hiloServidor(void)
 	struct sockaddr_in addr;
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones en puerto %s \n",configuracion.PUERTO_ESCUCHA);
+
+	////***************************CREACION DEL CPU1********************
 	CPU1.id = 1;
 	CPU1.socket = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-	pthread_create(&hConsola,NULL,hiloConsola,NULL);
+	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
 	pthread_create(&(CPU1.thread),NULL, manejadorCPU,NULL); //Chequear pasaje de parametro de id del cpu.
-	pthread_join(manejadorCPU,NULL);
 	pthread_join(hConsola,NULL);
-	close(socketEscucha);
+	close(socketEscucha); //DEJO DE ESCUCHAR AL FINALIZAR LA CONSOLA
+	printf("cierro socket escucha\n");
 	return 0;
 }
 
 int main()
-{	pthread_mutex_init(&MUTEXLISTOS,NULL); //Inicializacion de los semaforos
+{
+	pthread_mutex_init(&MUTEXLISTOS,NULL); //Inicializacion de los semaforos
+	pthread_mutex_init(&MUTEXPANTALLA,NULL);
 	sem_init(&SEMAFOROLISTOS,0,0);
-
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
-
 	pthread_create(&hServer,NULL,hiloServidor,NULL);
 	pthread_join(hServer,NULL);
 	pthread_mutex_destroy(&MUTEXLISTOS);

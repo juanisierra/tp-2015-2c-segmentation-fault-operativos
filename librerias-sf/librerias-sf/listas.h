@@ -13,9 +13,9 @@
 #include "tiposDato.h"
 
 nodoPCB* ultimoNodo(nodoPCB* raiz);
-nodoPCB* crearNodoPCB(pcb informacion); // A partir de una estructura de tipo pcb crea el nodo para la lista
-void agregarNodoPCB(nodoPCB* raiz,nodoPCB* nuevoPCB); // Agregar el nodo a una lista
-nodoPCB* sacarNodoPCB(nodoPCB*raiz); // Saca el nodo de una lista y lo devuelve
+nodoPCB* crearNodoPCB(int pid,char path[]); // A partir de un pid y un path crea el nodo para la lista.
+void agregarNodoPCB(nodoPCB** raiz,nodoPCB* nuevoPCB); // Agregar el nodo a una lista, hay que pasarle &raiz.
+nodoPCB* sacarNodoPCB(nodoPCB**raiz);  // Saca el nodo de una lista y lo devuelve, hay que pasarle &raiz.
 
 
 

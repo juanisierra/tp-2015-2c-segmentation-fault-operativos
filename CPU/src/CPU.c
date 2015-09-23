@@ -49,25 +49,24 @@ int main(void)
 		printf("No se pudo crear socket planificador en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 		return 0;
 	}
-	if((socketADM = crearSocketCliente(configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA))<0)
+	////CONEXION A MEMORIA COMENTADA--------------------------------------------------------******
+	/*if((socketADM = crearSocketCliente(configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA))<0)
 		{
 			printf("No se pudo crear socket en %s:%s \n",configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 			close(socketPL);
 			return 0;
 		}
+		*/
 	int status = 1;		// Estructura que manjea el status de los recieve.
 
 	printf("Conectado al Planificador en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR);
 
-	/*while (status != 0)
-		{
+	while (status != 0)
+		{ sleep(4);
 			status = recibirPCB(socketPL,&proceso,&quantum);
-			printf("Mensaje Recibido %d \n %d \n %s \n",proceso.ip,proceso.pid,proceso.path);
-			close(socketADM);
-			close(socketPL);
-			return 0;
+			printf("PCB RECIBIDO:\n PID: %d \n PATH: %s \n\n",proceso.pid,proceso.path);
 		}
-		*/
+
 	close(socketADM);
 	close(socketPL);
 	return 0;

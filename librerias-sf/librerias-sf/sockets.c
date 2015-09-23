@@ -60,18 +60,43 @@ int crearSocketCliente (char IP[], char PUERTO[])
 			freeaddrinfo(serverInfo);	// No lo necesitamos mas
 			return serverSocket;
 }
-int enviarPCB(int socket,pcb* PCB, uint32_t quantum)
+/*int enviarPCB(int socket,nodoPCB PCB, uint32_t quantum) //-2 si no hay malloc
 {	int resultado;
 	mensaje_PL_CPU* mensaje;
 	mensaje = malloc(sizeof(mensaje_PL_CPU));
-	memcpy(&(mensaje->pid),&(PCB->pid),sizeof(uint32_t));
-	memcpy(&(mensaje->ip),&(PCB->ip),sizeof(uint32_t));
-	memcpy(&(mensaje->path),&(PCB->path),51*sizeof(char));
+	printf("Antes de enviarPCB: %s %d\n",PCB.info.path,PCB.info.pid);
+
+	if(mensaje!=NULL){
+	memcpy(&(mensaje->pid),&(PCB.info.pid),sizeof(uint32_t));
+	memcpy(&(mensaje->ip),&(PCB.info.ip),sizeof(uint32_t));
+	memcpy(&(mensaje->path),&(PCB.info.path),51*sizeof(char));
 	memcpy(&(mensaje->quantum),&quantum,sizeof(uint32_t));
-
-
+	printf("Antes de enviar mensaje: %s %d\n",mensaje->path,mensaje->pid);
 	resultado = send(socket,(void*) mensaje,sizeof(mensaje_PL_CPU),0);
 	free(mensaje);
+	}
+	else {
+		resultado=-2;
+	}
+	return resultado;
+}
+*/
+int enviarPCB(int socket,nodoPCB* PCB, uint32_t quantum) //-2 si no hay malloc
+{	int resultado;
+	mensaje_PL_CPU* mensaje;
+	mensaje = malloc(sizeof(mensaje_PL_CPU));
+	if(mensaje!=NULL){
+	memcpy(&(mensaje->pid),&(PCB->info.pid),sizeof(uint32_t));
+	memcpy(&(mensaje->ip),&(PCB->info.ip),sizeof(uint32_t));
+	memcpy(&(mensaje->path),&(PCB->info.path),51*sizeof(char));
+	memcpy(&(mensaje->quantum),&quantum,sizeof(uint32_t));
+	printf("Antes de enviar mensaje: %s %d\n",mensaje->path,mensaje->pid);
+	resultado = send(socket,(void*) mensaje,sizeof(mensaje_PL_CPU),0);
+	free(mensaje);
+	}
+	else {
+		resultado=-2;
+	}
 	return resultado;
 }
 int recibirPCB(int socket, proceso_CPU* proceso,int *quantum)
