@@ -17,9 +17,10 @@
 
 config_pl configuracion;
 nodo_CPU CPU1; //Va a ser lista
-nodoPCB raizListos;
+nodoPCB* raizListos;
 pthread_mutex_t MUTEXLISTOS;
-
+pthread_t hConsola;
+	pthread_t hServer;
 sem_t SEMAFOROLISTOS;
 
 int iniciarConfiguracion(config_pl* configuracion)
@@ -62,25 +63,29 @@ void hiloConsola(void)
 			auxPCB.ip=0;//el puntero apunta a la primera instruccion
 			auxPCB.estado=1;
 			strcpy(auxPCB.path,parametro);
-
+			printf("Por agregar un nodo al pcb");//************************
+			raizListos=NULL;
 			pthread_mutex_lock(&MUTEXLISTOS);
 			agregarNodoPCB(raizListos,crearNodoPCB(auxPCB));//agregamos el PCB a la lista de listos, uno a la vez.
 			pthread_mutex_unlock(&MUTEXLISTOS);
 			sem_post(&SEMAFOROLISTOS);
+			printf("NODO AGREGADO");//************************
 		}
 	}
 	return;
 }
 
-int manejadorCPU(int id) //id Que CPU SOS
+int manejadorCPU(void) //id Que CPU SOS
 {	//mensaje_CPU_PL buffer; // VER IMPORTAR
 	while(1) // AGEGAR CORTE
 	{
 		sem_wait(&SEMAFOROLISTOS);
+		printf("Corro el hilo manejador de cpu\n");//******************************* * * * *
 		pthread_mutex_lock(&MUTEXLISTOS);
 		CPU1.ejecutando=sacarNodoPCB(raizListos);
 		pthread_mutex_unlock(&MUTEXLISTOS);
-		enviarPCB(CPU1.socket,&(CPU1.ejecutando->info),-1);
+		printf("Salio el pcb\n"); //**************************************************
+		//enviarPCB(CPU1.socket,&(CPU1.ejecutando->info),-1); FALLA ACAAAAAAAAAAAAAAAAAAAAAAA
 		//recibirDeCPU(CPU1.socket); //DEFINIR y cuidado con IP al finalziar
 	}
 	close(CPU1.socket);
@@ -106,21 +111,23 @@ int hiloServidor(void)
 	printf("Esperando conexiones en puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	CPU1.id = 1;
 	CPU1.socket = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
+	pthread_create(&hConsola,NULL,hiloConsola,NULL);
 	pthread_create(&(CPU1.thread),NULL, manejadorCPU,NULL); //Chequear pasaje de parametro de id del cpu.
+	pthread_join(manejadorCPU,NULL);
+	pthread_join(hConsola,NULL);
 	close(socketEscucha);
 	return 0;
 }
+
 int main()
 {	pthread_mutex_init(&MUTEXLISTOS,NULL); //Inicializacion de los semaforos
 	sem_init(&SEMAFOROLISTOS,0,0);
-	pthread_t hConsola;
-	pthread_t hServer;
+
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
-	pthread_create(&hConsola,NULL,hiloConsola,NULL);
+
 	pthread_create(&hServer,NULL,hiloServidor,NULL);
 	pthread_join(hServer,NULL);
-	pthread_join(hConsola,NULL);
 	pthread_mutex_destroy(&MUTEXLISTOS);
 	sem_destroy(&SEMAFOROLISTOS);
 	return 0;

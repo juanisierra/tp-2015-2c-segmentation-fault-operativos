@@ -46,7 +46,7 @@ int main(void)
 
 	if((socketPL = crearSocketCliente(configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR))<0)
 	{
-		printf("No se pudo crear socket en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
+		printf("No se pudo crear socket planificador en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 		return 0;
 	}
 	if((socketADM = crearSocketCliente(configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA))<0)
@@ -59,7 +59,7 @@ int main(void)
 
 	printf("Conectado al Planificador en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR);
 
-	while (status != 0)
+	/*while (status != 0)
 		{
 			status = recibirPCB(socketPL,&proceso,&quantum);
 			printf("Mensaje Recibido %d \n %d \n %s \n",proceso.ip,proceso.pid,proceso.path);
@@ -67,6 +67,7 @@ int main(void)
 			close(socketPL);
 			return 0;
 		}
+		*/
 	close(socketADM);
 	close(socketPL);
 	return 0;

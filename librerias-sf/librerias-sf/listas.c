@@ -12,10 +12,12 @@
 nodoPCB* ultimoNodoPCB(nodoPCB* raiz)
 {
 	nodoPCB* aux=raiz;
+	if(aux!=NULL){
     while(aux->ant)
     {
         aux=aux->ant;
     }
+	}
     return aux;
 }
 nodoPCB* crearNodoPCB(pcb informacion)
@@ -29,9 +31,15 @@ nodoPCB* crearNodoPCB(pcb informacion)
 void agregarNodoPCB(nodoPCB* raiz,nodoPCB* nuevoPCB)
 {
 	nodoPCB* ultimo=ultimoNodoPCB(raiz);
+	if(ultimo!=NULL){
 	ultimo->ant=nuevoPCB;
 	nuevoPCB->sgte=ultimo;
 	nuevoPCB->ant=NULL;
+	} else {
+		raiz=nuevoPCB;
+		nuevoPCB->sgte=ultimo;
+		nuevoPCB->ant=NULL;
+	}
 	return;
 }
 nodoPCB* sacarNodoPCB(nodoPCB*raiz)
