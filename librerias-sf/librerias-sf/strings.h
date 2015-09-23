@@ -7,7 +7,7 @@
 
 #ifndef LIBRERIAS_SF_STRINGS_H_
 #define LIBRERIAS_SF_STRINGS_H_
-void separarInstruccionParametro(char*renglon,char*instruccion,char*parametro);
+void separarInstruccionParametro(char*renglon,char*instruccion,char parametro[]);
 
 
 #endif /* LIBRERIAS_SF_STRINGS_H_ */

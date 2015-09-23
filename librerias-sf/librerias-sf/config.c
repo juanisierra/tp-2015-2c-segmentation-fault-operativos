@@ -355,10 +355,10 @@ config_SWAP cargarConfiguracionSWAP(char * ruta) {
 	char linea[200];
 		char campo[50];
 		char valor[50];
-		char cargados[5]; //Vector que avisa si se cargo el dato, 0 PE , 1 AP, 2 QUANTUM
+		char cargados[6]; //Vector que avisa si se cargo el dato, 0 PE , 1 AP, 2 QUANTUM
 		int verifica; // Cuando vale 1 se cargaron todos los datos
 		int m=0;
-		for(m=0;m<5;m++) cargados[m]=0; //Lo inicializo en 0 sin datos cargados
+		for(m=0;m<6;m++) cargados[m]=0; //Lo inicializo en 0 sin datos cargados
 	archivoConfiguracion= fopen(ruta,"r");
 	if(archivoConfiguracion==NULL)
 	{
@@ -401,17 +401,23 @@ config_SWAP cargarConfiguracionSWAP(char * ruta) {
 		config.TAMANIO_PAGINA = atoi(valor);
 		cargados[3]=1;
 	}
+	//CARGAR RETARDO SWAP********************************************************
+		if(strcmp(campo,"RETARDO_SWAP")==0)
+		{
+			config.RETARDO_SWAP = atoi(valor);
+			cargados[4]=1;
+		}
 //CARGAR RETARDO COMPACTACION********************************************************
 		if(strcmp(campo,"RETARDO_COMPACTACION")==0)
 		{
 				config.RETARDO_COMPACTACION = atoi(valor);
-			cargados[4]=1;
+			cargados[5]=1;
 		}
 	}
 	}
  //VERIFICACION DEL INGRESO DE TODOS LOS PARAMETROS***************************
 			verifica=1;
-			for(m=0;m<5;m++) {
+			for(m=0;m<6;m++) {
 				if(cargados[m]==0)
 					{verifica=0;
 					}

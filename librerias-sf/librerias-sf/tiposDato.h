@@ -75,4 +75,14 @@ typedef struct proceso_CPU_t
 	char path[50+1];
 } proceso_CPU;
 
+typedef struct nodo_CPU_t
+{
+	struct nodo_Lista_CPU_t*sgte;
+	struct nodo_Lista_CPU_t*ant;
+	int id;
+	int socket;
+	pthread_t thread;
+	nodoPCB *ejecutando;
+} nodo_CPU;
+
 #endif /* LIBRERIAS_SF_TIPOSDATO_H_ */

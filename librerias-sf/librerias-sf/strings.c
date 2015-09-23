@@ -5,7 +5,7 @@
  *      Author: utnso
  */
 #include <strings.h>
-void separarInstruccionParametro(char*linea,char*instruccion,char*parametro)
+void separarInstruccionParametro(char*linea,char*instruccion,char parametro[])
 {
 	int i=0;
 	int x=0;

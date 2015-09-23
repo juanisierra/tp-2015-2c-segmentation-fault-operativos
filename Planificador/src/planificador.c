@@ -13,26 +13,14 @@
 #define TAMANOCONSOLA 1024
 #define RUTACONFIG "configuracion"
 
-typedef struct nodo_CPU_t
-{
-	struct nodo_Lista_CPU_t*sgte;
-	struct nodo_Lista_CPU_t*ant;
-	int id;
-	int socket;
-	pthread_t thread;
-	pcb ejecutando;
-} nodo_CPU;
-
 //variables globales (usar con cuidado)
 
 config_pl configuracion;
 nodo_CPU CPU1; //Va a ser lista
 nodoPCB raizListos;
-int status;
 pthread_mutex_t MUTEXLISTOS;
-status = pthread_mutex_init(&MUTEXLISTOS,NULL);
+
 sem_t SEMAFOROLISTOS;
-status = sem_init(&SEMAFOROLISTOS,0,0);
 
 int iniciarConfiguracion(config_pl* configuracion)
 {
@@ -73,14 +61,30 @@ void hiloConsola(void)
 			pid_cuenta++;
 			auxPCB.ip=0;//el puntero apunta a la primera instruccion
 			auxPCB.estado=1;
-			auxPCB.path=parametro;
+			strcpy(auxPCB.path,parametro);
+
 			pthread_mutex_lock(&MUTEXLISTOS);
-			agregarNodoPCB(raizListos,auxPCB);//agregamos el PCB a la lista de listos, uno a la vez.
+			agregarNodoPCB(raizListos,crearNodoPCB(auxPCB));//agregamos el PCB a la lista de listos, uno a la vez.
 			pthread_mutex_unlock(&MUTEXLISTOS);
-			sem_post(SEMAFOROLISTOS);
+			sem_post(&SEMAFOROLISTOS);
 		}
 	}
 	return;
+}
+
+int manejadorCPU(int id) //id Que CPU SOS
+{	//mensaje_CPU_PL buffer; // VER IMPORTAR
+	while(1) // AGEGAR CORTE
+	{
+		sem_wait(&SEMAFOROLISTOS);
+		pthread_mutex_lock(&MUTEXLISTOS);
+		CPU1.ejecutando=sacarNodoPCB(raizListos);
+		pthread_mutex_unlock(&MUTEXLISTOS);
+		enviarPCB(CPU1.socket,&(CPU1.ejecutando->info),-1);
+		//recibirDeCPU(CPU1.socket); //DEFINIR y cuidado con IP al finalziar
+	}
+	close(CPU1.socket);
+	return 0;
 }
 int hiloServidor(void)
 {
@@ -102,26 +106,13 @@ int hiloServidor(void)
 	printf("Esperando conexiones en puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	CPU1.id = 1;
 	CPU1.socket = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-	pthread_create(&(CPU1.thread),NULL,manejadorCPU,NULL);
+	pthread_create(&(CPU1.thread),NULL, manejadorCPU,NULL); //Chequear pasaje de parametro de id del cpu.
 	close(socketEscucha);
 	return 0;
 }
-int manejadorCPU(int id) //id Que CPU SOS
-{	//mensaje_CPU_PL buffer; // VER IMPORTAR
-	while(1) // AGEGAR CORTE
-	{
-		sem_wait(&SEMAFOROLISTOS);
-		pthread_mutex_lock(&MUTEXLISTOS);
-		CPU1.ejecutando=sacarNodoPCB(raizListos);
-		pthread_mutex_unlock(&MUTEXLISTOS);
-		enviarPCB(CPU1.socket,CPU1.ejecutando,-1);
-		recibirDeCPU(CPU1.socket); //DEFINIR y cuidado con IP al finalziar
-	}
-	close(CPU1.socket);
-	return 0;
-}
 int main()
-{
+{	pthread_mutex_init(&MUTEXLISTOS,NULL); //Inicializacion de los semaforos
+	sem_init(&SEMAFOROLISTOS,0,0);
 	pthread_t hConsola;
 	pthread_t hServer;
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;

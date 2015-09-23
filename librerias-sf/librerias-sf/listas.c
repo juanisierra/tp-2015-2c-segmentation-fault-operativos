@@ -9,51 +9,47 @@
 #include <stdint.h>
 #include "tiposDato.h"
 
-nodoPCB* ultimoNodo(nodoPCB* raiz)
+nodoPCB* ultimoNodoPCB(nodoPCB* raiz)
 {
 	nodoPCB* aux=raiz;
-    while(aux->sgte)
+    while(aux->ant)
     {
-        aux=aux->sgte;
+        aux=aux->ant;
     }
     return aux;
 }
-
-int agregarNodoPCB(nodoPCB* raiz, pcb nuevoPcb)
+nodoPCB* crearNodoPCB(pcb informacion)
 {
-    if(!raiz)
-    {
-    	raiz= malloc(sizeof(nodoPCB));
-    	if(!raiz) return -1;
-    	raiz->info=nuevoPcb;
-        raiz->ant=NULL;
-        raiz->sgte=NULL;
-        return 0;
-    }
-    else
-    {
-    	nodoPCB* ultimo_p;
-        ultimo_p=ultimoNodo(raiz);
-        nodoPCB* aMeter=malloc(sizeof(nodoPCB));
-        if(!aMeter) return -1;
-        aMeter->info=nuevoPcb;
-        aMeter->ant=ultimo_p;
-        aMeter->sgte=NULL;
-        ultimo_p->sgte=(aMeter);
-        return 0;
-    }
+	nodoPCB* nuevoNodo=malloc(sizeof(nodoPCB));
+	nuevoNodo->sgte=NULL;
+	nuevoNodo->ant=NULL;
+	nuevoNodo->info=informacion;
+	return nuevoNodo;
 }
-
-
-pcb sacarNodoPCB(nodoPCB*raiz)
+void agregarNodoPCB(nodoPCB* raiz,nodoPCB* nuevoPCB)
 {
-  nodoPCB* aux;
-  aux=raiz;
-  pcb info;
-  info=raiz->info;
-  raiz->sgte->ant=NULL;  //si no anda es esto
-  raiz=raiz->sgte;
-  free(aux);
-  return info;
+	nodoPCB* ultimo=ultimoNodoPCB(raiz);
+	ultimo->ant=nuevoPCB;
+	nuevoPCB->sgte=ultimo;
+	nuevoPCB->ant=NULL;
+	return;
+}
+nodoPCB* sacarNodoPCB(nodoPCB*raiz)
+{	nodoPCB*sacado;
+	if(raiz==NULL){
+		return NULL;
+	}
+	sacado=raiz;
+	if(raiz->ant!=NULL){
+	raiz->ant->sgte=NULL;
+	raiz=raiz->ant;
+	sacado->ant=NULL;
+	sacado->sgte=NULL;
+	}
+	else
+	{
+		raiz=NULL;
+	}
+	return sacado;
 }
 

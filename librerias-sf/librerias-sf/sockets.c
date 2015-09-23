@@ -60,13 +60,13 @@ int crearSocketCliente (char IP[], char PUERTO[])
 			freeaddrinfo(serverInfo);	// No lo necesitamos mas
 			return serverSocket;
 }
-int enviarPCB(int socket,pcb PCB, uint32_t quantum)
+int enviarPCB(int socket,pcb* PCB, uint32_t quantum)
 {	int resultado;
 	mensaje_PL_CPU* mensaje;
 	mensaje = malloc(sizeof(mensaje_PL_CPU));
-	memcpy(&(mensaje->pid),&PCB.pid,sizeof(uint32_t));
-	memcpy(&(mensaje->ip),&PCB.ip,sizeof(uint32_t));
-	memcpy(&(mensaje->path),&PCB.path,51*sizeof(char));
+	memcpy(&(mensaje->pid),&(PCB->pid),sizeof(uint32_t));
+	memcpy(&(mensaje->ip),&(PCB->ip),sizeof(uint32_t));
+	memcpy(&(mensaje->path),&(PCB->path),51*sizeof(char));
 	memcpy(&(mensaje->quantum),&quantum,sizeof(uint32_t));
 
 

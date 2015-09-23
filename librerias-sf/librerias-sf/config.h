@@ -48,6 +48,7 @@ typedef struct {
 	char NOMBRE_SWAP[20];
 	int CANTIDAD_PAGINAS;
 	int TAMANIO_PAGINA;
+	int RETARDO_SWAP;
 	int RETARDO_COMPACTACION;
 } config_SWAP;
 void separarCampoYValor(char*linea,char* campo, char* valor);
