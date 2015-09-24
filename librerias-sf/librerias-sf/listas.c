@@ -26,7 +26,7 @@ nodoPCB* crearNodoPCB(int pid,char path[])
 	nuevoNodo->sgte=NULL;
 	nuevoNodo->ant=NULL;
 	nuevoNodo->info.bloqueo=0;
-	nuevoNodo->info.estado=1;
+	nuevoNodo->info.estado=LISTO;
 	nuevoNodo->info.ip=0;
 	nuevoNodo->info.pid=pid;
 	strcpy(nuevoNodo->info.path,path);

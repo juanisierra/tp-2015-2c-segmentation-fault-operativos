@@ -7,7 +7,6 @@
 
 #ifndef LIBRERIAS_SF_STRINGS_H_
 #define LIBRERIAS_SF_STRINGS_H_
-typedef enum{INICIAR, LEER, ESCRIBIR, ES, FINALIZAR,ERROR}instruccion_t;
 void separarInstruccionParametro(char*renglon,char*instruccion,char parametro[]);
 //Recibe una linea y separa la instruccion de sus parametros, devuelve ERROR o 5 si es una linea invalida.
 instruccion_t interpretarMcod(char linea[],int *parametro1,char *parametro2 );

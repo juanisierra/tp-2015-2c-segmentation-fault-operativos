@@ -5,10 +5,11 @@
  *      Author: utnso
  */
 #include <strings.h>
-
+#include <stdio.h>
+#include "tiposDato.h"
 #define TAMANIOMAXIMOTEXTO 200
 #define TAMANIOMAXIMOLINEA 200
-typedef enum{INICIAR, LEER, ESCRIBIR, ES, FINALIZAR,ERROR}instruccion_t;
+
 void separarInstruccionParametro(char*linea,char*instruccion,char parametro[])
 {
 	int i=0;
@@ -121,6 +122,6 @@ char buffer[TAMANIOMAXIMOLINEA-1];
 	FILE* archivo;
 	archivo=fopen(path,"r");
 	while(fgets(buffer,TAMANIOMAXIMOLINEA,archivo)!=0) i++;
- fclose(archivo);
+	 fclose(archivo);
 	return i;
 }
