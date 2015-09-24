@@ -45,6 +45,7 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO}estado_t; //INVA
   {	instruccion_t instruccion;
 	  uint32_t pid;
 	 uint32_t parametro; // cant paginas, nunero pagina,
+	 uint32_t tamTexto;
 	  char* texto;
   }mensaje_CPU_ADM;
   typedef struct mensaje_ADM_CPU_T
