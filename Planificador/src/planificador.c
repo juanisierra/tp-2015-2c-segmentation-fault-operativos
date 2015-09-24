@@ -16,7 +16,7 @@
 //variables globales (usar con cuidado)
 
 config_pl configuracion;
-nodo_CPU CPU1; //Va a ser lista
+nodo_Lista_CPU CPU1; //Va a ser lista
 pthread_mutex_t MUTEXLISTOS;
 pthread_mutex_t MUTEXPANTALLA;
 pthread_t hConsola;

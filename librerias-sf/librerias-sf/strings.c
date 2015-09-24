@@ -121,7 +121,16 @@ int ultimaLinea(char *path)
 char buffer[TAMANIOMAXIMOLINEA-1];
 	FILE* archivo;
 	archivo=fopen(path,"r");
+	if(archivo==NULL) return-1;
 	while(fgets(buffer,TAMANIOMAXIMOLINEA,archivo)!=0) i++;
 	 fclose(archivo);
 	return i;
+}
+void leerLinea(FILE* archivo,char*buffer,int numeroLinea)
+{	int i=0;
+	char*status;
+	fseek(archivo,0,SEEK_SET);
+	fgets(buffer,TAMANIOMAXIMOLINEA,archivo);
+	while(i<numeroLinea && fgets(buffer,200,archivo)!=NULL)i++;
+	return;
 }
