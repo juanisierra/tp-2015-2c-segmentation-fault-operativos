@@ -121,5 +121,6 @@ char buffer[TAMANIOMAXIMOLINEA-1];
 	FILE* archivo;
 	archivo=fopen(path,"r");
 	while(fgets(buffer,TAMANIOMAXIMOLINEA,archivo)!=0) i++;
+ fclose(archivo);
 	return i;
 }
