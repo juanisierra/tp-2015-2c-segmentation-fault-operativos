@@ -1,14 +1,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
-#include <librerias-sf/config.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
-#define TAMANOCONSOLA 1024
+#include <stdint.h>
+#include <librerias-sf/config.h>
+#include <pthread.h>
+#include <librerias-sf/strings.h>
+#include <librerias-sf/tiposDato.h>
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
+#define TAMANIOMAXIMOTEXTO 200
+#define TAMANIOMAXIMOLINEA 200
+
 int iniciarConfiguracion(config_ADM* configuracion)
 {
 	printf("Cargando Configuracion..\n");
@@ -52,13 +58,14 @@ int main()
 		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de Memoria \n",configuracion.PUERTO_ESCUCHA);
 		return -1;
 	}
+	/*
 	printf("Creando Socket de conexion al SWAP en puerto %s \n",configuracion.PUERTO_SWAP);
 
 	if((socketSWAP = crearSocketCliente(configuracion.IP_SWAP,configuracion.PUERTO_SWAP))<0)
 		{
 			printf("No se pudo crear socket de conexion al SWAP \n"); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 			return 0;
-		}
+		}*/
 
 
 
@@ -69,11 +76,13 @@ int main()
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones.. \n");
 	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-
-	int status = 1;		// Estructura que manjea el status de los recieve.
-
 	printf("Conectado al CPU en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
-
+	mensaje_CPU_ADM mensajeARecibir;
+	int status = 1;		// Estructura que manjea el status de los recieve.
+	status = recibirInstrucionDeCPU(socketCPU, &mensajeARecibir);
+	printf("%d \n", mensajeARecibir.tamTexto);
+	printf("%s \n", mensajeARecibir.texto);
+/*
 	while (status != 0)
 	{
 		status = recv(socketCPU, (void*) mensaje, TAMANOPAQUETE, 0);
@@ -108,7 +117,7 @@ int main()
 			return 0;
 		}
 	}
-	close(socketSWAP);
+	*/
 	close(socketCPU);
 	close(socketEscucha);
 	return 0;

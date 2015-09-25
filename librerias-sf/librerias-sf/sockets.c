@@ -92,3 +92,37 @@ int recibirPCB(int socket, proceso_CPU* proceso,int *quantum)
 	return resultado;
 
 }
+
+int enviarInstruccionAlADM(int socket, mensaje_CPU_ADM* mensajeAMandar)
+{
+	int resultado;
+	mensaje_CPU_ADM* mensaje;
+	mensaje = malloc(sizeof(mensaje_CPU_ADM) + (mensajeAMandar->tamTexto)*sizeof(char));
+	memcpy(&(mensaje->instruccion), &(mensajeAMandar->instruccion), sizeof(instruccion_t));
+	memcpy(&(mensaje->pid), &(mensajeAMandar->pid), sizeof(uint32_t));
+	memcpy(&(mensaje->parametro), &(mensajeAMandar->parametro), sizeof(uint32_t));
+	memcpy(&(mensaje->tamTexto), &(mensajeAMandar->tamTexto), sizeof(uint32_t));
+	memcpy(&(mensaje->texto), (mensajeAMandar->texto), mensajeAMandar->tamTexto*sizeof(char)); //al mensaje le desplazo el puntero para que se pueda posicionar luego de toda la estructura
+	resultado = send(socket,(void*) mensaje,(sizeof(mensaje_CPU_ADM)+ (mensajeAMandar->tamTexto)*sizeof(char)),0);
+	printf("%s \n", &(mensaje->texto));
+	free(mensaje);
+	return resultado;
+}
+
+int recibirInstrucionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido)
+{
+	int resultado;
+	mensaje_CPU_ADM* mensaje1;
+	mensaje1 = malloc(sizeof(mensaje_CPU_ADM));
+	char* mensaje2;
+	resultado = recv(socket,(void*) mensaje1,sizeof(mensaje_PL_CPU),0);
+	memcpy(&(mensajeRecibido->instruccion), &(mensaje1->instruccion), sizeof(instruccion_t));
+	memcpy(&(mensajeRecibido->pid), &(mensaje1->pid), sizeof(uint32_t));
+	memcpy(&(mensajeRecibido->parametro), &(mensaje1->parametro), sizeof(uint32_t));
+	memcpy(&(mensajeRecibido->tamTexto), &(mensaje1->tamTexto), sizeof(uint32_t));
+	mensaje2 = malloc((mensaje1->tamTexto)*sizeof(char));
+	resultado = recv(socket, (void*) mensaje2, (mensaje1->tamTexto)*sizeof(char), 0);
+	printf("el mensaje es: %s \n", (char* )mensaje2);
+	mensajeRecibido->texto = strdup(mensaje2);
+	return resultado;
+}

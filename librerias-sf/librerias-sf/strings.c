@@ -1,3 +1,4 @@
+
 /*
  * strings.c
  *
@@ -32,7 +33,7 @@ void separarInstruccionParametro(char*linea,char*instruccion,char parametro[])
 	parametro[x]=0;
 	return;
 }
-instruccion_t interpretarMcod(char linea[],int *parametro1,char *parametro2 )
+instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2 )
 {	instruccion_t instruccion;
 	int i=0;
 	int x=0;
@@ -55,7 +56,7 @@ instruccion_t interpretarMcod(char linea[],int *parametro1,char *parametro2 )
 		i++;
 	}
 	buffer2[x]=0;
-	*parametro1=atoi(buffer2);
+	*parametro1=(uint32_t) atoi(buffer2);
 	return instruccion;
 	}
 	if(strcmp(buffer1,"leer")==0)
@@ -68,7 +69,7 @@ instruccion_t interpretarMcod(char linea[],int *parametro1,char *parametro2 )
 			i++;
 		}
 		buffer2[x]=0;
-		*parametro1=atoi(buffer2);
+		*parametro1=(uint32_t) atoi(buffer2);
 		return instruccion;
 		}
 	if(strcmp(buffer1,"escribir")==0)
@@ -82,7 +83,7 @@ instruccion_t interpretarMcod(char linea[],int *parametro1,char *parametro2 )
 				i++;
 			}
 			buffer2[x]=0;
-			*parametro1=atoi(buffer2);
+			*parametro1=(uint32_t) atoi(buffer2);
 			x=0;
 			while(linea[i]!='"' && linea[i]!=0 && linea[i]!='\n') i++;
 			i++;
@@ -105,7 +106,7 @@ instruccion_t interpretarMcod(char linea[],int *parametro1,char *parametro2 )
 			i++;
 		}
 		buffer2[x]=0;
-		*parametro1=atoi(buffer2);
+		*parametro1=(uint32_t) atoi(buffer2);
 		return instruccion;
 		}
 	if(strcmp(buffer1,"finalizar")==0)
@@ -134,3 +135,5 @@ void leerLinea(FILE* archivo,char*buffer,int numeroLinea)
 	while(i<numeroLinea && fgets(buffer,200,archivo)!=NULL)i++;
 	return;
 }
+
+
