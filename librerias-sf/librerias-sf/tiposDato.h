@@ -85,8 +85,9 @@ typedef struct proceso_CPU_t //Contiene las estructuras para cada hilo dentro de
 	char path[50+1];
 	uint32_t id;//El ID del cpu
 	int socket; //El socket en que se conecta a su manejador de CPU en el planificador.
+	pthread_t thread;
 	nodo_Retorno_Instruccion* listaRetornos;
-} proceso_CPU;
+}proceso_CPU;
 
 typedef struct nodo_Lista_CPU_t //Cada uno contiene los datos para el manejador de CPU en el planificador
 {
