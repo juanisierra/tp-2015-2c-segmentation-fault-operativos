@@ -1,12 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
+#include <librerias-sf/sockets.c>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <librerias-sf/config.h>
+#include <librerias-sf/config.c>
 #include <pthread.h>
 #include <librerias-sf/strings.h>
 #include <librerias-sf/tiposDato.h>
