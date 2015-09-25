@@ -31,31 +31,35 @@ typedef struct espacioOcupado_t
 	char*texto;
 }espacioOcupado;
 
-int iniciarConfiguracion(config_SWAP* configuracion)
+FILE* archivo;
+config_SWAP configuracion;
+espacioLibre* libreRaiz=NULL;
+espacioOcupado* ocupadoRaiz=NULL;
+
+
+int iniciarConfiguracion(cvoid)
 {
 	printf("Cargando configuracion.. \n \n");
-	(*configuracion) =  cargarConfiguracionSWAP(RUTACONFIG);
-	if (configuracion->estado!=1){
+	configuracion =  cargarConfiguracionSWAP(RUTACONFIG);
+	if (configuracion.estado!=1)
+	{
 		printf("Error en el archivo de configuracion, cerrando Administrador de SWAP.. \n");
 		return -1;
 	}
-	if(configuracion->estado==1){
-		printf("Configuracion cargada correctamente: \nPuerto Escucha: %s \n",configuracion->PUERTO_ESCUCHA);
-		printf("Nombre del Archivo de SWAP: %s \n", configuracion->NOMBRE_SWAP);
-		printf("Cantidad de Paginas: %d \n",configuracion->CANTIDAD_PAGINAS);
-		printf("Tamanio de Pagina: %d \n",configuracion->TAMANIO_PAGINA);
-		printf("Retardo de Compactacion: %d \n \n",configuracion->RETARDO_COMPACTACION);
+	if(configuracion.estado==1){
+		printf("Configuracion cargada correctamente: \nPuerto Escucha: %s \n",configuracion.PUERTO_ESCUCHA);
+		printf("Nombre del Archivo de SWAP: %s \n", configuracion.NOMBRE_SWAP);
+		printf("Cantidad de Paginas: %d \n",configuracion.CANTIDAD_PAGINAS);
+		printf("Tamanio de Pagina: %d \n",configuracion.TAMANIO_PAGINA);
+		printf("Retardo de Compactacion: %d \n \n",configuracion.RETARDO_COMPACTACION);
 		return 0;
 	}
 	return -1;
 }
 
-espacioLibre* libreRaiz=NULL;
-espacioOcupado* ocupadoRaiz=NULL;
-
 int main()
 {	char mensaje[3];
-	config_SWAP configuracion;
+
 
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Iniciando Administrador de SWAP.. \n");
@@ -117,27 +121,24 @@ int main()
 	return 0;
 }
 
-void inicializarArchivo(FILE* archivito, config_SWAP* configuracion1)
+void inicializarArchivo(void)
 {
-    int tamanioArchivo=(configuracion1->CANTIDAD_PAGINAS)*(configuracion1->TAMANIO_PAGINA);
+    int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
     char* s = string_repeat('\0', tamanioArchivo);
-    fprintf(archivito,"%s", s);
+    fprintf(archivo,"%s", s);
     return;
 }
 
-FILE* crearArchivo(config_SWAP* configuracion)//si devuelve NULL fallo
+int crearArchivo(void)//si devuelve NULL fallo
 {
-	FILE* archivo;
-	char nombre [20];
-	strcpy(nombre,(*configuracion).NOMBRE_SWAP );
+	char nombre [30];
+	strcpy(nombre,configuracion.NOMBRE_SWAP );
 	archivo= fopen(nombre,"w+");
 	if(!archivo)
 	{
 		return archivo;
 	}
-
-    inicializarArchivo(archivo,configuracion);
-
+    inicializarArchivo();
 	libreRaiz=malloc(sizeof(espacioLibre));//creamos el primero nodo libre (que esTodo el archivo)
 	if(!libreRaiz)
 	{
@@ -146,8 +147,8 @@ FILE* crearArchivo(config_SWAP* configuracion)//si devuelve NULL fallo
 	libreRaiz->sgte=NULL;
 	libreRaiz->ant=NULL;
 	libreRaiz->comienzo=1;//posicion 1 en vez de 0, mas comodo
-	libreRaiz->cantPag=(configuracion->CANTIDAD_PAGINAS);
-	return archivo;
+	libreRaiz->cantPag=(configuracion.CANTIDAD_PAGINAS);
+	return 1;
 }
 
 void ocupar(int posicion, int espacio)//probar esta funcion
@@ -198,21 +199,21 @@ void ocupar(int posicion, int espacio)//probar esta funcion
 }
 int hayEspacio(int espacio)//espacio esta en paginas
 {
-	int noHay=0;
+	int hay=0;
 	espacioLibre* raiz=libreRaiz;//para no cambiar al puntero
-	while((!noHay) && raiz)
+	while((!hay) && raiz)
 	{
 		if(raiz->cantPag >= espacio)
 		{
-			noHay= raiz->comienzo;//comienzo !=0
+			hay= raiz->comienzo;//comienzo !=0
 		}
 		raiz= raiz->sgte;
 	}
-	if(noHay)
+	if(hay)
 	{
-		ocupar(noHay, espacio);
+		ocupar(hay, espacio);
 	}
-	return noHay;//devolvemos 0 si no hay o la posicion inicial del hueco necesitado
+	return hay;//devolvemos 0 si no hay o la posicion inicial del hueco necesitado
 }
 
 void unirBloquesLibres(void)
@@ -247,7 +248,8 @@ void desgragmentar(void)
     {
         if(libreRaiz->comienzo == 1)//si esta libre la primera pagina (o mas)
         {
-            ocupadoRaiz->comienzo=1;//pasamos lo ocupado a la primera pagina
+        	moverInformacion(ocupadoRaiz->comienzo, ocupadoRaiz->cantPag, 1);
+        	ocupadoRaiz->comienzo=1;//pasamos lo ocupado a la primera pagina
             libreRaiz->comienzo= 1 + ocupadoRaiz->cantPag;
             auxO=ocupadoRaiz;
             if(libreRaiz->sgte->comienzo == libreRaiz->comienzo + libreRaiz->cantPag)//si la pagina siguiente tmb esta libre
@@ -264,6 +266,7 @@ void desgragmentar(void)
             	return;
             }
         	auxO=auxO->sgte;//acomodamos el proximo proceso
+        	moverInformacion(auxO->comienzo, auxO->cantPag, libreRaiz->comienzo);
             auxO->comienzo=libreRaiz->comienzo;//lo colocamos al principio de los libres
             libreRaiz->comienzo=libreRaiz->comienzo+auxO->cantPag;//movemos a libres
             if(libreRaiz->sgte->comienzo == libreRaiz->comienzo + libreRaiz->cantPag)//si la pagina siguiente tmb esta libre
@@ -275,3 +278,14 @@ void desgragmentar(void)
     }
     return;
 }
+
+void moverInformacion(int inicioDe, int cantPags, int inicioA)
+{
+	char buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
+	fseek(archivo, inicioDe * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
+	fread(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//leemos
+	fseek(archivo, inicioA * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
+	fwrite(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//escribimos
+	return;//en el "nuevo" libre ahora ha basura
+}
+
