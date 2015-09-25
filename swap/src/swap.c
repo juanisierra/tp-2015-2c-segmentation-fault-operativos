@@ -121,7 +121,7 @@ void inicializarArchivo(FILE* archivito, config_SWAP* configuracion1)
 {
     int tamanioArchivo=(configuracion1->CANTIDAD_PAGINAS)*(configuracion1->TAMANIO_PAGINA);
     char* s = string_repeat('\0', tamanioArchivo);
-    fprintf(archivito,"%s\n", s);
+    fprintf(archivito,"%s", s);
     return;
 }
 
@@ -149,6 +149,7 @@ FILE* crearArchivo(config_SWAP* configuracion)//si devuelve NULL fallo
 	libreRaiz->cantPag=(configuracion->CANTIDAD_PAGINAS);
 	return archivo;
 }
+
 void ocupar(int posicion, int espacio)//probar esta funcion
 {
 	if(libreRaiz->cantPag == espacio)//si el espacio dado es el primer nodo completo
@@ -207,7 +208,7 @@ int hayEspacio(int espacio)//espacio esta en paginas
 		}
 		raiz= raiz->sgte;
 	}
-	if(!noHay)
+	if(noHay)
 	{
 		ocupar(noHay, espacio);
 	}
@@ -217,7 +218,13 @@ int hayEspacio(int espacio)//espacio esta en paginas
 void unirBloquesLibres(void)
 {
     espacioLibre* nodoABorrar;
-    libreRaiz->cantPag=libreRaiz->cantPag + (libreRaiz->sgte)->cantPag;
+   libreRaiz->cantPag=libreRaiz->cantPag + (libreRaiz->sgte)->cantPag;
+   if(!(libreRaiz->sgte->sgte))//solo son dos nodos
+   {
+	   nodoABorrar=libreRaiz->sgte;
+	   free(nodoABorrar);
+	   return;
+   }
     (libreRaiz->sgte->sgte)->ant=libreRaiz;
     libreRaiz->sgte=(libreRaiz->sgte)->sgte;
     nodoABorrar=libreRaiz->sgte;
@@ -225,11 +232,11 @@ void unirBloquesLibres(void)
     return;
 }
 
-void ordenarPaginas(void)
+void desgragmentar(void)
 {
 	int sizeLibres=0;
 	espacioLibre* auxLibre=libreRaiz;
-	while(auxLibre)
+	while(auxLibre)//contamos cuantos espacios libres hay
     {
         auxLibre=auxLibre->sgte;
         sizeLibres= sizeLibres+1;
@@ -240,37 +247,31 @@ void ordenarPaginas(void)
     {
         if(libreRaiz->comienzo == 1)//si esta libre la primera pagina (o mas)
         {
-            ocupadoRaiz->comienzo=libreRaiz->comienzo;
-            libreRaiz->comienzo=libreRaiz->comienzo+ocupadoRaiz->cantPag;
+            ocupadoRaiz->comienzo=1;//pasamos lo ocupado a la primera pagina
+            libreRaiz->comienzo= 1 + ocupadoRaiz->cantPag;
             auxO=ocupadoRaiz;
-            unirBloquesLibres();
+            if(libreRaiz->sgte->comienzo == libreRaiz->comienzo + libreRaiz->cantPag)//si la pagina siguiente tmb esta libre
+            {
+            	unirBloquesLibres();
+            	sizeLibres--;
+            }
         }
-
         else
         {
-            auxO=auxO->sgte;
-            auxO->comienzo=libreRaiz->comienzo;
-            libreRaiz->comienzo=libreRaiz->comienzo+auxO->cantPag;
-            unirBloquesLibres();
+            if(!auxO->sgte)// si ya ordenamos el ultimo nodo nos vamos
+
+            {
+            	return;
+            }
+        	auxO=auxO->sgte;//acomodamos el proximo proceso
+            auxO->comienzo=libreRaiz->comienzo;//lo colocamos al principio de los libres
+            libreRaiz->comienzo=libreRaiz->comienzo+auxO->cantPag;//movemos a libres
+            if(libreRaiz->sgte->comienzo == libreRaiz->comienzo + libreRaiz->cantPag)//si la pagina siguiente tmb esta libre
+            {
+            	unirBloquesLibres();
+            	sizeLibres--;
+            }
         }
-
-        sizeLibres= sizeLibres-1;
     }
-
     return;
 }
-
-
-/*
-int asignarEspacio(int posicion, int tamanio)
-{
-	if(hayEspacio(tamanio))
-	{
-		ocupar(posicion,tamanio);
-		return 1;
-	}
-
-return 0;
-}
-*/
-
