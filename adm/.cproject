@@ -38,6 +38,7 @@
 								</option>
 								<option id="gnu.c.link.option.libs.1463636410" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="librerias-sf"/>
+									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="commons"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.400456891" superClass="cdt.managedbuild.tool.gnu.c.linker.input">

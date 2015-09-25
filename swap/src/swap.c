@@ -2,10 +2,12 @@
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
 #include <librerias-sf/config.h>
+#include <librerias-sf/tiposDato.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <commons/string.h>
 #define TAMANOCONSOLA 1024
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
@@ -25,12 +27,11 @@ typedef struct espacioOcupado_t
 	uint32_t comienzo;
 	uint32_t cantPag;
 	uint32_t pid;
-	uint32_t tipoInst; //1 iniciar 2 leer pagina 3 escribir pagina 5 finaliza
+	instruccion_t tipoInst; //1 iniciar 2 leer pagina 3 escribir pagina 5 finaliza
 	char*texto;
 }espacioOcupado;
 
 int iniciarConfiguracion(config_SWAP* configuracion)
-
 {
 	printf("Cargando configuracion.. \n \n");
 	(*configuracion) =  cargarConfiguracionSWAP(RUTACONFIG);
@@ -115,21 +116,29 @@ int main()
 	close(socketEscucha);
 	return 0;
 }
+
+void inicializarArchivo(FILE* archivito, config_SWAP* configuracion1)
+{
+    int tamanioArchivo=(configuracion1->CANTIDAD_PAGINAS)*(configuracion1->TAMANIO_PAGINA);
+    char* s = string_repeat('\0', tamanioArchivo);
+    fprintf(archivito,"%s\n", s);
+    return;
+}
+
 FILE* crearArchivo(config_SWAP* configuracion)//si devuelve NULL fallo
 {
 	FILE* archivo;
-	//char nombre [50];
-	//strcpy(nombre,(*configuracion).NOMBRE_SWAP );
-	archivo= fopen("swap.txt","w+");
+	char nombre [20];
+	strcpy(nombre,(*configuracion).NOMBRE_SWAP );
+	archivo= fopen(nombre,"w+");
 	if(!archivo)
 	{
 		return archivo;
 	}
-	while(feof(archivo)) //incializa
-	{
-		fprintf(archivo,'/0');//nose si funciona bien
-	}
-	libreRaiz=malloc(sizeof(espacioLibre));//creamos el primero nodo libre (que es todo el archivo)
+
+    inicializarArchivo(archivo,configuracion);
+
+	libreRaiz=malloc(sizeof(espacioLibre));//creamos el primero nodo libre (que esTodo el archivo)
 	if(!libreRaiz)
 	{
 		return 0;
@@ -156,16 +165,22 @@ void ocupar(int posicion, int espacio)//probar esta funcion
 		libreRaiz->cantPag= libreRaiz->cantPag - espacio;
 		return;
 	}
-	espacioLibre* aux=libreRaiz;//no modificamos al la var global
+	espacioLibre* aux=libreRaiz;//no modificamos a la var global
 	while(posicion-1)//vamos al nodo elegido
 	{
 		aux= aux->sgte;
 		posicion--;
 	}
-	if(aux->cantPag == espacio)//que pasa si aux es el ultimo nodo?
+	if(aux->cantPag == espacio)
 	{
 		espacioLibre* aBorrar1=aux;
-		aux= aux->sgte; //no queda espacio
+		if(aux->sgte == NULL) //si aux es el ultimo nodo
+		{
+			(aBorrar1->ant)->sgte=NULL;
+			free(aBorrar1);
+			return;
+		}
+		aux= aux->sgte;
 		(aux->ant) = (aBorrar1->ant);
 		aBorrar1= aBorrar1->ant;
 		aBorrar1->sgte = aux;
@@ -182,9 +197,9 @@ void ocupar(int posicion, int espacio)//probar esta funcion
 }
 int hayEspacio(int espacio)//espacio esta en paginas
 {
-	int noHay=1;
+	int noHay=0;
 	espacioLibre* raiz=libreRaiz;//para no cambiar al puntero
-	while(noHay && raiz)
+	while((!noHay) && raiz)
 	{
 		if(raiz->cantPag >= espacio)
 		{
@@ -192,10 +207,70 @@ int hayEspacio(int espacio)//espacio esta en paginas
 		}
 		raiz= raiz->sgte;
 	}
-	if(noHay)
+	if(!noHay)
 	{
 		ocupar(noHay, espacio);
 	}
 	return noHay;//devolvemos 0 si no hay o la posicion inicial del hueco necesitado
 }
-//int asignarEspacio(espacioOcupado** ocupado, int posicion, int tamanio)//punteros a punteros por si hay que modificarlos
+
+void unirBloquesLibres(void)
+{
+    espacioLibre* nodoABorrar;
+    libreRaiz->cantPag=libreRaiz->cantPag + (libreRaiz->sgte)->cantPag;
+    (libreRaiz->sgte->sgte)->ant=libreRaiz;
+    libreRaiz->sgte=(libreRaiz->sgte)->sgte;
+    nodoABorrar=libreRaiz->sgte;
+    free(nodoABorrar);
+    return;
+}
+
+void ordenarPaginas(void)
+{
+	int sizeLibres=0;
+	espacioLibre* auxLibre=libreRaiz;
+	while(auxLibre)
+    {
+        auxLibre=auxLibre->sgte;
+        sizeLibres= sizeLibres+1;
+	}
+
+    espacioOcupado* auxO=ocupadoRaiz;
+    while (sizeLibres>1)
+    {
+        if(libreRaiz->comienzo == 1)//si esta libre la primera pagina (o mas)
+        {
+            ocupadoRaiz->comienzo=libreRaiz->comienzo;
+            libreRaiz->comienzo=libreRaiz->comienzo+ocupadoRaiz->cantPag;
+            auxO=ocupadoRaiz;
+            unirBloquesLibres();
+        }
+
+        else
+        {
+            auxO=auxO->sgte;
+            auxO->comienzo=libreRaiz->comienzo;
+            libreRaiz->comienzo=libreRaiz->comienzo+auxO->cantPag;
+            unirBloquesLibres();
+        }
+
+        sizeLibres= sizeLibres-1;
+    }
+
+    return;
+}
+
+
+/*
+int asignarEspacio(int posicion, int tamanio)
+{
+	if(hayEspacio(tamanio))
+	{
+		ocupar(posicion,tamanio);
+		return 1;
+	}
+
+return 0;
+}
+*/
+
