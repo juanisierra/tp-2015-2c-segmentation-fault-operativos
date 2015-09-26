@@ -38,7 +38,7 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO}estado_t; //INVA
 	  uint32_t ip;
 	  estado_t nuevoEstado;// Si dice FINALIZAR se debe borrar del PCB y ERROR es si una instruccion no era valida, tambien finaliza.
 	  uint32_t tiempoBloqueo;
-	  uint32_t cantidadRetornos; // Depende de la cantidad de instrucciones ejecutadas
+	  uint32_t tamPayload; // Depende de la cantidad de instrucciones ejecutadas
 	  char*payload;
   } mensaje_CPU_PL;
   typedef struct mensaje_CPU_ADM_t

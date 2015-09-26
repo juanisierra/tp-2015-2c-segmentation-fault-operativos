@@ -127,6 +127,7 @@ int recibirInstruccionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido) //el A
 	resultado = recv(socket,(void*) mensaje1->texto, sizeof(char)*(mensaje1->tamTexto), 0);
 	mensajeRecibido->texto = malloc(sizeof(char)*(mensaje1->tamTexto));
 	memcpy(mensajeRecibido->texto, mensaje1->texto, sizeof(char)*(mensaje1->tamTexto));
+	free(mensaje1->texto);
 	free(mensaje1);
 	return resultado;
 }
@@ -157,7 +158,9 @@ int recibirRetornoInstruccion(int socket, mensaje_ADM_CPU* mensajeRecibido)// el
 	memcpy(&(mensajeRecibido->tamanoMensaje), &(mensaje1->tamanoMensaje), sizeof(uint32_t));
 	mensaje1->texto = malloc(sizeof(char)*(mensaje1->tamanoMensaje));
 	resultado = recv(socket,(void*) mensaje1->texto, sizeof(char)*(mensaje1->tamanoMensaje), 0);
-	memcpy(&(mensajeRecibido->texto), &(mensaje1->texto), sizeof(char)*(mensaje1->tamanoMensaje));
+	mensajeRecibido->texto = malloc(sizeof(char)*(mensaje1->tamanoMensaje));
+	memcpy(mensajeRecibido->texto, mensaje1->texto, sizeof(char)*(mensaje1->tamanoMensaje));
+	free(mensaje1->texto);
 	free(mensaje1);
 	return resultado;
 

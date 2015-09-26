@@ -71,7 +71,7 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 {
 	if(datos_CPU->listaRetornos == NULL)
 	{
-		datos_CPU->listaRetornos = malloc(sizeof(mensaje_ADM_CPU));
+		datos_CPU->listaRetornos = malloc(sizeof(nodo_Retorno_Instruccion));
 		datos_CPU->listaRetornos->info.instruccion = instruccion;
 		datos_CPU->listaRetornos->info.parametro = mensaje.parametro;
 		datos_CPU->listaRetornos->info.tamTexto = mensaje.tamanoMensaje;
@@ -83,7 +83,7 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 	{
 		nodo_Retorno_Instruccion* aux = datos_CPU->listaRetornos;
 		while(aux != NULL) aux= aux->sgte;
-		aux->sgte=malloc(sizeof(mensaje_ADM_CPU));
+		aux->sgte=malloc(sizeof(nodo_Retorno_Instruccion));
 		aux->sgte->info.instruccion = instruccion;
 		aux->sgte->info.parametro = mensaje.parametro;
 		aux->sgte->info.tamTexto = mensaje.tamanoMensaje;
@@ -91,6 +91,7 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 		aux->sgte->sgte = NULL;
 		aux ->sgte->ant = aux;
 	}
+
 }
 
 uint32_t desempaquetarLista(retornoInstruccion* mensaje, nodo_Retorno_Instruccion* lista) // funcion que pasa la lista a un array que sera casteado posteriormente, y retorna el tamaño del payload a enviar al PL

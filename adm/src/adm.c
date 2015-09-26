@@ -110,7 +110,7 @@ int main()
 	{
 		mensajeAMandar.parametro = mensajeARecibir.parametro;
 		mensajeAMandar.tamanoMensaje = strlen("mProc X - Pagina N escrita:") +1;
-		mensajeAMandar.texto = strdup("mProc X - Pagina N escrita:");
+		mensajeAMandar.texto = strdup(mensajeARecibir.texto);
 		enviarRetornoInstruccion(socketCPU, &mensajeAMandar);
 		free(mensajeAMandar.texto);
 	}
