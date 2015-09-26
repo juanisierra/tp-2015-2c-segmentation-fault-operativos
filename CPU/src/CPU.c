@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
+#include <librerias-sf/sockets.c>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -10,6 +11,8 @@
 #include <librerias-sf/config.c>
 #include <pthread.h>
 #include <librerias-sf/strings.h>
+#include <librerias-sf/strings.c>
+#include <librerias-sf/listas.c>
 #include <librerias-sf/tiposDato.h>
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
@@ -60,6 +63,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirRetornoInstruccion(socketADM, &mensajeRetorno);
 		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
+		free(mensajeRetorno.texto); //Vaciamos la memoria dinamica del texto que se recibio
 		break;
 	}
 	case LEER:
@@ -67,6 +71,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirRetornoInstruccion(socketADM, &mensajeRetorno);
 		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
+		free(mensajeRetorno.texto); //Vaciamos la memoria dinamica del texto que se recibio
 		break;
 	}
 	case ESCRIBIR:
@@ -76,6 +81,8 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirRetornoInstruccion(socketADM, &mensajeRetorno);
 		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
+		free(mensajeRetorno.texto); //Vaciamos la memoria dinamica del texto que se recibio
+		free(mensajeParaADM.texto);
 		break;
 	}
 	case ES:
@@ -87,6 +94,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		(*estado) = BLOQUEADO;
 		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		(*entrada_salida) = 1; // marcara el tiempo de bloqueo
+		free(mensajeRetorno.texto); //Vaciamos la memoria dinamica del texto que se recibio
 		break;
 	}
 	case ERROR:
@@ -105,16 +113,20 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		(*estado) = AFINALIZAR;
 		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		(*finArchivo) = 1;
+		free(mensajeRetorno.texto); //Vaciamos la memoria dinamica del texto que se recibio
+		break;
+	}
+	case CERRAR:
+	{
 		break;
 	}
 	}
-	free(mensajeRetorno.texto); //Vaciamos la memoria dinamica del texto que se recibio
 }
 
 void hiloCPU(void* datoCPUACastear)
 {
 	uint32_t quantum;
-	uint32_t cantidadMensajes; //Aqui se guardara la cantidad de retorno de instrucciones que se le enviaran al PL
+	uint32_t cantidadMensajes;//Aqui se guardara la cantidad de retorno de instrucciones que se le enviaran al PL
 	estado_t estado; // es el estado de ejecucion
 	retornoInstruccion* mensajeParaPL; //POSTERIORMENTE LO CASTEAMOS A CHAR PARA MANDARLO AL PL
 	int status;
@@ -146,7 +158,8 @@ void hiloCPU(void* datoCPUACastear)
 			ejecutarInstruccion(&datos_CPU, instruccion, parametro1, parametro2, &entrada_salida, &finArchivo, &estado);
 		}
 		cantidadMensajes = desempaquetarLista(mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
-		printf("%s \n", mensajeParaPL->texto);
+		printf("%s \n", mensajeParaPL->texto);//hay que vaciar la memoria del vector
+		printf("%d \n", cantidadMensajes);
 		//enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL, cantidadMensajes);
 		status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
 	}
