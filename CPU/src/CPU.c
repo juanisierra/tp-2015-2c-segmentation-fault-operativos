@@ -124,7 +124,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 void hiloCPU(void* datoCPUACastear)
 {
 	uint32_t quantum;
-	uint32_t cantidadMensajes;//Aqui se guardara la cantidad de retorno de instrucciones que se le enviaran al PL
+	uint32_t tamPayload;//Aqui se guardara el tamaño de lo que se le manda al PL
 	estado_t estado; // es el estado de ejecucion
 	retornoInstruccion* mensajeParaPL; //POSTERIORMENTE LO CASTEAMOS A CHAR PARA MANDARLO AL PL
 	int status;
@@ -160,10 +160,9 @@ void hiloCPU(void* datoCPUACastear)
 			//printf("%s \n",datos_CPU.listaRetornos->info.texto);
 		}
 		printf("hola \n");
-		cantidadMensajes = desempaquetarLista(mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
+		tamPayload = desempaquetarLista(mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
 		printf("%s \n", mensajeParaPL->texto);//hay que vaciar la memoria del vector
-		printf("%d \n", cantidadMensajes);
-		//enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL, cantidadMensajes);
+		//enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL,tamPayload);
 		status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
 	}
 }
