@@ -93,36 +93,70 @@ int recibirPCB(int socket, proceso_CPU* proceso,int *quantum)
 
 }
 
-int enviarInstruccionAlADM(int socket, mensaje_CPU_ADM* mensajeAMandar)
+int enviarInstruccionAlADM(int socket, mensaje_CPU_ADM* mensajeAMandar) //el CPU le manda al ADM
 {
 	int resultado;
-	mensaje_CPU_ADM* mensaje;
-	mensaje = malloc(sizeof(mensaje_CPU_ADM) + (mensajeAMandar->tamTexto)*sizeof(char));
-	memcpy(&(mensaje->instruccion), &(mensajeAMandar->instruccion), sizeof(instruccion_t));
-	memcpy(&(mensaje->pid), &(mensajeAMandar->pid), sizeof(uint32_t));
-	memcpy(&(mensaje->parametro), &(mensajeAMandar->parametro), sizeof(uint32_t));
-	memcpy(&(mensaje->tamTexto), &(mensajeAMandar->tamTexto), sizeof(uint32_t));
-	memcpy(&(mensaje->texto), (mensajeAMandar->texto), mensajeAMandar->tamTexto*sizeof(char)); //al mensaje le desplazo el puntero para que se pueda posicionar luego de toda la estructura
-	resultado = send(socket,(void*) mensaje,(sizeof(mensaje_CPU_ADM)+ (mensajeAMandar->tamTexto)*sizeof(char)),0);
-	printf("%s \n", &(mensaje->texto));
-	free(mensaje);
+	mensaje_CPU_ADM* mensaje1;
+	char* mensaje2;
+	mensaje1 = malloc(sizeof(mensaje_CPU_ADM));
+	memcpy(&(mensaje1->instruccion), &(mensajeAMandar->instruccion), sizeof(instruccion_t));
+	memcpy(&(mensaje1->pid), &(mensajeAMandar->pid), sizeof(uint32_t));
+	memcpy(&(mensaje1->parametro), &(mensajeAMandar->parametro), sizeof(uint32_t));
+	memcpy(&(mensaje1->tamTexto), &(mensajeAMandar->tamTexto), sizeof(uint32_t));
+	resultado = send(socket,(void*) mensaje1,(sizeof(mensaje_CPU_ADM)),0);
+	mensaje2 = malloc(sizeof(char)*(mensajeAMandar->tamTexto));
+	memcpy(mensaje2, (mensajeAMandar->texto), sizeof(char)*(mensajeAMandar->tamTexto));
+	resultado = send(socket,(void*) mensaje2,sizeof(char)*(mensajeAMandar->tamTexto),0);
+	free(mensaje1);
+	free(mensaje2);
 	return resultado;
 }
 
-int recibirInstrucionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido)
+int recibirInstrucionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido) //el ADM recibe el mensaje que le manda el CPU
 {
 	int resultado;
 	mensaje_CPU_ADM* mensaje1;
 	mensaje1 = malloc(sizeof(mensaje_CPU_ADM));
-	char* mensaje2;
 	resultado = recv(socket,(void*) mensaje1,sizeof(mensaje_PL_CPU),0);
 	memcpy(&(mensajeRecibido->instruccion), &(mensaje1->instruccion), sizeof(instruccion_t));
 	memcpy(&(mensajeRecibido->pid), &(mensaje1->pid), sizeof(uint32_t));
 	memcpy(&(mensajeRecibido->parametro), &(mensaje1->parametro), sizeof(uint32_t));
 	memcpy(&(mensajeRecibido->tamTexto), &(mensaje1->tamTexto), sizeof(uint32_t));
-	mensaje2 = malloc((mensaje1->tamTexto)*sizeof(char));
-	resultado = recv(socket, (void*) mensaje2, (mensaje1->tamTexto)*sizeof(char), 0);
-	printf("el mensaje es: %s \n", (char* )mensaje2);
-	mensajeRecibido->texto = strdup(mensaje2);
+	mensaje1->texto = malloc(sizeof(char)*(mensaje1->tamTexto));
+	resultado = recv(socket,(void*) mensaje1->texto, sizeof(char)*(mensaje1->tamTexto), 0);
+	mensajeRecibido->texto = malloc(sizeof(char)*(mensaje1->tamTexto));
+	memcpy(mensajeRecibido->texto, mensaje1->texto, sizeof(char)*(mensaje1->tamTexto));
+	free(mensaje1);
 	return resultado;
+}
+
+int enviarRetornoInstruccion(int socket, mensaje_ADM_CPU* mensajeAMandar) // El ADM le manda al CPU
+{
+		int resultado;
+		mensaje_ADM_CPU* mensaje1;
+		char* mensaje2;
+		mensaje1 = malloc(sizeof(mensaje_ADM_CPU));
+		memcpy(&(mensaje1->parametro), &(mensajeAMandar->parametro), sizeof(uint32_t));
+		memcpy(&(mensaje1->tamanoMensaje), &(mensajeAMandar->tamanoMensaje), sizeof(uint32_t));
+		resultado = send(socket,(void*) mensaje1,(sizeof(mensaje_ADM_CPU)),0);
+		mensaje2 = malloc(sizeof(char)*(mensajeAMandar->tamanoMensaje));
+		memcpy(mensaje2, (mensajeAMandar->texto), sizeof(char)*(mensajeAMandar->tamanoMensaje));
+		resultado = send(socket,(void*) mensaje2,sizeof(char)*(mensajeAMandar->tamanoMensaje),0);
+		free(mensaje1);
+		free(mensaje2);
+		return resultado;
+}
+int recibirRetornoInstruccion(int socket, mensaje_ADM_CPU* mensajeRecibido)// el CPU recibe el mensaje del ADM
+{
+	int resultado;
+	mensaje_ADM_CPU* mensaje1;
+	mensaje1 = malloc(sizeof(mensaje_ADM_CPU));
+	resultado = recv(socket,(void*) mensaje1,sizeof(mensaje_ADM_CPU),0);
+	memcpy(&(mensajeRecibido->parametro), &(mensaje1->parametro), sizeof(uint32_t));
+	memcpy(&(mensajeRecibido->tamanoMensaje), &(mensaje1->tamanoMensaje), sizeof(uint32_t));
+	mensaje1->texto = malloc(sizeof(char)*(mensaje1->tamanoMensaje));
+	resultado = recv(socket,(void*) mensaje1->texto, sizeof(char)*(mensaje1->tamanoMensaje), 0);
+	memcpy(&(mensajeRecibido->texto), &(mensaje1->texto), sizeof(char)*(mensaje1->tamanoMensaje));
+	return resultado;
+
 }

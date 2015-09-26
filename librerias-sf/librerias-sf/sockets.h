@@ -19,6 +19,4 @@ int crearSocketEscucha (int cantidadConexiones, char puerto[]);
 int crearSocketCliente (char IP[], char PUERTO[]);
 int enviarPCB(int socket,nodoPCB* PCB, uint32_t quantum);
 int recibirPCB(int socket, proceso_CPU* proceso,int *quantum);
-int enviarInstruccionAlADM(int socket, mensaje_CPU_ADM* mensajeAMandar);
-int recibirInstrucionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido);
 #endif /* LIBRERIAS_SF_SOCKETS_H_ */

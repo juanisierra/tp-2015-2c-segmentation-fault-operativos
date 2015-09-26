@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
-#include <librerias-sf/sockets.c>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -45,8 +44,7 @@ int iniciarConfiguracion(config_CPU* configuracion)
 	return -1;
 }
 
-/*void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint32_t parametro1, char* parametro2, int* entrada_salida, int* finArchivo)//funcion que ejecuta
-las instrucciones
+void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint32_t parametro1, char* parametro2, int* entrada_salida, int* finArchivo)//funcion que ejecuta las instrucciones
 {
 	mensaje_CPU_ADM mensajeParaADM;
 	uint32_t tamTexto = strlen(parametro2) +1;
@@ -124,7 +122,7 @@ void hiloCPU(void* datoCPUACastear)
 		status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
 	}
 }
-*/
+
 int main(void)
 {
 	int i;
@@ -136,23 +134,12 @@ int main(void)
 			printf("No se pudo crear socket en %s:%s \n",configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 			return 0;
 		}
-	// PRUEBA DE ENVIO DE MEMORIA DINAMICA
-	mensaje_CPU_ADM mensajeParaADM;
-	uint32_t tamTexto = strlen("hola") +1;
-	mensajeParaADM.instruccion = 2;
-	mensajeParaADM.pid = 0;
-	mensajeParaADM.parametro = 10;
-	mensajeParaADM.tamTexto = tamTexto;
-	mensajeParaADM.texto = strdup("hola");
-	printf("%d", sizeof(char*));
-	enviarInstruccionAlADM(socketADM, &mensajeParaADM);
-	/*for(i = 0;i < configuracion.CANTIDAD_HILOS; i++) // Vamos creando un hilo por cada CPU.
+	for(i = 0;i < configuracion.CANTIDAD_HILOS; i++) // Vamos creando un hilo por cada CPU.
 	{
 		CPUs[i].id = i;
 		if((CPUs[i].socket = crearSocketCliente(configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR))<0) // ponemos el socket de cada CPU
 		{
-			printf("No se pudo crear socket planificador en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR); //AGREGAR SOPOTE PARA -2 SI
-NO SE CONECTA
+			printf("No se pudo crear socket planificador en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 			return 0;
 		}
 		pthread_create(&CPUs[i].thread, NULL, (void*)hiloCPU, (void*) &(CPUs[i]));
@@ -162,7 +149,7 @@ NO SE CONECTA
 	{
 		pthread_join(CPUs[i].thread, NULL);
 		i++;
-	}*/
+	}
 
 	return 0;
 }
