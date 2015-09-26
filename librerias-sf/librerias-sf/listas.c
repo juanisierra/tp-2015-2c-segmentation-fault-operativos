@@ -93,11 +93,11 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 	}
 }
 
-uint32_t desempaquetarLista(retornoInstruccion* mensaje, nodo_Retorno_Instruccion lista) // funcion que pasa la lista a un array que sera casteado posteriormente, y retorna el tamaño del payload a enviar al PL
+uint32_t desempaquetarLista(retornoInstruccion* mensaje, nodo_Retorno_Instruccion* lista) // funcion que pasa la lista a un array que sera casteado posteriormente, y retorna el tamaño del payload a enviar al PL
 {
 	int j=0; // VARIABLE CONTADORA PARA IR LLENANDO LOS ESPACIOS DEL MENSAJE
 	int i = 0;//VARIABLE UTILIZADA PARA CONTAR LOS NODOS
-	nodo_Retorno_Instruccion aux; //auxiliar para recorrer la lista por primera vez
+	nodo_Retorno_Instruccion* aux; //auxiliar para recorrer la lista por primera vez
 	aux = lista;
 	while(aux != NULL)
 	{
@@ -116,5 +116,5 @@ uint32_t desempaquetarLista(retornoInstruccion* mensaje, nodo_Retorno_Instruccio
 		free(aux->info.texto);//liberamos la memoria del texto
 		free(aux);//liberamos el resto de la memoria de ese nodo
 	}
-	return (sizeof(retornoInstruccion)*i);
+	return i; //RETORNARA LA CANTIDAD DE TIPOS RETORNO INSTRUCCION QUE TENDRA EL VECTOR MENSAJE
 }

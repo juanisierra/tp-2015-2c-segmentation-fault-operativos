@@ -162,7 +162,7 @@ int recibirRetornoInstruccion(int socket, mensaje_ADM_CPU* mensajeRecibido)// el
 	return resultado;
 
 }
-int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloqueo, retornoInstruccion* payload, uint32_t tamPayload)//enviamos los retornos de instreuccion al PL, tamPayload es el tamaño real que ocupa, ya medido
+int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloqueo, retornoInstruccion* payload, uint32_t cantidadMensajes)//enviamos los retornos de instreuccion al PL, cantidadMensajes seria un "tamaño", hay que multiplicarlo por el size
 {
 	int resultado;
 	mensaje_CPU_PL* mensaje1;
@@ -171,11 +171,11 @@ int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloq
 	memcpy(&(mensaje1->ip),&(datos_CPU.ip),sizeof(uint32_t));
 	memcpy(&(mensaje1->nuevoEstado), &(estado), sizeof(estado_t));
 	memcpy(&(mensaje1->tiempoBloqueo), &tiempoBloqueo, sizeof(uint32_t));
-	memcpy(&(mensaje1->tamMensaje), &tamPayload, sizeof(uint32_t));
+	memcpy(&(mensaje1->cantidadRetornos), &cantidadMensajes, sizeof(uint32_t));
 	resultado = send(datos_CPU.socket,(void*) mensaje1,(sizeof(mensaje_CPU_PL)),0);
-	mensaje2 = malloc(tamPayload);
-	memcpy(mensaje2, payload, tamPayload);
-	resultado = send(datos_CPU.socket,(void*) mensaje2,tamPayload,0);
+	mensaje2 = malloc(cantidadMensajes*sizeof(retornoInstruccion));
+	memcpy(mensaje2, payload, cantidadMensajes*sizeof(retornoInstruccion));
+	resultado = send(datos_CPU.socket,(void*) mensaje2,cantidadMensajes*sizeof(retornoInstruccion),0);
 	free(mensaje1);
 	free(mensaje2);
 	return resultado;

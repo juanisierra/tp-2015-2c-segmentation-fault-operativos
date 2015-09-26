@@ -81,6 +81,9 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	case ES:
 	{
 		// ASIGNAR MENSAJE
+		mensajeRetorno.parametro = parametro1;
+		mensajeRetorno.texto = strdup("mProc X en entrada-salida de tiempo: T");
+		mensajeRetorno.tamanoMensaje = strlen("mProc X en entrada-salida de tiempo: T") +1;
 		(*estado) = BLOQUEADO;
 		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		(*entrada_salida) = 1; // marcara el tiempo de bloqueo
@@ -96,18 +99,22 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	case FINALIZAR:
 	{
 		// ASIGNAR MENSAJE
+		mensajeRetorno.parametro = parametro1;
+		mensajeRetorno.texto = strdup("mProc X finalizado");
+		mensajeRetorno.tamanoMensaje = strlen("mProc X finalizado") +1;
 		(*estado) = AFINALIZAR;
 		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		(*finArchivo) = 1;
 		break;
 	}
 	}
+	free(mensajeRetorno.texto); //Vaciamos la memoria dinamica del texto que se recibio
 }
 
 void hiloCPU(void* datoCPUACastear)
 {
 	uint32_t quantum;
-	uint32_t tamPayload; //Aqui se guardara el tamaño del payload de la lista de retorno de instrucciones
+	uint32_t cantidadMensajes; //Aqui se guardara la cantidad de retorno de instrucciones que se le enviaran al PL
 	estado_t estado; // es el estado de ejecucion
 	retornoInstruccion* mensajeParaPL; //POSTERIORMENTE LO CASTEAMOS A CHAR PARA MANDARLO AL PL
 	int status;
@@ -138,8 +145,9 @@ void hiloCPU(void* datoCPUACastear)
 			instruccion = interpretarMcod(lineaAEjecutar,&parametro1,parametro2);
 			ejecutarInstruccion(&datos_CPU, instruccion, parametro1, parametro2, &entrada_salida, &finArchivo, &estado);
 		}
-		tamPayload = desempaquetarLista(mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
-		enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL, tamPayload);
+		cantidadMensajes = desempaquetarLista(mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
+		printf("%s \n", mensajeParaPL->texto);
+		//enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL, cantidadMensajes);
 		status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
 	}
 }

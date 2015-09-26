@@ -79,6 +79,7 @@ int main()
 	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	printf("Conectado al CPU en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	mensaje_CPU_ADM mensajeARecibir;
+	mensaje_ADM_CPU mensajeAMandar;//es el mensaje que le mandaremos al CPU
 	int status = 1;		// Estructura que manjea el status de los recieve.
 	while(1)
 	{
@@ -89,6 +90,30 @@ int main()
 	printf("%d \n", mensajeARecibir.pid);
 	printf("%d \n", mensajeARecibir.tamTexto);
 	printf("%s \n \n \n", mensajeARecibir.texto);
+	if(mensajeARecibir.instruccion == INICIAR)
+	{
+		mensajeAMandar.parametro = mensajeARecibir.parametro;
+		mensajeAMandar.tamanoMensaje = strlen("mProx X - Iniciado") +1;
+		mensajeAMandar.texto = strdup("mProx X - Iniciado");
+		enviarRetornoInstruccion(socketCPU, &mensajeAMandar);
+		free(mensajeAMandar.texto);
+	}
+	if(mensajeARecibir.instruccion == LEER)
+	{
+		mensajeAMandar.parametro = mensajeARecibir.parametro;
+		mensajeAMandar.tamanoMensaje = strlen("mProc X - Pagina N leida:") +1;
+		mensajeAMandar.texto = strdup("mProc X - Pagina N leida:");
+		enviarRetornoInstruccion(socketCPU, &mensajeAMandar);
+		free(mensajeAMandar.texto);
+	}
+	if(mensajeARecibir.instruccion == ESCRIBIR)
+	{
+		mensajeAMandar.parametro = mensajeARecibir.parametro;
+		mensajeAMandar.tamanoMensaje = strlen("mProc X - Pagina N escrita:") +1;
+		mensajeAMandar.texto = strdup("mProc X - Pagina N escrita:");
+		enviarRetornoInstruccion(socketCPU, &mensajeAMandar);
+		free(mensajeAMandar.texto);
+	}
 	free(mensajeARecibir.texto);
 	}
 /*
