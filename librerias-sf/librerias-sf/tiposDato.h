@@ -70,6 +70,7 @@ typedef struct retornoInstruccion_t //Se almacenan en una lista en CPU y luego v
 {
 	instruccion_t instruccion;
 	uint32_t parametro; // 0 bien 1 mal , cant paginas, numero pagina, tiempo e/s
+	uint32_t tamTexto;
 	char*texto; //texto escrito-****************************************** CAPAZ CONVIENE DARLE LONGITUD FIJA*****************
 } retornoInstruccion;
 typedef struct nodo_Retorno_Instruccion_t // Nodos de  la lista de retornos de instrucciones.

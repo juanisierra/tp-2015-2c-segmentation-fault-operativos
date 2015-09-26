@@ -12,6 +12,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include "tiposDato.h"
+#include <stdint.h>
 
 int crearSocketEscucha (int cantidadConexiones, char puerto[]) {
 	struct addrinfo hints;
@@ -79,7 +80,7 @@ int enviarPCB(int socket,nodoPCB* PCB, uint32_t quantum) //-2 si no hay malloc
 	}
 	return resultado;
 }
-int recibirPCB(int socket, proceso_CPU* proceso,int *quantum)
+int recibirPCB(int socket, proceso_CPU* proceso,uint32_t *quantum)
 {	int resultado;
 	mensaje_PL_CPU* mensajeRecibido;
 	mensajeRecibido=malloc(sizeof(mensaje_PL_CPU));
@@ -112,7 +113,7 @@ int enviarInstruccionAlADM(int socket, mensaje_CPU_ADM* mensajeAMandar) //el CPU
 	return resultado;
 }
 
-int recibirInstrucionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido) //el ADM recibe el mensaje que le manda el CPU
+int recibirInstruccionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido) //el ADM recibe el mensaje que le manda el CPU
 {
 	int resultado;
 	mensaje_CPU_ADM* mensaje1;
@@ -157,6 +158,25 @@ int recibirRetornoInstruccion(int socket, mensaje_ADM_CPU* mensajeRecibido)// el
 	mensaje1->texto = malloc(sizeof(char)*(mensaje1->tamanoMensaje));
 	resultado = recv(socket,(void*) mensaje1->texto, sizeof(char)*(mensaje1->tamanoMensaje), 0);
 	memcpy(&(mensajeRecibido->texto), &(mensaje1->texto), sizeof(char)*(mensaje1->tamanoMensaje));
+	free(mensaje1);
 	return resultado;
 
+}
+int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloqueo, retornoInstruccion* payload, uint32_t tamPayload)//enviamos los retornos de instreuccion al PL, tamPayload es el tamaño real que ocupa, ya medido
+{
+	int resultado;
+	mensaje_CPU_PL* mensaje1;
+	char* mensaje2;
+	mensaje1 = malloc(sizeof(mensaje_CPU_PL));
+	memcpy(&(mensaje1->ip),&(datos_CPU.ip),sizeof(uint32_t));
+	memcpy(&(mensaje1->nuevoEstado), &(estado), sizeof(estado_t));
+	memcpy(&(mensaje1->tiempoBloqueo), &tiempoBloqueo, sizeof(uint32_t));
+	memcpy(&(mensaje1->tamMensaje), &tamPayload, sizeof(uint32_t));
+	resultado = send(datos_CPU.socket,(void*) mensaje1,(sizeof(mensaje_CPU_PL)),0);
+	mensaje2 = malloc(tamPayload);
+	memcpy(mensaje2, payload, tamPayload);
+	resultado = send(datos_CPU.socket,(void*) mensaje2,tamPayload,0);
+	free(mensaje1);
+	free(mensaje2);
+	return resultado;
 }

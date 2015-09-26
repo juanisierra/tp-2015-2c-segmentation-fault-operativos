@@ -44,8 +44,9 @@ int iniciarConfiguracion(config_CPU* configuracion)
 	return -1;
 }
 
-void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint32_t parametro1, char* parametro2, int* entrada_salida, int* finArchivo)//funcion que ejecuta las instrucciones
+void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint32_t parametro1, char* parametro2, uint32_t* entrada_salida, int* finArchivo, estado_t* estado)//funcion que ejecuta las instrucciones
 {
+	mensaje_ADM_CPU mensajeRetorno;
 	mensaje_CPU_ADM mensajeParaADM;
 	uint32_t tamTexto = strlen(parametro2) +1;
 	mensajeParaADM.instruccion = instruccion;
@@ -57,11 +58,15 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	case INICIAR:
 	{
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
+		recibirRetornoInstruccion(socketADM, &mensajeRetorno);
+		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		break;
 	}
 	case LEER:
 	{
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
+		recibirRetornoInstruccion(socketADM, &mensajeRetorno);
+		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		break;
 	}
 	case ESCRIBIR:
@@ -69,21 +74,30 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		printf("prueba");
 		mensajeParaADM.texto = strdup(parametro2); //duplicamos la cadena en el heap
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
+		recibirRetornoInstruccion(socketADM, &mensajeRetorno);
+		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		break;
 	}
 	case ES:
 	{
-		(*entrada_salida) = 1;
+		// ASIGNAR MENSAJE
+		(*estado) = BLOQUEADO;
+		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
+		(*entrada_salida) = 1; // marcara el tiempo de bloqueo
 		break;
 	}
 	case ERROR:
 	{
 		printf("Escribiste mal algo.asd.asd");
+		(*estado) = INVALIDO;
 		(*finArchivo) = 1;
 		break;
 	}
 	case FINALIZAR:
 	{
+		// ASIGNAR MENSAJE
+		(*estado) = AFINALIZAR;
+		almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		(*finArchivo) = 1;
 		break;
 	}
@@ -93,8 +107,11 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 void hiloCPU(void* datoCPUACastear)
 {
 	uint32_t quantum;
+	uint32_t tamPayload; //Aqui se guardara el tamaño del payload de la lista de retorno de instrucciones
+	estado_t estado; // es el estado de ejecucion
+	retornoInstruccion* mensajeParaPL; //POSTERIORMENTE LO CASTEAMOS A CHAR PARA MANDARLO AL PL
 	int status;
-	int entrada_salida; // informa si llego un mensaje de entrada salida.
+	uint32_t entrada_salida; // informa si llego un mensaje de entrada salida.
 	int finArchivo; // Informa si se llego al fin de archivo
 	char lineaAEjecutar[TAMANIOMAXIMOLINEA]; // Aca se va  a ir guardando las diferentes instrucciones a ejecutar.
 	instruccion_t instruccion;
@@ -107,6 +124,8 @@ void hiloCPU(void* datoCPUACastear)
 	{
 		entrada_salida = 0;//REINICIAMOS ESTOS VALORES PARA CADA VEZ QUE LEA UNA NUEVA PCB
 		finArchivo = 0;
+		datos_CPU.listaRetornos = NULL; // ACA HAGO QUE LA LISTA REINICIE AL LEER UN MCOD COMPLETO,la lista es liberada en la funcion desempaquetar
+		printf("CPU numero: %d \n", datos_CPU.id);
 		printf("PCB RECIBIDO:\n PID: %d \n PATH: %s \n\n",datos_CPU.pid,datos_CPU.path);
 		while (quantum != 0 && entrada_salida == 0 && finArchivo == 0) //esta es la condicion para que deje de ejecutar
 		{
@@ -117,8 +136,10 @@ void hiloCPU(void* datoCPUACastear)
 			datos_CPU.ip++;
 			quantum--; // RESTAMOS EL QUANTUM DESPUES DE LEER UNA LINEA
 			instruccion = interpretarMcod(lineaAEjecutar,&parametro1,parametro2);
-			ejecutarInstruccion(&datos_CPU, instruccion, parametro1, parametro2, &entrada_salida, &finArchivo);
+			ejecutarInstruccion(&datos_CPU, instruccion, parametro1, parametro2, &entrada_salida, &finArchivo, &estado);
 		}
+		tamPayload = desempaquetarLista(mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
+		enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL, tamPayload);
 		status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
 	}
 }

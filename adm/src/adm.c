@@ -80,18 +80,17 @@ int main()
 	printf("Conectado al CPU en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	mensaje_CPU_ADM mensajeARecibir;
 	int status = 1;		// Estructura que manjea el status de los recieve.
-	status = recibirInstrucionDeCPU(socketCPU, &mensajeARecibir);
+	while(1)
+	{
+	printf("esperando que el CPU mande \n");
+	status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
 	printf("%d \n", mensajeARecibir.instruccion);
 	printf("%d \n", mensajeARecibir.parametro);
 	printf("%d \n", mensajeARecibir.pid);
 	printf("%d \n", mensajeARecibir.tamTexto);
 	printf("%s \n \n \n", mensajeARecibir.texto);
-	mensaje_ADM_CPU mensajeAEnviar;
-	mensajeAEnviar.parametro = 1;
-	mensajeAEnviar.tamanoMensaje= strlen("gilputogato")+1;
-	mensajeAEnviar.texto = strdup("gilputogato");
-	int resultado;
-	resultado = enviarRetornoInstruccion(socketCPU, &mensajeAEnviar);
+	free(mensajeARecibir.texto);
+	}
 /*
 	while (status != 0)
 	{
