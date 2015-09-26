@@ -31,11 +31,11 @@ typedef struct espacioOcupado_t
 	char*texto;
 }espacioOcupado;
 
-FILE* archivo;
+//****** OJO QUE SON VARIABLES GLOBALES ******
+FILE* archivo=NULL;
 config_SWAP configuracion;
 espacioLibre* libreRaiz=NULL;
 espacioOcupado* ocupadoRaiz=NULL;
-
 
 int iniciarConfiguracion(cvoid)
 {
@@ -59,13 +59,9 @@ int iniciarConfiguracion(cvoid)
 
 int main()
 {	char mensaje[3];
-
-
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Iniciando Administrador de SWAP.. \n");
-
 	printf("Estableciendo conexion.. \n");
-
 	int socketEscucha;
 	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
 	if(socketEscucha < 0)
@@ -83,11 +79,8 @@ int main()
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones en puerto %s..\n",configuracion.PUERTO_ESCUCHA);
 	int socketADM = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-
 	int status = 1;		// Estructura que manjea el status de los recieve.
-
 	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
-
 	while (status != 0)
 	{
 		status = recv(socketADM, (void*) mensaje, TAMANOPAQUETE, 0);
@@ -129,19 +122,21 @@ void inicializarArchivo(void)
     return;
 }
 
-int crearArchivo(void)//si devuelve NULL fallo
+int crearArchivo(void)//0 mal 1 bien
 {
 	char nombre [30];
 	strcpy(nombre,configuracion.NOMBRE_SWAP );
 	archivo= fopen(nombre,"w+");
 	if(!archivo)
 	{
-		return archivo;
+		printf("fallo al crear el archivo en swap.c \n");
+		return 0;
 	}
     inicializarArchivo();
 	libreRaiz=malloc(sizeof(espacioLibre));//creamos el primero nodo libre (que esTodo el archivo)
 	if(!libreRaiz)
 	{
+		printf("fallo el malloc para la lista de libres en swap.c \n");
 		return 0;
 	}
 	libreRaiz->sgte=NULL;
@@ -151,12 +146,13 @@ int crearArchivo(void)//si devuelve NULL fallo
 	return 1;
 }
 
-void ocupar(int posicion, int espacio)//probar esta funcion
+void ocupar(int posicion, int espacio)//no estoy seguro que este bien, mirenla porfavor
 {
+	espacioLibre* aBorrar=libreRaiz;
 	if(libreRaiz->cantPag == espacio)//si el espacio dado es el primer nodo completo
 	{
-		espacioLibre* aBorrar=libreRaiz;
-		libreRaiz= libreRaiz->sgte;//si era el ultimo la raiz a libres apunta a nulo(no hay esp)
+		libreRaiz= libreRaiz->sgte;
+		if(!libreRaiz)return;//si era el ultimo la raiz a libres apunta a nulo(no hay esp)
 		libreRaiz->ant=NULL;
 		free(aBorrar);//eliminamos el nodo
 		return;
@@ -173,21 +169,21 @@ void ocupar(int posicion, int espacio)//probar esta funcion
 		aux= aux->sgte;
 		posicion--;
 	}
-	if(aux->cantPag == espacio)
+	if(aux->cantPag == espacio)// nos piden el nodo entero
 	{
-		espacioLibre* aBorrar1=aux;
+		aBorrar=aux;
 		if(aux->sgte == NULL) //si aux es el ultimo nodo
 		{
-			(aBorrar1->ant)->sgte=NULL;
-			free(aBorrar1);
+			(aBorrar->ant)->sgte=NULL;
+			free(aBorrar);
 			return;
 		}
 		aux= aux->sgte;
-		(aux->ant) = (aBorrar1->ant);
-		aBorrar1= aBorrar1->ant;
-		aBorrar1->sgte = aux;
-		aBorrar1= aBorrar1->sgte;
-		free(aBorrar1);
+		(aux->ant) = (aBorrar->ant);
+		aBorrar= aBorrar->ant;
+		aBorrar->sgte = aux;
+		aBorrar= aBorrar->sgte;
+		free(aBorrar);
 		return;
 	}
 	else
@@ -197,6 +193,7 @@ void ocupar(int posicion, int espacio)//probar esta funcion
 		return;
 	}
 }
+
 int hayEspacio(int espacio)//espacio esta en paginas
 {
 	int hay=0;
@@ -286,6 +283,65 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)
 	fread(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//leemos
 	fseek(archivo, inicioA * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
 	fwrite(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//escribimos
-	return;//en el "nuevo" libre ahora ha basura
+	return;//en el "nuevo" libre ahora hay basura
 }
 
+int agregarOcupado(uint32_t pid, uint32_t cantPag, int tipoInst, char*texto, int comienzo)//0 mal 1 bien
+{
+	if(!ocupadoRaiz)
+	{
+		ocupadoRaiz= malloc(sizeof(espacioOcupado));
+		if(!ocupadoRaiz)
+			{
+				printf("fallo el malloc para la lista de ocupados en swap.c \n");
+				return 0;
+			}
+		ocupadoRaiz->ant=NULL;
+		ocupadoRaiz->sgte=NULL;
+		ocupadoRaiz->pid=pid;
+		ocupadoRaiz->cantPag=cantPag;
+		ocupadoRaiz->tipoInst=tipoInst;
+		ocupadoRaiz->comienzo=comienzo;
+		ocupadoRaiz->texto=texto;
+		return 1;
+	}
+
+	espacioOcupado* ultimo= ocupadoRaiz;
+	while(ultimo->sgte)//puntero al ultimo nodo de ocupados
+	{
+		ultimo=ultimo->sgte;
+	}
+	espacioOcupado* nuevo= malloc(sizeof(espacioOcupado));
+	if(!nuevo)
+	{
+		printf("fallo el malloc para la lista de ocupados en swap.c \n");
+		return 0;
+	}
+	ultimo->sgte=nuevo;
+	nuevo->sgte=NULL;
+	nuevo->ant=ultimo;
+	nuevo->pid=pid;
+	nuevo->cantPag=cantPag;
+	nuevo->tipoInst=tipoInst;
+	nuevo->comienzo=comienzo;
+	nuevo->texto=texto;
+	return 1;
+}
+
+int asignarMemoria( uint32_t pid, uint32_t cantPag, int tipoInst, char*texto)//tipo instruccion no lo toma, pongo int por ahora
+{
+	int inicio;
+	inicio= hayEspacio(cantPag);
+	if(!inicio)
+	{
+		desgragmentar();
+		inicio= hayEspacio;
+		if(!inicio)
+		{
+			printf("no hay espacio suficiente para el proceso de pid: %s \n", pid);
+			return 0;
+		}
+	}
+	int exito= agregarOcupado(pid, cantPag, tipoInst, texto, inicio);
+	return exito;
+}
