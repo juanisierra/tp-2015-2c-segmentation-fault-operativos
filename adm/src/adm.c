@@ -41,7 +41,7 @@ int iniciarConfiguracion(config_ADM* configuracion)
 }
 #define RUTACONFIG "configuracion"
 int main()
-{	char mensaje[3];
+{
 	config_ADM configuracion;
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Administrador de Memoria \nEstableciendo conexion.. \n");
@@ -80,6 +80,7 @@ int main()
 	printf("Conectado al CPU en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	mensaje_CPU_ADM mensajeARecibir;
 	mensaje_ADM_CPU mensajeAMandar;//es el mensaje que le mandaremos al CPU
+	//mensajeAMandar.texto=malloc(200);//CAMBIARRRR SOLO PRUEBA
 	int status = 1;		// Estructura que manjea el status de los recieve.
 	while(1)
 	{
@@ -89,32 +90,43 @@ int main()
 	printf("%d \n", mensajeARecibir.parametro);
 	printf("%d \n", mensajeARecibir.pid);
 	printf("%d \n", mensajeARecibir.tamTexto);
-	printf("%s \n \n \n", mensajeARecibir.texto);
+	if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
 	if(mensajeARecibir.instruccion == INICIAR)
-	{
+	{printf("RECIBI INICIAR\n");
 		mensajeAMandar.parametro = mensajeARecibir.parametro;
-		mensajeAMandar.tamanoMensaje = strlen("mProx X - Iniciado") +1;
-		mensajeAMandar.texto = strdup("mProx X - Iniciado");
-		enviarRetornoInstruccion(socketCPU, &mensajeAMandar);
+		mensajeAMandar.tamanoMensaje = strlen("recibi iniciar") +1;
+		mensajeAMandar.texto = strdup("recibi iniciar");
+		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 		free(mensajeAMandar.texto);
+
 	}
 	if(mensajeARecibir.instruccion == LEER)
-	{
+	{printf("RECIBI LEER\n");
 		mensajeAMandar.parametro = mensajeARecibir.parametro;
-		mensajeAMandar.tamanoMensaje = strlen("mProc X - Pagina N leida:") +1;
-		mensajeAMandar.texto = strdup("mProc X - Pagina N leida:");
-		enviarRetornoInstruccion(socketCPU, &mensajeAMandar);
+		mensajeAMandar.tamanoMensaje = strlen("recibi leer") +1;
+		mensajeAMandar.texto = strdup("recibi leer");
+		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 		free(mensajeAMandar.texto);
 	}
 	if(mensajeARecibir.instruccion == ESCRIBIR)
-	{
+	{printf("RECIBI ESCRIBIR\n");
 		mensajeAMandar.parametro = mensajeARecibir.parametro;
-		mensajeAMandar.tamanoMensaje = strlen("mProc X - Pagina N escrita:") +1;
-		mensajeAMandar.texto = strdup(mensajeARecibir.texto);
-		enviarRetornoInstruccion(socketCPU, &mensajeAMandar);
+		mensajeAMandar.tamanoMensaje = strlen("recibi escribir") +1;
+		mensajeAMandar.texto = strdup("recibi escribir");
+		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 		free(mensajeAMandar.texto);
+
 	}
-	free(mensajeARecibir.texto);
+	if(mensajeARecibir.instruccion ==FINALIZAR)
+	{printf("RECIBI FINALIZAR\n");
+	mensajeAMandar.parametro = mensajeARecibir.parametro;
+	mensajeAMandar.tamanoMensaje = strlen("recibi finalizar") +1;
+	mensajeAMandar.texto = strdup("recibi finalizar");
+	enviarInstruccionACPU(socketCPU, &mensajeAMandar);
+	free(mensajeAMandar.texto);
+
+	}
+	if(mensajeARecibir.tamTexto!=0) free(mensajeARecibir.texto);
 	}
 /*
 	while (status != 0)

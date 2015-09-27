@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include "tiposDato.h"
 #define TAMANIOMAXIMOTEXTO 200
-#define TAMANIOMAXIMOLINEA 200
+#define TAMANIOMAXIMOLINEA 200 // BUSCAR EN VARIABLE ABAJO
 
 void separarInstruccionParametro(char*linea,char*instruccion,char parametro[])
 {
@@ -39,7 +39,7 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 	int x=0;
 	char buffer1[50];
 	char buffer2[200];
-	while(linea[i]!=' ' && linea[i]!='\n' &&linea[i]!=0)
+	while(linea[i]!=' ' && linea[i]!='\n' &&linea[i]!=0 &&linea[i]!=';')
 	{
 		buffer1[i]=linea[i];
 		i++;
@@ -49,7 +49,7 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 	if(strcmp(buffer1,"iniciar")==0)
 	{
 		instruccion= INICIAR;
-	while(linea[i]!=' ' && linea[i]!='\n')
+	while(linea[i]!=' ' && linea[i]!='\n' &&linea[i]!=';')
 	{
 		buffer2[x]=linea[i];
 		x++;
@@ -57,6 +57,7 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 	}
 	buffer2[x]=0;
 	*parametro1=(uint32_t) atoi(buffer2);
+	parametro2=NULL;
 	return instruccion;
 	}
 	if(strcmp(buffer1,"leer")==0)
@@ -70,6 +71,7 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 		}
 		buffer2[x]=0;
 		*parametro1=(uint32_t) atoi(buffer2);
+		parametro2=NULL;
 		return instruccion;
 		}
 	if(strcmp(buffer1,"escribir")==0)
@@ -107,11 +109,14 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 		}
 		buffer2[x]=0;
 		*parametro1=(uint32_t) atoi(buffer2);
+		parametro2=NULL;
 		return instruccion;
 		}
 	if(strcmp(buffer1,"finalizar")==0)
 		{
 			instruccion= FINALIZAR;
+			*parametro1=0;
+			parametro2=NULL;
 		return instruccion;
 		}
 
@@ -127,13 +132,29 @@ char buffer[TAMANIOMAXIMOLINEA-1];
 	 fclose(archivo);
 	return i;
 }
-void leerLinea(FILE* archivo,char*buffer,int numeroLinea)
-{	int i=0;
-	char*status;
+/*void leerLinea(FILE* archivo,char *buffer,int numeroLinea)
+{	int i=-1;
+	int status=0;
+	size_t tamMax=TAMANIOMAXIMOLINEA;
+	fseek(archivo,0,SEEK_SET);
+
+	//fgets(buffer,TAMANIOMAXIMOLINEA,archivo);
+	while(i<numeroLinea && status!=-1)
+		{
+		if(buffer[0]!='\n' || i==-1){
+		i++;
+		}
+		status=getdelim(&buffer,&tamMax,(int) ';',archivo);
+		}
+}
+*/
+void leerLinea(FILE*archivo,char*buffer,int numeroLinea){
+	int i=0;
 	fseek(archivo,0,SEEK_SET);
 	fgets(buffer,TAMANIOMAXIMOLINEA,archivo);
-	while(i<numeroLinea && fgets(buffer,200,archivo)!=NULL)i++;
-	return;
+	while(i<numeroLinea && fgets(buffer,TAMANIOMAXIMOLINEA,archivo))
+	{
+		i++;
+	}
 }
-
 
