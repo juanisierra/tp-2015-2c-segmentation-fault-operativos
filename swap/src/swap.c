@@ -230,7 +230,7 @@ void unirBloquesLibres(void)
     return;
 }
 
-void desgragmentar(void)
+void desfragmentar(void)
 {
 	int sizeLibres=0;
 	espacioLibre* auxLibre=libreRaiz;
@@ -278,7 +278,7 @@ void desgragmentar(void)
 
 void moverInformacion(int inicioDe, int cantPags, int inicioA)
 {
-	char buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
+	char* buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
 	fseek(archivo, inicioDe * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
 	fread(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//leemos
 	fseek(archivo, inicioA * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
@@ -334,11 +334,11 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag, int tipoInst, char*texto)//t
 	inicio= hayEspacio(cantPag);
 	if(!inicio)
 	{
-		desgragmentar();
-		inicio= hayEspacio;
+		desfragmentar();
+		inicio = hayEspacio(cantPag);
 		if(!inicio)
 		{
-			printf("no hay espacio suficiente para el proceso de pid: %s \n", pid);
+			printf("no hay espacio suficiente para el proceso de pid: %u \n", pid);
 			return 0;
 		}
 	}
