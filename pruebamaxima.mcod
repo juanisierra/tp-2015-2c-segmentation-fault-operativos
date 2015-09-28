@@ -1,0 +1,12 @@
+iniciar 20;
+leer 10;
+escribir 12 "juani";
+escribir 13 "jaja";
+leer 1;
+escribir 12 "juani";
+escribir 13 "jajsdfa";
+leer 5;
+escribir 12 "judsdfani";
+escribir 13 "jajdfgda";
+leer 3;
+finalizar;

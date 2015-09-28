@@ -66,7 +66,17 @@ nodoPCB* sacarNodoPCB(nodoPCB**raiz)
 	}
 	return sacado;
 }
-
+nodoPCB* buscarNodoPCB(nodoPCB*raiz,int pid)
+{
+	nodoPCB*indice;
+	indice=raiz;
+	while(indice!=NULL)
+	{
+		if(indice->info.pid==pid) return indice;
+		indice=indice->ant;
+	}
+	return NULL;
+}
 void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, instruccion_t instruccion)//funcion que almacena en la lista de retornos del CPU
 {
 	char mensajeAGuardar[50+mensaje.tamanoMensaje];

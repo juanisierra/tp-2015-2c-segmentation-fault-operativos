@@ -25,5 +25,5 @@ int enviarInstruccionACPU(int socket, mensaje_ADM_CPU* mensajeAMandar); // El AD
 int recibirInstruccionDeADM(int socket, mensaje_ADM_CPU* mensajeRecibido);// el CPU recibe el mensaje del ADM
 int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloqueo, retornoInstruccion* payload, uint32_t cantidadMensajes);
 //enviamos los retornos de instreuccion al PL, cantidadMensajes seria un "tamaño", hay que multiplicarlo por el size
-
+int recibirPCBDeCPU(int socket, mensaje_CPU_PL *mensaje);
 #endif /* LIBRERIAS_SF_SOCKETS_H_ */

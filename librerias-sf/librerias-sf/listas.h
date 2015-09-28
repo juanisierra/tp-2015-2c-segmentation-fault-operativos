@@ -20,7 +20,7 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 //funcion que almacena en la lista de retornos del CPU
 uint32_t desempaquetarLista(retornoInstruccion* mensaje, nodo_Retorno_Instruccion* lista);
 // funcion que pasa la lista a un array que sera casteado posteriormente, y retorna el tamaño del payload a enviar al PL
-
+nodoPCB* buscarNodoPCB(nodoPCB*raiz,int pid); //Busca un PCB por su pid en una lista.
 
 
 #endif /* LIBRERIAS_SF_LISTAS_H_ */

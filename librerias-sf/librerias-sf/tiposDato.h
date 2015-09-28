@@ -96,6 +96,8 @@ typedef struct nodo_Lista_CPU_t //Cada uno contiene los datos para el manejador 
 	struct nodo_Lista_CPU_t*ant;
 	int id;
 	int socket;
+	int finalizar; //Si vale 1 el PID se cambia al ultimo al terminar la rafaga.
+	pthread_mutex_t MUTEXCPU; //Para cambiar finalizar.
 	pthread_t thread;
 	nodoPCB *ejecutando;
 } nodo_Lista_CPU;

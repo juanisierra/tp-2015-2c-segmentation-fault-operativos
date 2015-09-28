@@ -12,7 +12,7 @@
 #include <librerias-sf/strings.h>
 #include <librerias-sf/tiposDato.h>
 #define TAMANOPAQUETE 4
-#define RUTACONFIG "configuracion"
+#define RUTACONFIG "configuracionCPU"
 #define TAMANIOMAXIMOTEXTO 200
 #define TAMANIOMAXIMOLINEA 200
 

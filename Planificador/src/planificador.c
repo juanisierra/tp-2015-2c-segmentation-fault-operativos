@@ -11,7 +11,7 @@
 #include <librerias-sf/strings.h>
 #include <semaphore.h>
 #define TAMANOCONSOLA 1024
-#define RUTACONFIG "configuracion"
+#define RUTACONFIG "configuracionPlanificador"
 
 //variables globales (usar con cuidado)
 
@@ -53,6 +53,7 @@ void hiloConsola(void)
 	char instruccion[20];
 	char parametro[50];
 	int pid_cuenta =0; //PID ACTUAL
+	nodoPCB* aFinalizar;
 	raizListos=NULL;
 	printf("Conectado al CPU, ya puede enviar mensajes. Escriba 'salir' para salir\n");
 	while(estado_consola)
@@ -69,6 +70,32 @@ void hiloConsola(void)
 			pthread_mutex_unlock(&MUTEXLISTOS);
 			sem_post(&SEMAFOROLISTOS);
 		}
+		if(strcmp(instruccion,"finalizar")==0)
+		{		pthread_mutex_lock(&(CPU1.MUTEXCPU)); //CAMBIAR PARA MUCHOS CPU***************************************************************************************************************
+		printf("POR FINALIZAR PID: %d\n",atoi(parametro));
+		if(CPU1.ejecutando->info.pid==atoi(parametro))
+					{ aFinalizar=CPU1.ejecutando;
+					CPU1.ejecutando->info.ip=ultimaLinea(CPU1.ejecutando->info.path);
+					CPU1.finalizar=1;
+					printf("puesto para finalzia en cpu1\n");
+					} else {
+						aFinalizar=NULL;
+					}
+					pthread_mutex_unlock(&(CPU1.MUTEXCPU));
+
+			if(aFinalizar==NULL){
+			pthread_mutex_lock(&MUTEXLISTOS);
+			aFinalizar=buscarNodoPCB(raizListos,atoi(parametro));
+			if(aFinalizar!=NULL) aFinalizar->info.ip=ultimaLinea(aFinalizar->info.path);
+			pthread_mutex_unlock(&MUTEXLISTOS);
+			}
+			if(aFinalizar==NULL){ //No esta en listos, lo busca en bloqueados
+			pthread_mutex_lock(&MUTEXBLOQUEADOS);
+			aFinalizar=buscarNodoPCB(raizBloqueados,atoi(parametro));
+			if(aFinalizar!=NULL) aFinalizar->info.ip=ultimaLinea(aFinalizar->info.path);
+			pthread_mutex_unlock(&MUTEXBLOQUEADOS);
+			}
+		}
 	}
 	close(CPU1.socket); // Al terminar la consola no hace mas falta el cpu.
 	printf("cierro socket cpu\n");
@@ -80,12 +107,16 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
 	switch(mensajeRecibido->nuevoEstado)
 	{
 	case LISTO:
-	{	(*PCB)->info.ip=mensajeRecibido->ip;
+	{	pthread_mutex_lock(&(CPU1.MUTEXCPU));
+	if(CPU1.finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR
+		{(*PCB)->info.ip=mensajeRecibido->ip;
+		}
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		sem_post(&SEMAFOROLISTOS);
-		pthread_mutex_lock(&MUTEXLISTOS);
+		pthread_mutex_lock(&MUTEXLISTOS);					//MUTEX ADENTRO DE OTRO< CUIDADOOO, ADEMAS CAMBIAR PARA MUCHOS CPU
 		agregarNodoPCB(&raizListos,*PCB);
 		pthread_mutex_unlock(&MUTEXLISTOS);
+		pthread_mutex_unlock(&(CPU1.MUTEXCPU));
 		printf("EL PCB MANDADO A LA LISTA TIENE PID %d\n",(*PCB)->info.pid);
 		(*PCB)=NULL;
 		break;
@@ -98,13 +129,17 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
 		break;
 	}
 	case BLOQUEADO:
-	{	(*PCB)->info.ip=mensajeRecibido->ip;
+	{	pthread_mutex_lock(&(CPU1.MUTEXCPU));
+	if(CPU1.finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR  //MUTEX DENTRO DE OTRO Y CAMBIAR PARA MAS DE UN CPU
+			{(*PCB)->info.ip=mensajeRecibido->ip;
+			}
 	(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 	(*PCB)->info.bloqueo=mensajeRecibido->tiempoBloqueo;
 	sem_post(&SEMAFOROBLOQUEADOS);
 	pthread_mutex_lock(&MUTEXBLOQUEADOS);
 	agregarNodoPCB(&raizBloqueados,*PCB);
 	pthread_mutex_unlock(&MUTEXBLOQUEADOS);
+	pthread_mutex_unlock(&(CPU1.MUTEXCPU));
 	(*PCB)=NULL;
 		break;
 	}
@@ -126,9 +161,10 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
 		(*PCB)=NULL;
 		break;
 }
+	}
 	return;
 }
-}
+
 
 void manejadorCPU(void) //id Que CPU SOS
 {	mensaje_CPU_PL mensajeRecibido;
@@ -172,10 +208,13 @@ int hiloServidor(void)
 
 	////***************************CREACION DEL CPU1********************
 	CPU1.id = 1;
+	CPU1.finalizar=0;
+	pthread_mutex_init(&(CPU1.MUTEXCPU),NULL);
 	CPU1.socket = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
 	pthread_create(&(CPU1.thread),NULL, manejadorCPU,NULL); //Chequear pasaje de parametro de id del cpu.
 	pthread_join(hConsola,NULL);
+	pthread_mutex_destroy(&(CPU1.MUTEXCPU));
 	close(socketEscucha); //DEJO DE ESCUCHAR AL FINALIZAR LA CONSOLA
 	printf("cierro socket escucha\n");
 	return 0;
