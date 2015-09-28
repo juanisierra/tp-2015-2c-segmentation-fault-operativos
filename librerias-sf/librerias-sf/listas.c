@@ -69,53 +69,163 @@ nodoPCB* sacarNodoPCB(nodoPCB**raiz)
 
 void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, instruccion_t instruccion)//funcion que almacena en la lista de retornos del CPU
 {
+	char mensajeAGuardar[50+mensaje.tamanoMensaje];
 	if(datos_CPU->listaRetornos == NULL)
 	{
 		datos_CPU->listaRetornos = malloc(sizeof(nodo_Retorno_Instruccion));
 		datos_CPU->listaRetornos->info.instruccion = instruccion;
 		datos_CPU->listaRetornos->info.parametro = mensaje.parametro;
-		datos_CPU->listaRetornos->info.tamTexto = mensaje.tamanoMensaje;
-		datos_CPU->listaRetornos->info.texto = strdup(mensaje.texto);
+		switch(instruccion)
+		{
+			case INICIAR:
+			{
+				if(mensaje.parametro == 0)//OK
+				{
+					sprintf(mensajeAGuardar, "mProc %d - Iniciado \n", datos_CPU->pid);
+					datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+					datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				}
+				else//no ok
+				{
+					sprintf(mensajeAGuardar, "mProc %d - Fallo \n", datos_CPU->pid);
+					datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+					datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				}
+				break;
+			}
+			case LEER:
+			{
+				sprintf(mensajeAGuardar, "mProc %d - Pagina %d leida: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
+				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				break;
+			}
+			case ESCRIBIR:
+			{
+				sprintf(mensajeAGuardar, "mProc %d - Pagina %d escrita: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
+				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				break;
+			}
+			case ES:
+			{
+				sprintf(mensajeAGuardar, "mProc %d en entrada-salida de tiempo %d \n", datos_CPU->pid, mensaje.parametro);
+				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				break;
+			}
+			case FINALIZAR:
+			{
+				sprintf(mensajeAGuardar, "mProc %d finalizado \n", datos_CPU->pid);
+				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				break;
+			}
+			case ERROR:
+			{
+				break;
+			}
+			case CERRAR:
+			{
+				break;
+			}
+		}
 		datos_CPU->listaRetornos->sgte = NULL;
 		datos_CPU->listaRetornos->ant = NULL;
 	}
 	else
 	{
 		nodo_Retorno_Instruccion* aux = datos_CPU->listaRetornos;
-		while(aux != NULL) aux= aux->sgte;
+		while(aux->sgte != NULL) aux= aux->sgte;
 		aux->sgte=malloc(sizeof(nodo_Retorno_Instruccion));
 		aux->sgte->info.instruccion = instruccion;
 		aux->sgte->info.parametro = mensaje.parametro;
-		aux->sgte->info.tamTexto = mensaje.tamanoMensaje;
-		aux->sgte->info.texto = strdup(mensaje.texto);
+		switch(instruccion)
+				{
+					case INICIAR:
+					{
+						if(mensaje.parametro == 0)//OK
+						{
+							sprintf(mensajeAGuardar, "mProc %d - Iniciado \n", datos_CPU->pid);
+							aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+							aux->sgte->info.texto = strdup(mensajeAGuardar);
+						}
+						else//no ok
+						{
+							sprintf(mensajeAGuardar, "mProc %d - Fallo \n", datos_CPU->pid);
+							aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+							aux->sgte->info.texto = strdup(mensajeAGuardar);
+						}
+						break;
+					}
+					case LEER:
+					{
+						sprintf(mensajeAGuardar, "mProc %d - Pagina %d leida: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
+						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+						aux->sgte->info.texto = strdup(mensajeAGuardar);
+						break;
+					}
+					case ESCRIBIR:
+					{
+						sprintf(mensajeAGuardar, "mProc %d - Pagina %d escrita: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
+						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+						aux->sgte->info.texto = strdup(mensajeAGuardar);
+						break;
+					}
+					case ES:
+					{
+						sprintf(mensajeAGuardar, "mProc %d en entrada-salida de tiempo %d \n", datos_CPU->pid, mensaje.parametro);
+						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+						aux->sgte->info.texto = strdup(mensajeAGuardar);
+						break;
+					}
+					case FINALIZAR:
+					{
+						sprintf(mensajeAGuardar, "mProc %d finalizado \n", datos_CPU->pid);
+						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+						aux->sgte->info.texto = strdup(mensajeAGuardar);
+						break;
+					}
+					case ERROR:
+					{
+						break;
+					}
+					case CERRAR:
+					{
+						break;
+					}
+				}
 		aux->sgte->sgte = NULL;
 		aux ->sgte->ant = aux;
 	}
 
 }
 
-uint32_t desempaquetarLista(retornoInstruccion* mensaje, nodo_Retorno_Instruccion* lista) // funcion que pasa la lista a un array que sera casteado posteriormente, y retorna el tamaño del payload a enviar al PL
+uint32_t desempaquetarLista(void** mensaje, nodo_Retorno_Instruccion* lista) // funcion que pasa la lista a un array que sera casteado posteriormente, y retorna el tamaño del payload a enviar al PL
 {
 	int j=0; // VARIABLE CONTADORA PARA IR LLENANDO LOS ESPACIOS DEL MENSAJE
 	int i = 0;//VARIABLE UTILIZADA PARA CONTAR LOS NODOS
+	uint32_t tamTextoFinal = 0;// Aca tengo el tamaño final de lo que voy a mandar
+	int tamContado = 0; //Aca voy poniendo los tamaños y sumandolos, para el memcpy
 	nodo_Retorno_Instruccion* aux; //auxiliar para recorrer la lista por primera vez
 	aux = lista;
+	printf("\n %d \n", tamTextoFinal);
 	while(aux != NULL)
 	{
+		tamTextoFinal += aux->info.tamTexto;
 		aux = aux->sgte;
 		i++;
 	}
-	mensaje = malloc(sizeof(retornoInstruccion)*i);
+	printf("%d \n", tamTextoFinal);
+	(*mensaje) = malloc(tamTextoFinal);
 	for(; j < i; j++)
 	{
 		aux = lista;
-		mensaje[j].instruccion = lista->info.instruccion;
-		mensaje[j].parametro = lista->info.parametro;
-		mensaje[j].tamTexto = lista->info.tamTexto;
-		mensaje[j].texto = strdup(lista->info.texto);
-		lista = lista->sgte; // pasamos a leer el siguiente
+		memcpy((*mensaje) + tamContado, lista->info.texto, lista->info.tamTexto);
+		tamContado += aux->info.tamTexto;// Vamos sumando los tamaños para que el memcpy sepa donde poner el dato
+		lista = lista->sgte;
 		free(aux->info.texto);//liberamos la memoria del texto
 		free(aux);//liberamos el resto de la memoria de ese nodo
 	}
-	return i; //RETORNARA LA CANTIDAD DE TIPOS RETORNO INSTRUCCION QUE TENDRA EL VECTOR MENSAJE
+	return tamTextoFinal; // retorna el tamaño final del payload
 }

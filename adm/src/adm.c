@@ -94,8 +94,8 @@ int main()
 	if(mensajeARecibir.instruccion == INICIAR)
 	{printf("RECIBI INICIAR\n");
 		mensajeAMandar.parametro = mensajeARecibir.parametro;
-		mensajeAMandar.tamanoMensaje = strlen("recibi iniciar") +1;
-		mensajeAMandar.texto = strdup("recibi iniciar");
+		mensajeAMandar.tamanoMensaje = 0;
+		mensajeAMandar.texto = NULL;
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 		free(mensajeAMandar.texto);
 
@@ -103,16 +103,16 @@ int main()
 	if(mensajeARecibir.instruccion == LEER)
 	{printf("RECIBI LEER\n");
 		mensajeAMandar.parametro = mensajeARecibir.parametro;
-		mensajeAMandar.tamanoMensaje = strlen("recibi leer") +1;
-		mensajeAMandar.texto = strdup("recibi leer");
+		mensajeAMandar.tamanoMensaje = strlen("texto leido") +1;
+		mensajeAMandar.texto = strdup("texto leido");
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 		free(mensajeAMandar.texto);
 	}
 	if(mensajeARecibir.instruccion == ESCRIBIR)
 	{printf("RECIBI ESCRIBIR\n");
 		mensajeAMandar.parametro = mensajeARecibir.parametro;
-		mensajeAMandar.tamanoMensaje = strlen("recibi escribir") +1;
-		mensajeAMandar.texto = strdup("recibi escribir");
+		mensajeAMandar.tamanoMensaje = mensajeARecibir.tamTexto;
+		mensajeAMandar.texto = strdup(mensajeARecibir.texto);
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 		free(mensajeAMandar.texto);
 
@@ -120,8 +120,8 @@ int main()
 	if(mensajeARecibir.instruccion ==FINALIZAR)
 	{printf("RECIBI FINALIZAR\n");
 	mensajeAMandar.parametro = mensajeARecibir.parametro;
-	mensajeAMandar.tamanoMensaje = strlen("recibi finalizar") +1;
-	mensajeAMandar.texto = strdup("recibi finalizar");
+	mensajeAMandar.tamanoMensaje = 0;
+	mensajeAMandar.texto = NULL;
 	enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 	free(mensajeAMandar.texto);
 

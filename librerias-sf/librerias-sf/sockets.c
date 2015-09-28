@@ -155,21 +155,16 @@ int recibirInstruccionDeADM(int socket, mensaje_ADM_CPU* mensajeRecibido)// el C
 	return resultado;
 }
 //FALTA CAMBIAR A MEMCOPY CON BUFFER
-int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloqueo, retornoInstruccion* payload, uint32_t tamPayload)//enviamos los retornos de instreuccion al PL, cantidadMensajes seria un "tamaño", hay que multiplicarlo por el size
+int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloqueo, char* payload, uint32_t tamPayload)//enviamos los retornos de instreuccion al PL, cantidadMensajes seria un "tamaño", hay que multiplicarlo por el size
 {
 	int resultado;
-	mensaje_CPU_PL* mensaje1;
-	char* mensaje2;
-	mensaje1 = malloc(sizeof(mensaje_CPU_PL));
-	memcpy(&(mensaje1->ip),&(datos_CPU.ip),sizeof(uint32_t));
-	memcpy(&(mensaje1->nuevoEstado), &(estado), sizeof(estado_t));
-	memcpy(&(mensaje1->tiempoBloqueo), &tiempoBloqueo, sizeof(uint32_t));
-	memcpy(&(mensaje1->tamPayload), &tamPayload, sizeof(uint32_t));
-	resultado = send(datos_CPU.socket,(void*) mensaje1,(sizeof(mensaje_CPU_PL)),0);
-	mensaje2 = malloc(tamPayload*sizeof(char));
-	memcpy(mensaje2, payload,tamPayload*sizeof(char) );
-	resultado = send(datos_CPU.socket,(void*) mensaje2,tamPayload*sizeof(char),0);
-	free(mensaje1);
-	free(mensaje2);
+	void* buffer= malloc(3*sizeof(uint32_t)+sizeof(estado_t)+tamPayload);
+	memcpy(buffer, &(datos_CPU.ip), sizeof(uint32_t));
+	memcpy(buffer+sizeof(uint32_t), &estado, sizeof(estado_t));
+	memcpy(buffer+sizeof(uint32_t)+sizeof(estado_t), &tiempoBloqueo, sizeof(uint32_t));
+	memcpy(buffer+2*sizeof(uint32_t)+sizeof(estado_t), &tamPayload, sizeof(uint32_t));
+	memcpy(buffer+3*sizeof(uint32_t)+sizeof(estado_t), payload, tamPayload);
+	resultado = send(datos_CPU.socket, buffer, 3*sizeof(uint32_t)+sizeof(estado_t)+tamPayload, 0 );
+	free(buffer);
 	return resultado;
 }

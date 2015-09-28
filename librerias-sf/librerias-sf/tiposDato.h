@@ -50,7 +50,7 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO}estado_t; //INVA
   }mensaje_CPU_ADM;
   typedef struct mensaje_ADM_CPU_T
   {
-	  uint32_t parametro; // 0 ok 1 no ok
+	  uint32_t parametro; // 0 ok 1 no ok,   si leyo o escribio devolvera el numero de pagina
 	  uint32_t tamanoMensaje;
 	  char*texto;
   }mensaje_ADM_CPU;

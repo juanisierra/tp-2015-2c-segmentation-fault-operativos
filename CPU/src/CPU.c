@@ -60,9 +60,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		printf("Inst enviada\n");
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
-		printf("Recibi: %s\n",mensajeDeADM.texto); //BORRAR Y NO FREE TEXTO
-		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
-		free(mensajeDeADM.texto);
+		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		break;
 	}
 	case LEER:
@@ -71,7 +69,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		printf("Recibi: %s\n ",mensajeDeADM.texto);
-		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
+		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeDeADM.texto);
 		break;
 
@@ -83,7 +81,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		printf("Recibi: %s\n",mensajeDeADM.texto);
-		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
+		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeParaADM.texto);
 		free(mensajeDeADM.texto);
 		break;
@@ -92,22 +90,22 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	{	printf("instruccion es tiempo: %d\n",parametro1);
 		// ASIGNAR MENSAJE
 		(*estado) = BLOQUEADO;
-		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
+		mensajeDeADM.parametro = parametro1;
+		mensajeDeADM.tamanoMensaje = 0;
+		mensajeDeADM.texto = NULL;
+		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		(*entrada_salida) = 1; // marcara el tiempo de bloqueo
 		break;
 	}
 
 	case FINALIZAR:
-	{	printf("Instruccion finalizar\n");
+	{
+		printf("Instruccion finalizar\n");
 		mensajeParaADM.texto=NULL;
-		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
+		enviarInstruccionAlADM(socketADM, &mensajeParaADM);;
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
-		printf("Recibi: %s\n",mensajeDeADM.texto);
-		// ASIGNAR MENSAJE
-		(*estado) = AFINALIZAR;
-		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
+		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		(*finArchivo) = 1;
-		free(mensajeDeADM.texto);
 		break;
 	}
 	case ERROR:
@@ -130,7 +128,7 @@ void hiloCPU(void* datoCPUACastear)
 	uint32_t quantum;
 	uint32_t tamPayload;//Aqui se guardara el tamaño de lo que se le manda al PL
 	estado_t estado; // es el estado de ejecucion
-	retornoInstruccion* mensajeParaPL; //POSTERIORMENTE LO CASTEAMOS A CHAR PARA MANDARLO AL PL
+	char* mensajeParaPL; //aca se guardara toda la secuencia de datos a mandar al PL
 	int status;
 	uint32_t entrada_salida; // informa si llego un mensaje de entrada salida.
 	int finArchivo; // Informa si se llego al fin de archivo
@@ -167,9 +165,16 @@ void hiloCPU(void* datoCPUACastear)
 			//printf("%s \n",datos_CPU.listaRetornos->info.texto);
 		}
 		fclose(mCod);
-		//tamPayload = desempaquetarLista(mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
-		//printf("%s \n", mensajeParaPL->texto);//hay que vaciar la memoria del vector
-		//enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL,tamPayload);
+		printf("La primer instruccion de la lista es: %d \n", datos_CPU.listaRetornos->info.instruccion);
+		printf("El primer mensaje de la lista es: %s \n", datos_CPU.listaRetornos->info.texto);
+		printf("tamaño de lo primero: %d \n", datos_CPU.listaRetornos->info.tamTexto);
+		printf("La segunda instruccion de la lista es: %d \n", datos_CPU.listaRetornos->sgte->info.instruccion);
+		printf("El segundo mensaje de la lista es: %s \n", datos_CPU.listaRetornos->sgte->info.texto);
+		printf("tamaño de lo segundo: %d \n", datos_CPU.listaRetornos->info.tamTexto);
+		tamPayload = desempaquetarLista(&mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
+		printf("Todas las instrucciones a devolver son: \n%s", mensajeParaPL); //no se va a mostrar todo porque corta en el \0, muestra 1
+		enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL,tamPayload);
+		free(mensajeParaPL);
 		printf("Termino rafaga\n");
 	}
 	printf("Terminando Hilo de CPU\n");
