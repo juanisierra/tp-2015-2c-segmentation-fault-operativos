@@ -82,13 +82,13 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 				if(mensaje.parametro == 0)//OK
 				{
 					sprintf(mensajeAGuardar, "mProc %d - Iniciado \n", datos_CPU->pid);
-					datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+					datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
 					datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
 				}
 				else//no ok
 				{
 					sprintf(mensajeAGuardar, "mProc %d - Fallo \n", datos_CPU->pid);
-					datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+					datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
 					datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
 				}
 				break;
@@ -96,28 +96,28 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 			case LEER:
 			{
 				sprintf(mensajeAGuardar, "mProc %d - Pagina %d leida: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
-				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
 				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
 				break;
 			}
 			case ESCRIBIR:
 			{
 				sprintf(mensajeAGuardar, "mProc %d - Pagina %d escrita: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
-				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
 				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
 				break;
 			}
 			case ES:
 			{
 				sprintf(mensajeAGuardar, "mProc %d en entrada-salida de tiempo %d \n", datos_CPU->pid, mensaje.parametro);
-				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
 				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
 				break;
 			}
 			case FINALIZAR:
 			{
 				sprintf(mensajeAGuardar, "mProc %d finalizado \n", datos_CPU->pid);
-				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) + 1;
+				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
 				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
 				break;
 			}
@@ -147,13 +147,13 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 						if(mensaje.parametro == 0)//OK
 						{
 							sprintf(mensajeAGuardar, "mProc %d - Iniciado \n", datos_CPU->pid);
-							aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+							aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
 							aux->sgte->info.texto = strdup(mensajeAGuardar);
 						}
 						else//no ok
 						{
 							sprintf(mensajeAGuardar, "mProc %d - Fallo \n", datos_CPU->pid);
-							aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+							aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
 							aux->sgte->info.texto = strdup(mensajeAGuardar);
 						}
 						break;
@@ -161,28 +161,28 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 					case LEER:
 					{
 						sprintf(mensajeAGuardar, "mProc %d - Pagina %d leida: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
-						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
 						aux->sgte->info.texto = strdup(mensajeAGuardar);
 						break;
 					}
 					case ESCRIBIR:
 					{
 						sprintf(mensajeAGuardar, "mProc %d - Pagina %d escrita: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
-						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
 						aux->sgte->info.texto = strdup(mensajeAGuardar);
 						break;
 					}
 					case ES:
 					{
 						sprintf(mensajeAGuardar, "mProc %d en entrada-salida de tiempo %d \n", datos_CPU->pid, mensaje.parametro);
-						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
 						aux->sgte->info.texto = strdup(mensajeAGuardar);
 						break;
 					}
 					case FINALIZAR:
 					{
 						sprintf(mensajeAGuardar, "mProc %d finalizado \n", datos_CPU->pid);
-						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) + 1;
+						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
 						aux->sgte->info.texto = strdup(mensajeAGuardar);
 						break;
 					}
@@ -207,6 +207,9 @@ uint32_t desempaquetarLista(void** mensaje, nodo_Retorno_Instruccion* lista) // 
 	int i = 0;//VARIABLE UTILIZADA PARA CONTAR LOS NODOS
 	uint32_t tamTextoFinal = 0;// Aca tengo el tamaño final de lo que voy a mandar
 	int tamContado = 0; //Aca voy poniendo los tamaños y sumandolos, para el memcpy
+	char* nulo;
+	nulo = malloc(1);
+	*nulo = '\0';
 	nodo_Retorno_Instruccion* aux; //auxiliar para recorrer la lista por primera vez
 	aux = lista;
 	printf("\n %d \n", tamTextoFinal);
@@ -217,7 +220,7 @@ uint32_t desempaquetarLista(void** mensaje, nodo_Retorno_Instruccion* lista) // 
 		i++;
 	}
 	printf("%d \n", tamTextoFinal);
-	(*mensaje) = malloc(tamTextoFinal);
+	(*mensaje) = malloc(tamTextoFinal + 1);
 	for(; j < i; j++)
 	{
 		aux = lista;
@@ -227,5 +230,7 @@ uint32_t desempaquetarLista(void** mensaje, nodo_Retorno_Instruccion* lista) // 
 		free(aux->info.texto);//liberamos la memoria del texto
 		free(aux);//liberamos el resto de la memoria de ese nodo
 	}
-	return tamTextoFinal; // retorna el tamaño final del payload
+	memcpy((*mensaje) + tamTextoFinal, nulo, 1); //agregamos el nulo al final
+	free(nulo);//libero la memoria del nulo
+	return tamTextoFinal + 1; // retorna el tamaño final del payload con el nulo incluido
 }
