@@ -63,7 +63,7 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO}estado_t; //INVA
   }mensaje_ADM_SWAP;
   typedef struct mensaje_SWAP_ADM_t
   {
-	  int estado; //0 ok 1 no ok
+	  uint32_t estado; //0 ok 1 no ok
 	  char*contenidoPagina;
   } mensaje_SWAP_ADM;
 typedef struct retornoInstruccion_t //Se almacenan en una lista en CPU y luego van al planificador para ser logeados o impresos.

@@ -172,12 +172,24 @@ int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloq
 int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPagina)//del adm al swap
 {
 	int resultado;
+	int cantidadNulos = (tamPagina*mensajeAEnviar->parametro) - (strlen(mensajeAEnviar->contenidoPagina)+1);
+	int i = 0;//variable contadora para llenar con nulos
 	void* buffer = malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+ (tamPagina*mensajeAEnviar->parametro));
+	void* nulos = malloc(cantidadNulos);
+	char* nulo = malloc(1);
+	*nulo = '\0';
+	for(i; i<cantidadNulos; i++)
+	{
+		memcpy(nulos+i, nulo, 1);
+	}
 	memcpy(buffer, &(mensajeAEnviar->instruccion), sizeof(instruccion_t));
 	memcpy(buffer+sizeof(instruccion_t), &(mensajeAEnviar->pid), sizeof(uint32_t));
 	memcpy(buffer+sizeof(instruccion_t)+sizeof(uint32_t), &(mensajeAEnviar->parametro), sizeof(uint32_t));
-	memcpy(buffer+sizeof(instruccion_t)+2*sizeof(uint32_t), mensajeAEnviar->contenidoPagina, (tamPagina*mensajeAEnviar->parametro));
+	memcpy(buffer+sizeof(instruccion_t)+2*sizeof(uint32_t), mensajeAEnviar->contenidoPagina, strlen(mensajeAEnviar->contenidoPagina)+1);
+	memcpy(buffer+sizeof(instruccion_t)+2*sizeof(uint32_t)+strlen(mensajeAEnviar->contenidoPagina)+1, nulos, cantidadNulos);
 	resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t)+ (tamPagina*mensajeAEnviar->parametro), 0 );
+	free(nulo);
+	free(nulos);
 	free(buffer);
 	return resultado;
 }
