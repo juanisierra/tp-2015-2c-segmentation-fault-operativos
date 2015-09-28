@@ -415,7 +415,7 @@ void borrarNodoOcupado(espacioOcupado* aBorrar)
 	return;
 }
 
-int liberarMemoria(espacioOcupado* aBorrar)//HAY QUE AGREGAR EL MANEJO DE LOS NODOS OCUPADOS
+int liberarMemoria(espacioOcupado* aBorrar)
 {
 	int atrasVar= atras(aBorrar);
 	int adelanteVar= adelante(aBorrar);
@@ -433,6 +433,7 @@ int liberarMemoria(espacioOcupado* aBorrar)//HAY QUE AGREGAR EL MANEJO DE LOS NO
 		libreRaiz->comienzo=1;//posicion 1 en vez de 0, mas comodo
 		libreRaiz->cantPag=(configuracion.CANTIDAD_PAGINAS);
 		borrarNodoOcupado(aBorrar);
+		return 1;
 	}
 	else if(atrasVar==0 && adelanteVar==1)//tiene un libre adelante
 	{
@@ -504,7 +505,7 @@ int liberarMemoria(espacioOcupado* aBorrar)//HAY QUE AGREGAR EL MANEJO DE LOS NO
 			{
 				anterior= anterior->ant;
 			}
-			espacioLibre* nuevo= libreRaiz;
+			espacioLibre* nuevo;
 			nuevo=malloc(sizeof(espacioLibre));
 			if(!nuevo)
 			{
@@ -629,7 +630,7 @@ int liberarMemoria(espacioOcupado* aBorrar)//HAY QUE AGREGAR EL MANEJO DE LOS NO
 			printf("fallo el malloc para la lista de libres en swap.c \n");
 			return 0;
 		}
-		if(libreRaiz->sgte)//corremos la raiz al inicio y nuevo donde estaba la raiz / creo que lo hize bien
+		if(libreRaiz->sgte)//corremos la raiz al inicio y nuevo donde estaba la raiz / creo que lo hice bien
 		{
 			libreRaiz->sgte->ant=nuevo;
 		}
