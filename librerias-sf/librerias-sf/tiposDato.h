@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 typedef enum{INICIAR, LEER, ESCRIBIR, ES, FINALIZAR,ERROR, CERRAR}instruccion_t; //CERRAR es el mensaje para apagar.
-typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO}estado_t; //INVALIDO es si alguna instruccion no estaba bien.
+typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO}estado_t; //INVALIDO es si alguna instruccion no estaba bien.
   typedef struct pcb_t
     {
         uint32_t pid;

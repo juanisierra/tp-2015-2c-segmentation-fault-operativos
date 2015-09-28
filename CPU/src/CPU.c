@@ -19,6 +19,7 @@
 //Variables globales
 int socketADM;
 config_CPU configuracion;
+pthread_mutex_t mutexComADM; //mutex para comunicacion con el ADM
 
 int iniciarConfiguracion(config_CPU* configuracion)
 {
@@ -57,17 +58,25 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	case INICIAR:
 	{	printf("Instruccion iniciar param: %d\n",parametro1);//***********************
 		mensajeParaADM.texto=NULL;
+		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
-		printf("Inst enviada\n");
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
+		pthread_mutex_unlock(&mutexComADM);
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
+		if(mensajeDeADM.parametro == 1)// significa que fallo
+		{
+			(*finArchivo) = 1; //no termina el archivo pero se pone para que deja la ejecucion si es que falla la iniciazion de memoria
+			(*estado) = ERRORINICIO;
+		}
 		break;
 	}
 	case LEER:
 	{	printf("Instruccion leer parametro: %d\n",parametro1);//*********************
 		mensajeParaADM.texto=NULL;
+		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
+		pthread_mutex_unlock(&mutexComADM);
 		printf("Recibi: %s\n ",mensajeDeADM.texto);
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeDeADM.texto);
@@ -78,8 +87,10 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	{	printf("Instruccion escribir pag: %d  escribe: %s\n",parametro1,parametro2);//********************
 
 		mensajeParaADM.texto = strdup(parametro2); //duplicamos la cadena en el heap
+		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
+		pthread_mutex_unlock(&mutexComADM);
 		printf("Recibi: %s\n",mensajeDeADM.texto);
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeParaADM.texto);
@@ -100,10 +111,13 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 
 	case FINALIZAR:
 	{
+		(*estado) = AFINALIZAR;
 		printf("Instruccion finalizar\n");
 		mensajeParaADM.texto=NULL;
-		enviarInstruccionAlADM(socketADM, &mensajeParaADM);;
+		pthread_mutex_lock(&mutexComADM);
+		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
+		pthread_mutex_unlock(&mutexComADM);
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		(*finArchivo) = 1;
 		break;
@@ -185,6 +199,7 @@ void hiloCPU(void* datoCPUACastear)
 
 int main(void)
 {
+	pthread_mutex_init(&mutexComADM,NULL);
 	int i;
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	proceso_CPU CPUs[configuracion.CANTIDAD_HILOS];  //Declaramos el array donde cada componente es un hilo
