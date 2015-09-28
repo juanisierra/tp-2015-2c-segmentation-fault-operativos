@@ -230,6 +230,16 @@ void unirBloquesLibres(void)
     return;
 }
 
+void moverInformacion(int inicioDe, int cantPags, int inicioA)
+{
+	char buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
+	fseek(archivo, inicioDe * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
+	fread(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//leemos
+	fseek(archivo, inicioA * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
+	fwrite(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//escribimos
+	return;//en el "nuevo" libre ahora hay basura
+}
+
 void desfragmentar(void)
 {
 	int sizeLibres=0;
@@ -274,16 +284,6 @@ void desfragmentar(void)
         }
     }
     return;
-}
-
-void moverInformacion(int inicioDe, int cantPags, int inicioA)
-{
-	char* buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
-	fseek(archivo, inicioDe * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
-	fread(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//leemos
-	fseek(archivo, inicioA * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
-	fwrite(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//escribimos
-	return;//en el "nuevo" libre ahora hay basura
 }
 
 int agregarOcupado(uint32_t pid, uint32_t cantPag, int tipoInst, char*texto, int comienzo)//0 mal 1 bien
@@ -344,4 +344,304 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag, int tipoInst, char*texto)//t
 	}
 	int exito= agregarOcupado(pid, cantPag, tipoInst, texto, inicio);
 	return exito;
+}
+
+int atras(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
+{
+	int comienzo = nodo->comienzo;
+	espacioLibre* libreAux= libreRaiz;
+	espacioOcupado* ocupadoAux= ocupadoRaiz;
+	int encontrado= 0;
+	while(!encontrado && libreAux)
+	{
+		if(comienzo == libreAux->comienzo + libreAux->cantPag)
+		{
+			encontrado=1;
+		}
+		libreAux= libreAux->sgte;
+	}
+	while(!encontrado && ocupadoAux)
+	{
+		if(comienzo == ocupadoAux->comienzo + ocupadoAux->cantPag)
+		{
+			encontrado=2;
+		}
+		ocupadoAux= ocupadoAux->sgte;
+	}
+	return encontrado;
+}
+
+int adelante(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
+{
+	int comienzo = nodo->comienzo;
+	int cantPag = nodo->cantPag;
+	espacioLibre* libreAux= libreRaiz;
+	espacioOcupado* ocupadoAux= ocupadoRaiz;
+	int encontrado= 0;
+	while(!encontrado && libreAux)
+	{
+		if(comienzo + cantPag == libreAux->comienzo)
+		{
+			encontrado=1;
+		}
+		libreAux= libreAux->sgte;
+	}
+	while(!encontrado && ocupadoAux)
+	{
+		if(comienzo + cantPag == ocupadoAux->comienzo)
+		{
+			encontrado=2;
+		}
+		ocupadoAux= ocupadoAux->sgte;
+	}
+	return encontrado;
+}
+
+void borrarNodoOcupado(espacioOcupado* aBorrar)
+{
+	if(ocupadoRaiz == aBorrar)
+	{
+		ocupadoRaiz= ocupadoRaiz->sgte;
+		ocupadoRaiz->ant= NULL;
+		free(aBorrar);
+		return;
+	}
+	aBorrar->ant->sgte= aBorrar->sgte;
+	if(aBorrar->sgte)
+	{
+		aBorrar->sgte->ant= aBorrar->ant;
+	}
+	free(aBorrar);
+	return;
+}
+
+int liberarMemoria(espacioOcupado* aBorrar)//HAY QUE AGREGAR EL MANEJO DE LOS NODOS OCUPADOS
+{
+	int atrasVar= atras(aBorrar);
+	int adelanteVar= adelante(aBorrar);
+	if(atrasVar==0 && adelanteVar==0)//el proceso ocupa el archivo entero
+	{
+		inicializarArchivo();//no hace falta pero bueno ya que estamos
+		libreRaiz=malloc(sizeof(espacioLibre));//creamos el primero nodo libre (que esTodo el archivo)
+		if(!libreRaiz)
+		{
+			printf("fallo el malloc para la lista de libres en swap.c \n");
+			return 0;
+		}
+		libreRaiz->sgte=NULL;
+		libreRaiz->ant=NULL;
+		libreRaiz->comienzo=1;//posicion 1 en vez de 0, mas comodo
+		libreRaiz->cantPag=(configuracion.CANTIDAD_PAGINAS);
+		borrarNodoOcupado(aBorrar);
+	}
+	else if(atrasVar==0 && adelanteVar==1)//tiene un libre adelante
+	{
+		libreRaiz->comienzo=1;
+		libreRaiz->cantPag= libreRaiz->cantPag + aBorrar->cantPag;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	}
+	else if(atrasVar==1 && adelanteVar==0)//tiene libre atras y nada adelante
+	{
+		espacioLibre* ultimo= libreRaiz;
+		while(ultimo->sgte)//vamos al ultimo nodo libre
+		{
+			ultimo= ultimo->sgte;
+		}
+		ultimo->cantPag= ultimo->cantPag + aBorrar->cantPag;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	}
+	else if(atrasVar==2 && adelanteVar==2)//esta entre dos ocupados, hay varios sub casos aca
+	{
+		if(!libreRaiz)// estaba ocupado entero y sacamos un proceso
+		{
+			libreRaiz=malloc(sizeof(espacioLibre));
+			if(!libreRaiz)
+			{
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				return 0;
+			}
+			libreRaiz->sgte=NULL;
+			libreRaiz->ant=NULL;
+			libreRaiz->comienzo= aBorrar->comienzo;
+			libreRaiz->cantPag= aBorrar->cantPag;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+		else if(libreRaiz->comienzo > aBorrar->cantPag + aBorrar->comienzo)
+		{//la raiz esta adelante. pasamos la raiz atras y agregamos un nodo donde estaba la raiz
+			espacioLibre* nuevo;
+			nuevo=malloc(sizeof(espacioLibre));
+			if(!nuevo)
+			{
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				return 0;
+			}
+			if(libreRaiz->sgte)
+			{
+				libreRaiz->sgte->ant=nuevo;
+			}
+			nuevo->cantPag = libreRaiz->cantPag;
+			nuevo->comienzo = libreRaiz->comienzo;
+			nuevo->sgte= libreRaiz->sgte;
+			nuevo->ant= libreRaiz;
+			libreRaiz->cantPag= aBorrar->cantPag;
+			libreRaiz->comienzo= aBorrar->comienzo;
+			libreRaiz->ant=NULL;
+			libreRaiz->sgte=nuevo;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+		else//la raiz esta atras
+		{
+			espacioLibre* anterior= libreRaiz;
+			while(anterior->sgte && anterior->comienzo + anterior->cantPag < aBorrar->comienzo)//buscamos el libre anterior
+			{
+				anterior= anterior->sgte;
+			}//no estamos seguros por cual de las dos condiciones salio del while
+			if(anterior->comienzo + anterior->cantPag > aBorrar->comienzo)//si salio por ser el ultimo barbaro pero sino chequeamos este if
+			{
+				anterior= anterior->ant;
+			}
+			espacioLibre* nuevo= libreRaiz;
+			nuevo=malloc(sizeof(espacioLibre));
+			if(!nuevo)
+			{
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				return 0;
+			}
+			nuevo->comienzo= aBorrar->comienzo;
+			nuevo->cantPag= aBorrar->cantPag;
+			nuevo->ant= anterior;
+			anterior->sgte= nuevo;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+	}
+	else if(atrasVar==1 && adelanteVar==2)//esta entre un libre y un ocupado
+	{
+		espacioLibre* anterior= libreRaiz;
+		while(anterior->comienzo + anterior->cantPag != aBorrar->comienzo)
+		{
+			anterior= anterior->sgte;
+		}
+		anterior->cantPag = anterior->cantPag + aBorrar->cantPag;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	}
+	else if(atrasVar==2 && adelanteVar==1)//esta entre un ocupado y un libre
+	{
+			if(aBorrar->comienzo + aBorrar->cantPag == libreRaiz->comienzo)//tiene la raiz a la derecha
+			{
+				libreRaiz->cantPag= aBorrar->cantPag + libreRaiz->cantPag;
+				libreRaiz->comienzo= aBorrar->comienzo;
+				borrarNodoOcupado(aBorrar);
+				return 1;
+			}
+			espacioLibre* anterior= libreRaiz;
+			while(anterior->sgte->comienzo + anterior->sgte->cantPag != aBorrar->comienzo)
+			{
+				anterior= anterior->sgte;
+			}
+			espacioLibre* siguiente= anterior->sgte;
+			siguiente->comienzo= aBorrar->comienzo;
+			siguiente->cantPag= siguiente->cantPag + aBorrar->cantPag;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+	}
+	else if(atrasVar==1 && adelanteVar==1)//esta entre dos libres
+	{
+		espacioLibre* anterior= libreRaiz;
+		while(anterior->comienzo + anterior->cantPag != aBorrar->comienzo)
+		{
+			anterior= anterior->sgte;
+		}
+		anterior->cantPag = anterior->cantPag + (anterior->sgte)->cantPag + aBorrar->cantPag;
+		if(anterior->sgte->sgte)//si hay un tercer nodo libre
+		{
+			anterior->sgte->sgte->ant=anterior;
+		}
+		borrarNodoOcupado(aBorrar);
+		free(anterior->sgte);
+		return 1;
+	}
+	else if(atrasVar==2 && adelanteVar==0)//entre un ocupado y el final del archivo
+	{
+		if(!libreRaiz)
+		{
+			libreRaiz=malloc(sizeof(espacioLibre));
+			if(!libreRaiz)
+			{
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				return 0;
+			}
+			libreRaiz->sgte=NULL;
+			libreRaiz->ant=NULL;
+			libreRaiz->comienzo= aBorrar->comienzo;//posicion 1 en vez de 0, mas comodo
+			libreRaiz->cantPag= aBorrar->cantPag;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+		else
+		{
+			espacioLibre* anterior= libreRaiz;
+			while( anterior->sgte )//vamos al ultimo nodo de los libres
+			{
+				anterior= anterior->sgte;
+			}
+			espacioLibre* nuevo;
+			nuevo=malloc(sizeof(espacioLibre));
+			if(!nuevo)
+			{
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				return 0;
+			}
+			nuevo->comienzo= aBorrar->comienzo;
+			nuevo->cantPag= aBorrar->cantPag;
+			nuevo->ant= anterior;
+			anterior->sgte= nuevo;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+	}
+	else if(atrasVar==0 && adelanteVar==2)//entre el inicio del archivo y un ocupado
+	{
+		if(!libreRaiz)
+		{
+			libreRaiz=malloc(sizeof(espacioLibre));
+			if(!libreRaiz)
+			{
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				return 0;
+			}
+			libreRaiz->sgte=NULL;
+			libreRaiz->ant=NULL;
+			libreRaiz->comienzo= aBorrar->comienzo;
+			libreRaiz->cantPag= aBorrar->cantPag;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+		espacioLibre* nuevo;
+		nuevo=malloc(sizeof(espacioLibre));
+		if(!nuevo)
+		{
+			printf("fallo el malloc para la lista de libres en swap.c \n");
+			return 0;
+		}
+		if(libreRaiz->sgte)//corremos la raiz al inicio y nuevo donde estaba la raiz / creo que lo hize bien
+		{
+			libreRaiz->sgte->ant=nuevo;
+		}
+		nuevo->cantPag = libreRaiz->cantPag;
+		nuevo->comienzo = libreRaiz->comienzo;
+		nuevo->sgte= libreRaiz->sgte;
+		nuevo->ant= libreRaiz;
+		libreRaiz->cantPag= aBorrar->cantPag;
+		libreRaiz->comienzo= aBorrar->comienzo;
+		libreRaiz->ant=NULL;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	}
+	return 0;//si llego hasta aca es porque algo salio mal
 }

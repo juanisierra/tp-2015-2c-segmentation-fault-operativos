@@ -190,9 +190,9 @@ int recibirPCBDeCPU(int socket, mensaje_CPU_PL *mensaje)
 int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPagina)//del adm al swap
 {
 	int resultado;
-	int cantidadNulos = (tamPagina*mensajeAEnviar->parametro) - (strlen(mensajeAEnviar->contenidoPagina)+1);
+	int cantidadNulos = tamPagina - (strlen(mensajeAEnviar->contenidoPagina)+1);
 	int i = 0;//variable contadora para llenar con nulos
-	void* buffer = malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+ (tamPagina*mensajeAEnviar->parametro));
+	void* buffer = malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina);
 	void* nulos = malloc(cantidadNulos);
 	char* nulo = malloc(1);
 	*nulo = '\0';
@@ -205,7 +205,7 @@ int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPag
 	memcpy(buffer+sizeof(instruccion_t)+sizeof(uint32_t), &(mensajeAEnviar->parametro), sizeof(uint32_t));
 	memcpy(buffer+sizeof(instruccion_t)+2*sizeof(uint32_t), mensajeAEnviar->contenidoPagina, strlen(mensajeAEnviar->contenidoPagina)+1);
 	memcpy(buffer+sizeof(instruccion_t)+2*sizeof(uint32_t)+strlen(mensajeAEnviar->contenidoPagina)+1, nulos, cantidadNulos);
-	resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t)+ (tamPagina*mensajeAEnviar->parametro), 0 );
+	resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina, 0 );
 	free(nulo);
 	free(nulos);
 	free(buffer);
@@ -214,13 +214,35 @@ int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPag
 int recibirPaginaDeADM(int socket, mensaje_ADM_SWAP* mensajeARecibir, int tamPagina) //el swap recibe del adm
 {
 	int resultado;
-	void* buffer = malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t));
-	resultado = recv(socket,buffer,2*sizeof(uint32_t)+ sizeof(instruccion_t),0);
-	memcpy(&(mensajeARecibir->instruccion), buffer, sizeof(uint32_t));
+	void* buffer = malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+tamPagina);
+	resultado = recv(socket,buffer,2*sizeof(uint32_t)+ sizeof(instruccion_t)+tamPagina,0);
+	memcpy(&(mensajeARecibir->instruccion), buffer, sizeof(instruccion_t));
 	memcpy(&(mensajeARecibir->pid),buffer+sizeof(instruccion_t), sizeof(uint32_t) );
 	memcpy(&(mensajeARecibir->parametro),buffer+sizeof(instruccion_t)+sizeof(uint32_t), sizeof(uint32_t) );
-	mensajeARecibir->contenidoPagina = malloc(tamPagina*(mensajeARecibir->parametro));
-	resultado = recv(socket, mensajeARecibir->contenidoPagina, tamPagina*(mensajeARecibir->parametro), 0);
+	memcpy(&(mensajeARecibir->contenidoPagina), buffer+sizeof(instruccion_t)+2*sizeof(uint32_t), tamPagina);
 	free(buffer);
 	return resultado;
 }
+
+int enviarDeSwapAlADM(int socket, mensaje_SWAP_ADM* mensajeAEnviar, int tamPagina)
+{
+	int resultado;
+	void* buffer = malloc(sizeof(uint32_t) + tamPagina);
+	memcpy(buffer, mensajeAEnviar->estado, sizeof(uint32_t));
+	memcpy(buffer+sizeof(uint32_t), mensajeAEnviar->contenidoPagina, tamPagina);
+	resultado = send(socket, buffer, sizeof(uint32_t) + tamPagina, 0 );
+	free(buffer);
+	return resultado;
+}
+
+int recibirMensajeDeSwap(int socket, mensaje_SWAP_ADM* mensajeRecibido, int tamPagina)// el adm recibe el del swap
+{
+	int resultado;
+	void* buffer = malloc(sizeof(uint32_t) + tamPagina);
+	resultado = recv(socket, buffer, sizeof(uint32_t) + tamPagina, 0);
+	memcpy(&(mensajeRecibido->estado), buffer, sizeof(uint32_t));
+	memcpy(&(mensajeRecibido->contenidoPagina), buffer+sizeof(uint32_t), tamPagina);
+	free(buffer);
+	return resultado;
+}
+
