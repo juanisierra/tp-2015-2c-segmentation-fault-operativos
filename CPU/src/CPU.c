@@ -67,6 +67,8 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		{
 			(*finArchivo) = 1; //no termina el archivo pero se pone para que deja la ejecucion si es que falla la iniciazion de memoria
 			(*estado) = ERRORINICIO;
+		} else{
+			(*estado)=LISTO;
 		}
 		break;
 	}
@@ -80,6 +82,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		printf("Recibi: %s\n ",mensajeDeADM.texto);
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeDeADM.texto);
+		(*estado)=LISTO;
 		break;
 
 	}
@@ -95,6 +98,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeParaADM.texto);
 		free(mensajeDeADM.texto);
+		(*estado)=LISTO;
 		break;
 	}
 	case ES:

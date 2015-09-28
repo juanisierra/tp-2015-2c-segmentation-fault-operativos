@@ -88,7 +88,7 @@ config_pl cargarConfiguracionPL(char * ruta) {
 	}
 	if(strcmp(valor,"RR")==0){
 			config.ALGORITMO_PLANIFICACION=2;
-			cargados[0]=1;
+			cargados[1]=1;
 	}
 	if(strcmp(valor,"FIFO")&& strcmp(valor,"RR")){
 		config.ALGORITMO_PLANIFICACION=0;
