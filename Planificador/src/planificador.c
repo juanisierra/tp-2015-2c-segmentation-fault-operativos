@@ -21,6 +21,7 @@ pthread_mutex_t MUTEXLISTOS;
 pthread_mutex_t MUTEXPANTALLA;
 pthread_t hConsola;
 nodoPCB* raizListos;
+nodoPCB* raizBloqueados;
 pthread_t hServer;
 sem_t SEMAFOROLISTOS;
 int socketEscucha;
@@ -72,8 +73,13 @@ void hiloConsola(void)
 	return;
 }
 
+//interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
+//{
+//
+//}
+
 void manejadorCPU(void) //id Que CPU SOS
-{	//mensaje_CPU_PL buffer; // VER IMPORTAR
+{	mensaje_CPU_PL mensajeRecibido;
 	while(1) // AGEGAR CORTE
 	{	sleep(4);
 		sem_wait(&SEMAFOROLISTOS);
@@ -82,7 +88,10 @@ void manejadorCPU(void) //id Que CPU SOS
 		printf("\nPor enviar a ejecutar: Path: %s Pid: %d\n",CPU1.ejecutando->info.path,CPU1.ejecutando->info.pid);
 		pthread_mutex_unlock(&MUTEXLISTOS);
 		enviarPCB(CPU1.socket,CPU1.ejecutando,-1);
-		//recibirDeCPU(CPU1.socket); //DEFINIR y cuidado con IP al finalziar
+		recibirPCBDeCPU(CPU1.socket,&mensajeRecibido);//DEFINIR y cuidado con IP al finalziar
+		//interPretarMensajeCPU(&mensajeRecibido,&(CPU1.ejecutando));
+		printf("La rafaga fue: %s\n",mensajeRecibido.payload);
+		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
 	}
 	return;
 }

@@ -168,6 +168,24 @@ int enviarMensajeAPL(proceso_CPU datos_CPU, estado_t estado, uint32_t tiempoBloq
 	free(buffer);
 	return resultado;
 }
+int recibirPCBDeCPU(int socket, mensaje_CPU_PL *mensaje)
+{
+	int resultado;
+	void*buffer=malloc(3*sizeof(uint32_t)+sizeof(estado_t));
+	resultado = recv(socket,buffer,3*sizeof(uint32_t)+ sizeof(estado_t),0);
+	memcpy(&(mensaje->ip),buffer,sizeof(uint32_t));
+	memcpy(&(mensaje->nuevoEstado),buffer+sizeof(uint32_t),sizeof(estado_t));
+	memcpy(&(mensaje->tiempoBloqueo),buffer+sizeof(uint32_t)+sizeof(estado_t),sizeof(uint32_t));
+	memcpy(&(mensaje->tamPayload),buffer+2*sizeof(uint32_t)+sizeof(estado_t),sizeof(uint32_t));
+	if(mensaje->tamPayload!=0){
+		mensaje->payload=malloc(mensaje->tamPayload);
+		resultado = recv(socket,mensaje->payload,mensaje->tamPayload,0);
+	} else {
+		mensaje->payload=NULL;
+	}
+	free(buffer);
+	return resultado;
+}
 
 int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPagina)//del adm al swap
 {
