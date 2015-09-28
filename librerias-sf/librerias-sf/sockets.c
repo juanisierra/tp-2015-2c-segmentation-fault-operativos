@@ -146,7 +146,7 @@ int recibirInstruccionDeADM(int socket, mensaje_ADM_CPU* mensajeRecibido)// el C
 	memcpy(&(mensajeRecibido->parametro),buffer,sizeof(uint32_t));
 	memcpy(&(mensajeRecibido->tamanoMensaje),buffer+sizeof(uint32_t),sizeof(uint32_t));
 	if(mensajeRecibido->tamanoMensaje!=0){
-		mensajeRecibido->texto=malloc(sizeof(mensajeRecibido->tamanoMensaje));
+		mensajeRecibido->texto=malloc((mensajeRecibido->tamanoMensaje)*sizeof(char));
 		resultado = recv(socket,mensajeRecibido->texto,mensajeRecibido->tamanoMensaje,0);
 	} else {
 		mensajeRecibido->texto=NULL;

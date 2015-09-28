@@ -45,7 +45,7 @@ int iniciarConfiguracion(config_CPU* configuracion)
 }
 
 void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint32_t parametro1, char* parametro2, uint32_t* entrada_salida, int* finArchivo, estado_t* estado)//funcion que ejecuta las instrucciones
-{ //FALTAN lOS FREE
+{
 	mensaje_ADM_CPU mensajeDeADM;
 	mensaje_CPU_ADM mensajeParaADM;
 	mensajeParaADM.instruccion = instruccion;
@@ -62,7 +62,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		printf("Recibi: %s\n",mensajeDeADM.texto); //BORRAR Y NO FREE TEXTO
 		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
-		//free(mensajeDeADM.texto);
+		free(mensajeDeADM.texto);
 		break;
 	}
 	case LEER:
@@ -70,9 +70,9 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		mensajeParaADM.texto=NULL;
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
-		printf("Recibi: %s\n",mensajeDeADM.texto);
+		printf("Recibi: %s\n ",mensajeDeADM.texto);
 		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
-		//free(mensajeDeADM.texto);
+		free(mensajeDeADM.texto);
 		break;
 
 	}
@@ -84,8 +84,8 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		printf("Recibi: %s\n",mensajeDeADM.texto);
 		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
-		//free(mensajeParaADM.texto);
-		//free(mensajeDeADM.texto);
+		free(mensajeParaADM.texto);
+		free(mensajeDeADM.texto);
 		break;
 	}
 	case ES:
@@ -107,7 +107,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		(*estado) = AFINALIZAR;
 		//almacenarEnListaRetornos(mensajeRetorno, datos_CPU, instruccion);
 		(*finArchivo) = 1;
-		//free(mensajeDeADM.texto);
+		free(mensajeDeADM.texto);
 		break;
 	}
 	case ERROR:
@@ -123,8 +123,6 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		break;
 	}
 	}
-	//if(mensajeDeADM.texto!=NULL) free(mensajeDeADM.texto);
-	//if(mensajeParaADM.texto!=NULL) free(mensajeParaADM.texto);
 }
 
 void hiloCPU(void* datoCPUACastear)
