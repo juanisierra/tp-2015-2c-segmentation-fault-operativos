@@ -183,12 +183,6 @@ void hiloCPU(void* datoCPUACastear)
 			//printf("%s \n",datos_CPU.listaRetornos->info.texto);
 		}
 		fclose(mCod);
-		printf("La primer instruccion de la lista es: %d \n", datos_CPU.listaRetornos->info.instruccion);
-		printf("El primer mensaje de la lista es: %s \n", datos_CPU.listaRetornos->info.texto);
-		printf("tamaño de lo primero: %d \n", datos_CPU.listaRetornos->info.tamTexto);
-		printf("La segunda instruccion de la lista es: %d \n", datos_CPU.listaRetornos->sgte->info.instruccion);
-		printf("El segundo mensaje de la lista es: %s \n", datos_CPU.listaRetornos->sgte->info.texto);
-		printf("tamaño de lo segundo: %d \n", datos_CPU.listaRetornos->info.tamTexto);
 		tamPayload = desempaquetarLista(&mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
 		printf("Todas las instrucciones a devolver son: \n%s", mensajeParaPL); //no se va a mostrar todo porque corta en el \0, muestra 1
 		enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL,tamPayload);
