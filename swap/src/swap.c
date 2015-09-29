@@ -58,7 +58,8 @@ int iniciarConfiguracion(cvoid)
 }
 
 int main()
-{	char mensaje[3];
+{
+	mensaje_ADM_SWAP mensaje;
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Iniciando Administrador de SWAP.. \n");
 	printf("Estableciendo conexion.. \n");
@@ -83,31 +84,8 @@ int main()
 	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	while (status != 0)
 	{
-		status = recv(socketADM, (void*) mensaje, TAMANOPAQUETE, 0);
-		if(mensaje[0]!=3)
-		{
-			printf("El mensaje recibido por el socket del ADM no pertenece al mismo \n");
-			close(socketADM);
-			close(socketEscucha);
-			return -1;
-
-
-		}
-		if(mensaje[1]!=4)
-				{
-					printf("El mensaje recibido por el socket del ADM no tiene como destino el Administrador de SWAP \n");
-
-					close(socketADM);
-					close(socketEscucha);
-					return -1;
-				}
-		if(mensaje[2]==1)
-		{
-			printf("Mensaje Recibido\n");
-			close(socketADM);
-			close(socketEscucha);
-			return 0;
-		}
+		recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
+		interpretarMensaje(mensaje,socketADM);
 	}
 	close(socketADM);
 	close(socketEscucha);
@@ -328,7 +306,7 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int tipoInst, char*texto, int
 	return 1;
 }
 
-int asignarMemoria( uint32_t pid, uint32_t cantPag, int tipoInst, char*texto)//tipo instruccion no lo toma, pongo int por ahora
+int asignarMemoria( uint32_t pid, uint32_t cantPag, instruccion_t tipoInst, char*texto)//tipo instruccion no lo toma, pongo int por ahora
 {
 	int inicio;
 	inicio= hayEspacio(cantPag);
@@ -645,4 +623,78 @@ int liberarMemoria(espacioOcupado* aBorrar)
 		return 1;
 	}
 	return 0;//si llego hasta aca es porque algo salio mal
+}
+
+
+int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
+{
+	mensaje_SWAP_ADM aEnviar;
+	int resultado;
+	switch (mensaje.instruccion)
+	{
+	case INICIAR:
+		resultado=asignarMemoria(mensaje.pid, mensaje.parametro, mensaje.instruccion, mensaje.contenidoPagina);
+
+		if (resultado==0)
+		{
+			aEnviar.estado=1;
+			aEnviar.instruccion=mensaje.instruccion;
+			aEnviar.contenidoPagina=NULL;
+			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
+			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			return 0;
+		}
+		aEnviar.contenidoPagina=NULL;
+		break;
+
+	case FINALIZAR:
+		espacioOcupado* aBorrar;
+		aBorrar=ocupadoRaiz;
+		while (aBorrar->pid != mensaje.pid) aBorrar= aBorrar->sgte;
+		if(!aBorrar)
+		{
+			printf ("El proceso no se encuentra en el swap \n");
+			aEnviar.estado=1;
+			aEnviar.instruccion=mensaje.instruccion;
+			aEnviar.contenidoPagina=NULL;
+			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
+			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			return 0;
+		}
+
+		liberarMemoria(aBorrar);
+		aEnviar.contenidoPagina=NULL;
+		break;
+
+	case LEER:
+		aEnviar.contenidoPagina=malloc(configuracion.TAMANIO_PAGINA);
+		espacioOcupado* aLeer=ocupadoRaiz;
+		while(aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
+		aEnviar.contenidoPagina=aLeer->texto;
+		break;
+
+	case ESCRIBIR:
+		espacioOcupado*aEscribir;
+		aEscribir=ocupadoRaiz;
+		while(aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
+		aEscribir->texto=mensaje.contenidoPagina;
+		/*
+		 aca pone lo de modificar el archivo. Si no te sale, avisame
+		 */
+		aEnviar.contenidoPagina=NULL;
+		break;
+	}
+
+	aEnviar.instruccion=mensaje.instruccion;
+	aEnviar.estado=0;// si llegó hasta acá es porque esta OK (estado=0)
+
+	int i=0;
+	i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
+	if(!i)
+	{
+		printf("No se pudo enviar mensaje al ADM\n");
+		return 0;
+	}
+
+	return 1;
 }
