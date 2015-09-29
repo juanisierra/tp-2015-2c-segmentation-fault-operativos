@@ -62,7 +62,7 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO}est
 	  char*contenidoPagina; //Suponemos que el tamanio de la pagina ya lo sabe el swap y que se manda de a una pagina.
   }mensaje_ADM_SWAP;
   typedef struct mensaje_SWAP_ADM_t
-  {
+  {		instruccion_t instruccion;
 	  uint32_t estado; //0 ok 1 no ok
 	  char*contenidoPagina;
   } mensaje_SWAP_ADM;

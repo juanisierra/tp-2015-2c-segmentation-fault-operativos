@@ -59,14 +59,14 @@ int main()
 		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de Memoria \n",configuracion.PUERTO_ESCUCHA);
 		return -1;
 	}
-	/*
+
 	printf("Creando Socket de conexion al SWAP en puerto %s \n",configuracion.PUERTO_SWAP);
 
 	if((socketSWAP = crearSocketCliente(configuracion.IP_SWAP,configuracion.PUERTO_SWAP))<0)
 		{
 			printf("No se pudo crear socket de conexion al SWAP \n"); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 			return 0;
-		}*/
+		}
 
 
 
@@ -79,8 +79,9 @@ int main()
 	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	printf("Conectado al CPU en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	mensaje_CPU_ADM mensajeARecibir;
+	mensaje_ADM_SWAP mensajeParaSWAP;
+	mensaje_SWAP_ADM mensajeDeSWAP;
 	mensaje_ADM_CPU mensajeAMandar;//es el mensaje que le mandaremos al CPU
-	//mensajeAMandar.texto=malloc(200);//CAMBIARRRR SOLO PRUEBA
 	int status = 1;		// Estructura que manjea el status de los recieve.
 	while(1)
 	{
@@ -93,38 +94,58 @@ int main()
 	if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
 	if(mensajeARecibir.instruccion == INICIAR)
 	{printf("RECIBI INICIAR\n");
-		mensajeAMandar.parametro = mensajeARecibir.parametro;
+		mensajeParaSWAP.instruccion=INICIAR;
+		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
+		mensajeParaSWAP.contenidoPagina=NULL;
+		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+		mensajeAMandar.parametro = mensajeDeSWAP.estado;
 		mensajeAMandar.tamanoMensaje = 0;
 		mensajeAMandar.texto = NULL;
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-		free(mensajeAMandar.texto);
 
 	}
 	if(mensajeARecibir.instruccion == LEER)
 	{printf("RECIBI LEER\n");
-		mensajeAMandar.parametro = mensajeARecibir.parametro;
-		mensajeAMandar.tamanoMensaje = strlen("texto leido") +1;
-		mensajeAMandar.texto = strdup("texto leido");
+		mensajeParaSWAP.instruccion=LEER;
+		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
+		mensajeParaSWAP.contenidoPagina=NULL;
+		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+		mensajeAMandar.parametro=mensajeDeSWAP.estado;
+		mensajeAMandar.tamanoMensaje = strlen(mensajeDeSWAP.contenidoPagina) +1;
+		strcpy(mensajeAMandar.texto,mensajeDeSWAP.contenidoPagina);
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
+		free(mensajeDeSWAP.contenidoPagina);
+		mensajeDeSWAP.contenidoPagina=NULL;
 		free(mensajeAMandar.texto);
+		mensajeAMandar.texto=NULL;
 	}
 	if(mensajeARecibir.instruccion == ESCRIBIR)
 	{printf("RECIBI ESCRIBIR\n");
-		mensajeAMandar.parametro = mensajeARecibir.parametro;
-		mensajeAMandar.tamanoMensaje = mensajeARecibir.tamTexto;
-		mensajeAMandar.texto = strdup(mensajeARecibir.texto);
+	mensajeParaSWAP.instruccion=ESCRIBIR;
+		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
+		mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
+		strcpy(mensajeParaSWAP.contenidoPagina,mensajeARecibir.texto);
+		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+		mensajeAMandar.parametro = mensajeDeSWAP.estado;
+		mensajeAMandar.tamanoMensaje =0;
+		mensajeAMandar.texto =NULL;
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-		free(mensajeAMandar.texto);
-
+		free(mensajeParaSWAP.contenidoPagina);
 	}
 	if(mensajeARecibir.instruccion ==FINALIZAR)
 	{printf("RECIBI FINALIZAR\n");
-	mensajeAMandar.parametro = mensajeARecibir.parametro;
+	mensajeParaSWAP.instruccion=FINALIZAR;
+	mensajeParaSWAP.parametro=mensajeARecibir.parametro;
+	mensajeParaSWAP.contenidoPagina=NULL;
+	enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+	mensajeAMandar.parametro = mensajeDeSWAP.estado;
 	mensajeAMandar.tamanoMensaje = 0;
 	mensajeAMandar.texto = NULL;
 	enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-	free(mensajeAMandar.texto);
-
 	}
 	if(mensajeARecibir.tamTexto!=0) free(mensajeARecibir.texto);
 	}

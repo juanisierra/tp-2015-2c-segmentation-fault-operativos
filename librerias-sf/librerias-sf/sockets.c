@@ -191,21 +191,32 @@ int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPag
 {
 	int resultado;
 	int cantidadNulos = tamPagina - (strlen(mensajeAEnviar->contenidoPagina)+1);
+	void* buffer =NULL;
 	int i = 0;//variable contadora para llenar con nulos
-	void* buffer = malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina);
 	void* nulos = malloc(cantidadNulos);
 	char* nulo = malloc(1);
+	if(mensajeAEnviar->contenidoPagina!=NULL) {
+	buffer=malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina);
 	*nulo = '\0';
 	for(i; i<cantidadNulos; i++)
 	{
 		memcpy(nulos+i, nulo, 1);
 	}
+
+	} else {
+		buffer=malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t));
+	}
 	memcpy(buffer, &(mensajeAEnviar->instruccion), sizeof(instruccion_t));
 	memcpy(buffer+sizeof(instruccion_t), &(mensajeAEnviar->pid), sizeof(uint32_t));
 	memcpy(buffer+sizeof(instruccion_t)+sizeof(uint32_t), &(mensajeAEnviar->parametro), sizeof(uint32_t));
+
+	if(mensajeAEnviar->contenidoPagina!=NULL){
 	memcpy(buffer+sizeof(instruccion_t)+2*sizeof(uint32_t), mensajeAEnviar->contenidoPagina, strlen(mensajeAEnviar->contenidoPagina)+1);
 	memcpy(buffer+sizeof(instruccion_t)+2*sizeof(uint32_t)+strlen(mensajeAEnviar->contenidoPagina)+1, nulos, cantidadNulos);
 	resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina, 0 );
+	} else {
+		resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t), 0 );
+	}
 	free(nulo);
 	free(nulos);
 	free(buffer);
@@ -214,12 +225,15 @@ int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPag
 int recibirPaginaDeADM(int socket, mensaje_ADM_SWAP* mensajeARecibir, int tamPagina) //el swap recibe del adm
 {
 	int resultado;
-	void* buffer = malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+tamPagina);
-	resultado = recv(socket,buffer,2*sizeof(uint32_t)+ sizeof(instruccion_t)+tamPagina,0);
+	void* buffer = malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t));
+	resultado = recv(socket,buffer,2*sizeof(uint32_t)+ sizeof(instruccion_t),0);
 	memcpy(&(mensajeARecibir->instruccion), buffer, sizeof(instruccion_t));
 	memcpy(&(mensajeARecibir->pid),buffer+sizeof(instruccion_t), sizeof(uint32_t) );
 	memcpy(&(mensajeARecibir->parametro),buffer+sizeof(instruccion_t)+sizeof(uint32_t), sizeof(uint32_t) );
-	memcpy(&(mensajeARecibir->contenidoPagina), buffer+sizeof(instruccion_t)+2*sizeof(uint32_t), tamPagina);
+	if(mensajeARecibir->instruccion==ESCRIBIR){
+	mensajeARecibir->contenidoPagina=malloc(tamPagina);
+	resultado = recv(socket,mensajeARecibir->contenidoPagina,tamPagina,0);
+	}
 	free(buffer);
 	return resultado;
 }
@@ -227,10 +241,22 @@ int recibirPaginaDeADM(int socket, mensaje_ADM_SWAP* mensajeARecibir, int tamPag
 int enviarDeSwapAlADM(int socket, mensaje_SWAP_ADM* mensajeAEnviar, int tamPagina)
 {
 	int resultado;
-	void* buffer = malloc(sizeof(uint32_t) + tamPagina);
-	memcpy(buffer, mensajeAEnviar->estado, sizeof(uint32_t));
-	memcpy(buffer+sizeof(uint32_t), mensajeAEnviar->contenidoPagina, tamPagina);
-	resultado = send(socket, buffer, sizeof(uint32_t) + tamPagina, 0 );
+	void* buffer;
+	if(mensajeAEnviar->contenidoPagina!=NULL){
+		buffer = malloc(sizeof(uint32_t) + sizeof(instruccion_t)+ tamPagina);
+	} else{
+		buffer = malloc(sizeof(uint32_t));
+	}
+	memcpy(buffer, &(mensajeAEnviar->estado), sizeof(uint32_t));
+	memcpy(buffer,&(mensajeAEnviar->instruccion),sizeof(instruccion_t));
+	if(mensajeAEnviar->contenidoPagina!=NULL){
+	memcpy(buffer+sizeof(uint32_t)+sizeof(instruccion_t), &(mensajeAEnviar->contenidoPagina), tamPagina);
+	resultado = send(socket, buffer, sizeof(uint32_t) + sizeof(instruccion_t) + tamPagina, 0 );
+	} else
+	{
+		resultado = send(socket, buffer, sizeof(uint32_t)+sizeof(instruccion_t), 0 );
+	}
+
 	free(buffer);
 	return resultado;
 }
@@ -238,10 +264,14 @@ int enviarDeSwapAlADM(int socket, mensaje_SWAP_ADM* mensajeAEnviar, int tamPagin
 int recibirMensajeDeSwap(int socket, mensaje_SWAP_ADM* mensajeRecibido, int tamPagina)// el adm recibe el del swap
 {
 	int resultado;
-	void* buffer = malloc(sizeof(uint32_t) + tamPagina);
-	resultado = recv(socket, buffer, sizeof(uint32_t) + tamPagina, 0);
+	void* buffer = malloc(sizeof(uint32_t)+sizeof(instruccion_t));
+	resultado = recv(socket, buffer, sizeof(uint32_t)+sizeof(instruccion_t),0);
 	memcpy(&(mensajeRecibido->estado), buffer, sizeof(uint32_t));
-	memcpy(&(mensajeRecibido->contenidoPagina), buffer+sizeof(uint32_t), tamPagina);
+	memcpy(&(mensajeRecibido->instruccion),buffer+sizeof(uint32_t),sizeof(instruccion_t));
+	if(mensajeRecibido->instruccion==LEER){
+		mensajeRecibido->contenidoPagina=malloc(tamPagina);
+		resultado = recv(socket, mensajeRecibido->contenidoPagina,tamPagina,0);
+	}
 	free(buffer);
 	return resultado;
 }
