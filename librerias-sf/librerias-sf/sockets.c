@@ -66,22 +66,25 @@ int enviarPCB(int socket,nodoPCB* PCB, uint32_t quantum) //-2 si no hay malloc
 {	int resultado;
 	mensaje_PL_CPU* mensaje;
 	mensaje = malloc(sizeof(mensaje_PL_CPU));
-	if(mensaje!=NULL){
-	memcpy(&(mensaje->pid),&(PCB->info.pid),sizeof(uint32_t));
-	memcpy(&(mensaje->ip),&(PCB->info.ip),sizeof(uint32_t));
-	memcpy(&(mensaje->path),&(PCB->info.path),51*sizeof(char));
-	memcpy(&(mensaje->quantum),&quantum,sizeof(uint32_t));
-	printf("Antes de enviar mensaje: %s %d\n",mensaje->path,mensaje->pid);
-	resultado = send(socket,(void*) mensaje,sizeof(mensaje_PL_CPU),0);
-	free(mensaje);
+	if(mensaje!=NULL)
+	{
+		memcpy(&(mensaje->pid),&(PCB->info.pid),sizeof(uint32_t));
+		memcpy(&(mensaje->ip),&(PCB->info.ip),sizeof(uint32_t));
+		memcpy(&(mensaje->path),&(PCB->info.path),51*sizeof(char));
+		memcpy(&(mensaje->quantum),&quantum,sizeof(uint32_t));
+		printf("Antes de enviar mensaje: %s %d\n",mensaje->path,mensaje->pid);
+		resultado = send(socket,(void*) mensaje,sizeof(mensaje_PL_CPU),0);
+		free(mensaje);
 	}
-	else {
+	else
+	{
 		resultado=-2;
 	}
 	return resultado;
 }
 int recibirPCB(int socket, proceso_CPU* proceso,uint32_t *quantum)
-{	int resultado;
+{
+	int resultado;
 	mensaje_PL_CPU* mensajeRecibido;
 	mensajeRecibido=malloc(sizeof(mensaje_PL_CPU));
 	resultado = recv(socket,(void*) mensajeRecibido,sizeof(mensaje_PL_CPU),0);
@@ -91,13 +94,12 @@ int recibirPCB(int socket, proceso_CPU* proceso,uint32_t *quantum)
 	memcpy(quantum,&(mensajeRecibido->quantum),sizeof(uint32_t));
 	free(mensajeRecibido);
 	return resultado;
-
 }
 //FUNCIONAN BIEN CAMBIADAS
 int enviarInstruccionAlADM(int socket, mensaje_CPU_ADM* mensajeAMandar) //el CPU le manda al ADM
 {
 	int resultado;
-	if(mensajeAMandar->texto==NULL)mensajeAMandar->tamTexto=0;
+	if(mensajeAMandar->texto==NULL) mensajeAMandar->tamTexto=0;
 
 	void*buffer= malloc(sizeof(instruccion_t)+3*sizeof(uint32_t)+(mensajeAMandar->tamTexto));
 	memcpy(buffer,&(mensajeAMandar->instruccion),sizeof(instruccion_t));
@@ -119,8 +121,9 @@ int recibirInstruccionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido) //el A
 	memcpy(&(mensajeRecibido->parametro),buffer+sizeof(instruccion_t)+sizeof(uint32_t),sizeof(uint32_t));
 	memcpy(&(mensajeRecibido->tamTexto),buffer+sizeof(instruccion_t)+2*sizeof(uint32_t),sizeof(uint32_t));
 	mensajeRecibido->texto=malloc(mensajeRecibido->tamTexto);
-	if(mensajeRecibido->tamTexto!=0){
-	resultado = recv(socket,mensajeRecibido->texto,mensajeRecibido->tamTexto,0);
+	if(mensajeRecibido->tamTexto!=0)
+	{
+		resultado = recv(socket,mensajeRecibido->texto,mensajeRecibido->tamTexto,0);
 	}
 	free(buffer);
 	return resultado;
@@ -129,7 +132,7 @@ int recibirInstruccionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido) //el A
 int enviarInstruccionACPU(int socket, mensaje_ADM_CPU* mensajeAMandar) // El ADM le manda al CPU
 {
 	int resultado;
-	if(mensajeAMandar->texto==NULL)mensajeAMandar->tamanoMensaje=0;
+	if(mensajeAMandar->texto==NULL) mensajeAMandar->tamanoMensaje=0;
 	void*buffer=malloc(2*sizeof(uint32_t)+(mensajeAMandar->tamanoMensaje));
 	memcpy(buffer,&(mensajeAMandar->parametro),sizeof(uint32_t));
 	memcpy(buffer+sizeof(uint32_t),&(mensajeAMandar->tamanoMensaje),sizeof(uint32_t));
@@ -145,10 +148,13 @@ int recibirInstruccionDeADM(int socket, mensaje_ADM_CPU* mensajeRecibido)// el C
 	resultado = recv(socket,buffer,2*sizeof(uint32_t),0);
 	memcpy(&(mensajeRecibido->parametro),buffer,sizeof(uint32_t));
 	memcpy(&(mensajeRecibido->tamanoMensaje),buffer+sizeof(uint32_t),sizeof(uint32_t));
-	if(mensajeRecibido->tamanoMensaje!=0){
+	if(mensajeRecibido->tamanoMensaje!=0)
+	{
 		mensajeRecibido->texto=malloc((mensajeRecibido->tamanoMensaje)*sizeof(char));
 		resultado = recv(socket,mensajeRecibido->texto,mensajeRecibido->tamanoMensaje,0);
-	} else {
+	}
+	else
+	{
 		mensajeRecibido->texto=NULL;
 	}
 	free(buffer);
@@ -177,10 +183,13 @@ int recibirPCBDeCPU(int socket, mensaje_CPU_PL *mensaje)
 	memcpy(&(mensaje->nuevoEstado),buffer+sizeof(uint32_t),sizeof(estado_t));
 	memcpy(&(mensaje->tiempoBloqueo),buffer+sizeof(uint32_t)+sizeof(estado_t),sizeof(uint32_t));
 	memcpy(&(mensaje->tamPayload),buffer+2*sizeof(uint32_t)+sizeof(estado_t),sizeof(uint32_t));
-	if(mensaje->tamPayload!=0){
+	if(mensaje->tamPayload!=0)
+	{
 		mensaje->payload=malloc(mensaje->tamPayload);
 		resultado = recv(socket,mensaje->payload,mensaje->tamPayload,0);
-	} else {
+	}
+	else
+	{
 		mensaje->payload=NULL;
 	}
 	free(buffer);
@@ -198,7 +207,7 @@ int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPag
 	if(mensajeAEnviar->contenidoPagina!=NULL) {
 	buffer=malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina);
 	*nulo = '\0';
-	for(i; i<cantidadNulos; i++)
+	for(i=0; i<cantidadNulos; i++)
 	{
 		memcpy(nulos+i, nulo, 1);
 	}
