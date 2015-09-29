@@ -630,7 +630,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			printf("fallo el malloc para la lista de libres en swap.c \n");
 			return 0;
 		}
-		if(libreRaiz->sgte)//corremos la raiz al inicio y nuevo donde estaba la raiz / creo que lo hice bien
+		if(libreRaiz->sgte)//corremos la raiz al inicio y nuevo donde estaba la raiz
 		{
 			libreRaiz->sgte->ant=nuevo;
 		}
