@@ -208,12 +208,12 @@ void unirBloquesLibres(void)
     return;
 }
 
-void moverInformacion(int inicioDe, int cantPags, int inicioA)
+void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 alguien que me confime que tiene sentido
 {
 	char buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
-	fseek(archivo, inicioDe * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
+	fseek(archivo, (inicioDe -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
 	fread(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//leemos
-	fseek(archivo, inicioA * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
+	fseek(archivo, (inicioA -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
 	fwrite(buffer, configuracion.TAMANIO_PAGINA, cantPags, archivo);//escribimos
 	return;//en el "nuevo" libre ahora hay basura
 }
@@ -625,16 +625,38 @@ int liberarMemoria(espacioOcupado* aBorrar)
 	return 0;//si llego hasta aca es porque algo salio mal
 }
 
+char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
+{
+	//char buffer[configuracion.TAMANIO_PAGINA];// esto seria variable local no funcionaria creo
+	char * buffer= malloc(configuracion.TAMANIO_PAGINA);//cuando hariamos un free? dsp de mandar el msj?
+	if(!buffer)
+	{
+		printf("Fallo la creacion del buffer en el swap funcion leer");
+		return buffer;
+	}
+	fseek(archivo,(aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  (pagALeer -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
+	fread(buffer, configuracion.TAMANIO_PAGINA, 1, archivo);//leemos
+	return buffer;
+}
 
-int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
+int escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien
+{
+	if(strlen(texto) > configuracion.TAMANIO_PAGINA) return 0;
+	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  (pagAEscribir -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);
+	fwrite(texto, configuracion.TAMANIO_PAGINA, 1, archivo);//asumo que siempre escribirmos una pagina
+	return 1;
+}
+
+int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revisa esto porfa
 {
 	mensaje_SWAP_ADM aEnviar;
 	int resultado;
+	espacioOcupado* aBorrar;
+	espacioOcupado*aEscribir;
 	switch (mensaje.instruccion)
 	{
 	case INICIAR:
 		resultado=asignarMemoria(mensaje.pid, mensaje.parametro, mensaje.instruccion, mensaje.contenidoPagina);
-
 		if (resultado==0)
 		{
 			aEnviar.estado=1;
@@ -648,7 +670,6 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		break;
 
 	case FINALIZAR:
-		espacioOcupado* aBorrar;
 		aBorrar=ocupadoRaiz;
 		while (aBorrar->pid != mensaje.pid) aBorrar= aBorrar->sgte;
 		if(!aBorrar)
@@ -661,7 +682,6 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			if(!i) printf("No se pudo enviar mensaje al ADM\n");
 			return 0;
 		}
-
 		liberarMemoria(aBorrar);
 		aEnviar.contenidoPagina=NULL;
 		break;
@@ -670,17 +690,49 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		aEnviar.contenidoPagina=malloc(configuracion.TAMANIO_PAGINA);
 		espacioOcupado* aLeer=ocupadoRaiz;
 		while(aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
-		aEnviar.contenidoPagina=aLeer->texto;
+		if(!aLeer)
+		{
+			printf ("El proceso no se encuentra en el swap \n");
+			aEnviar.estado=1;
+			aEnviar.instruccion=mensaje.instruccion;
+			aEnviar.contenidoPagina=NULL;
+			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
+			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			return 0;
+		}
+		char* leido= leer(aLeer, mensaje.parametro);
+		aEnviar.contenidoPagina= leido;//esto esta bien?
+		//aEnviar.contenidoPagina=aLeer->texto;    creo que esto esta mal
+		free(leido);//creo que aca hariamos el free,dsp corramos valgrid
 		break;
 
 	case ESCRIBIR:
-		espacioOcupado*aEscribir;
+
 		aEscribir=ocupadoRaiz;
 		while(aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
+		if(!aEscribir)
+		{
+			printf ("El proceso no se encuentra en el swap \n");
+			aEnviar.estado=1;
+			aEnviar.instruccion=mensaje.instruccion;
+			aEnviar.contenidoPagina=NULL;
+			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
+			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			return 0;
+		}
+
 		aEscribir->texto=mensaje.contenidoPagina;
-		/*
-		 aca pone lo de modificar el archivo. Si no te sale, avisame
-		 */
+		int resultado= escribir(aEscribir, mensaje.parametro, mensaje.contenidoPagina);
+		if(!resultado)
+		{
+			printf ("El texto a escribir es demaciado largo \n");
+			aEnviar.estado=1;
+			aEnviar.instruccion=mensaje.instruccion;
+			aEnviar.contenidoPagina=NULL;
+			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
+			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			return 0;
+		}
 		aEnviar.contenidoPagina=NULL;
 		break;
 	}
@@ -695,6 +747,5 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		printf("No se pudo enviar mensaje al ADM\n");
 		return 0;
 	}
-
 	return 1;
 }
