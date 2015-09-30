@@ -27,8 +27,6 @@ typedef struct espacioOcupado_t
 	uint32_t comienzo;
 	uint32_t cantPag;
 	uint32_t pid;
-	instruccion_t tipoInst; //1 iniciar 2 leer pagina 3 escribir pagina 5 finaliza
-	char*texto;
 }espacioOcupado;
 
 //****** OJO QUE SON VARIABLES GLOBALES ******
@@ -37,7 +35,7 @@ config_SWAP configuracion;
 espacioLibre* libreRaiz=NULL;
 espacioOcupado* ocupadoRaiz=NULL;
 
-int iniciarConfiguracion(cvoid)
+int iniciarConfiguracion(void)
 {
 	printf("Cargando configuracion.. \n \n");
 	configuracion =  cargarConfiguracionSWAP(RUTACONFIG);
@@ -62,8 +60,8 @@ int iniciarConfiguracion(cvoid)
 void inicializarArchivo(void)
 {
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
-    char* s = string_repeat('\0', tamanioArchivo);
-    fprintf(archivo,"%s", s);
+    //char* s = string_repeat('a', tamanioArchivo);
+    fprintf(archivo,"%s", string_repeat('a', tamanioArchivo));//nose como hacer esto bien
     return;
 }
 
@@ -71,12 +69,13 @@ int crearArchivo(void)//0 mal 1 bien
 {
 	char nombre [30];
 	strcpy(nombre,configuracion.NOMBRE_SWAP );
-	archivo= fopen(nombre,"w+");
-	if(!archivo)
+	archivo= fopen("swap.txt","w+");//no podemos darle el nombre de la configuracion
+	if(archivo==0)
 	{
 		printf("fallo al crear el archivo en swap.c \n");
 		return 0;
 	}
+	printf("ahora se inicializa el archivo \n");
     inicializarArchivo();
 	libreRaiz=malloc(sizeof(espacioLibre));//creamos el primero nodo libre (que esTodo el archivo)
 	if(!libreRaiz)
@@ -245,9 +244,7 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int tipoInst, char*texto, int
 		ocupadoRaiz->sgte=NULL;
 		ocupadoRaiz->pid=pid;
 		ocupadoRaiz->cantPag=cantPag;
-		ocupadoRaiz->tipoInst=tipoInst;
 		ocupadoRaiz->comienzo=comienzo;
-		ocupadoRaiz->texto=texto;
 		return 1;
 	}
 
@@ -267,9 +264,7 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int tipoInst, char*texto, int
 	nuevo->ant=ultimo;
 	nuevo->pid=pid;
 	nuevo->cantPag=cantPag;
-	nuevo->tipoInst=tipoInst;
 	nuevo->comienzo=comienzo;
-	nuevo->texto=texto;
 	return 1;
 }
 
@@ -606,12 +601,11 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 	return buffer;
 }
 
-int escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien
+void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien
 {
-	if(strlen(texto) > configuracion.TAMANIO_PAGINA) return 0;
 	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  (pagAEscribir -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);
 	fwrite(texto, configuracion.TAMANIO_PAGINA, 1, archivo);//asumo que siempre escribirmos una pagina
-	return 1;
+	return;
 }
 
 int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revisa esto porfa
@@ -626,7 +620,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 		resultado=asignarMemoria(mensaje.pid, mensaje.parametro, mensaje.instruccion, mensaje.contenidoPagina);
 		if (resultado==0)
 		{
-			aEnviar.estado=0; //0 es ok, estaba en 1 antes, asingar memoria que devuelve??--------------------------------------------------
+			aEnviar.estado=1; //ESTO LO HABIA TOCADO JUANI, LO VUELVO COMO ESTABA
 			aEnviar.instruccion=mensaje.instruccion;
 			aEnviar.contenidoPagina=NULL;
 			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
@@ -638,8 +632,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 
 	case FINALIZAR:
 		aBorrar=ocupadoRaiz;
-		while (aBorrar->pid != mensaje.pid && aBorrar->sgte!=NULL) aBorrar= aBorrar->sgte; // CHEQUEO DE LLEGAR A FIN DE LISTAAA-------------------
-		if(!aBorrar) // ESTA BIEWN LA CONDICION????----------------------------------------------------
+		while (aBorrar && aBorrar->pid != mensaje.pid) aBorrar= aBorrar->sgte;
+		if(!aBorrar)
 		{
 			printf ("El proceso no se encuentra en el swap \n");
 			aEnviar.estado=1;
@@ -657,7 +651,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 	case LEER:
 		aEnviar.contenidoPagina=malloc(configuracion.TAMANIO_PAGINA);
 		espacioOcupado* aLeer=ocupadoRaiz;
-		while(aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
+		while(aLeer && aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
 		if(!aLeer)
 		{
 			printf ("El proceso no se encuentra en el swap \n");
@@ -670,14 +664,13 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 		}
 		char* leido= leer(aLeer, mensaje.parametro);
 		aEnviar.contenidoPagina= leido;//esto esta bien?
-		//aEnviar.contenidoPagina=aLeer->texto;    creo que esto esta mal
 		free(leido);//creo que aca hariamos el free,dsp corramos valgrid
 		break;
 
 	case ESCRIBIR:
 
 		aEscribir=ocupadoRaiz;
-		while(aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
+		while(aEscribir && aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
 		if(!aEscribir)
 		{
 			printf ("El proceso no se encuentra en el swap \n");
@@ -688,19 +681,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 			if(!i) printf("No se pudo enviar mensaje al ADM\n");
 			return 0;
 		}
-
-		aEscribir->texto=mensaje.contenidoPagina;
-		int resultado= escribir(aEscribir, mensaje.parametro, mensaje.contenidoPagina);
-		if(!resultado)
-		{
-			printf ("El texto a escribir es demaciado largo \n");
-			aEnviar.estado=1;
-			aEnviar.instruccion=mensaje.instruccion;
-			aEnviar.contenidoPagina=NULL;
-			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i) printf("No se pudo enviar mensaje al ADM\n");
-			return 0;
-		}
+		//aEscribir->texto=mensaje.contenidoPagina;  comento esto porque el texto e instruccion del nodo estam mal creo
+		escribir(aEscribir, mensaje.parametro, mensaje.contenidoPagina);
 		aEnviar.contenidoPagina=NULL;
 		break;
 	}
@@ -721,7 +703,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 int main()
 {
 	mensaje_ADM_SWAP mensaje;
-	if(iniciarConfiguracion(&configuracion)==-1) return -1;
+	if(iniciarConfiguracion()==-1) return -1;
 	printf("Iniciando Administrador de SWAP.. \n");
 	printf("Estableciendo conexion.. \n");
 	int socketEscucha;
@@ -743,6 +725,9 @@ int main()
 	int socketADM = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	int status = 1;		// Estructura que manjea el status de los recieve.
 	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
+
+	int exito= crearArchivo();
+	if(exito) printf("se creo el archivo correctamente\n");
 	while (status != 0)
 	{
 		status = recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
@@ -753,7 +738,3 @@ int main()
 	close(socketEscucha);
 	return 0;
 }
-
-
-
-
