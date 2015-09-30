@@ -57,40 +57,7 @@ int iniciarConfiguracion(cvoid)
 	return -1;
 }
 
-int main()
-{
-	mensaje_ADM_SWAP mensaje;
-	if(iniciarConfiguracion(&configuracion)==-1) return -1;
-	printf("Iniciando Administrador de SWAP.. \n");
-	printf("Estableciendo conexion.. \n");
-	int socketEscucha;
-	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
-	if(socketEscucha < 0)
-	{
-		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);
-		return -1;
-	}
 
-	if(listen(socketEscucha,10)< 0)
-	{
-		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);
-		return -1;
-	}
-	struct sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-	printf("Esperando conexiones en puerto %s..\n",configuracion.PUERTO_ESCUCHA);
-	int socketADM = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-	int status = 1;		// Estructura que manjea el status de los recieve.
-	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
-	while (status != 0)
-	{
-		recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
-		interpretarMensaje(mensaje,socketADM);
-	}
-	close(socketADM);
-	close(socketEscucha);
-	return 0;
-}
 
 void inicializarArchivo(void)
 {
@@ -309,7 +276,7 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int tipoInst, char*texto, int
 int asignarMemoria( uint32_t pid, uint32_t cantPag, instruccion_t tipoInst, char*texto)//tipo instruccion no lo toma, pongo int por ahora
 {
 	int inicio;
-	inicio= hayEspacio(cantPag);
+	inicio= hayEspacio(cantPag); //---NO SE COMO FUNCIONA PERO NO PARACE ANDARR ACA-----------------------------------------
 	if(!inicio)
 	{
 		desfragmentar();
@@ -659,29 +626,30 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 		resultado=asignarMemoria(mensaje.pid, mensaje.parametro, mensaje.instruccion, mensaje.contenidoPagina);
 		if (resultado==0)
 		{
-			aEnviar.estado=1;
+			aEnviar.estado=0; //0 es ok, estaba en 1 antes, asingar memoria que devuelve??--------------------------------------------------
 			aEnviar.instruccion=mensaje.instruccion;
 			aEnviar.contenidoPagina=NULL;
 			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			printf("mensaje enviado: %d %d\n",aEnviar.estado,aEnviar.instruccion);
+			if(!i) printf("No se pudo enviar mensaje al ADM\n"); // Distinto de i no sirve, i es cuanto manda.--------------------
 			return 0;
-		}
-		aEnviar.contenidoPagina=NULL;
+		} //FAlta el else ---------------------------------------------------------------------------------------------------------
 		break;
 
 	case FINALIZAR:
 		aBorrar=ocupadoRaiz;
-		while (aBorrar->pid != mensaje.pid) aBorrar= aBorrar->sgte;
-		if(!aBorrar)
+		while (aBorrar->pid != mensaje.pid && aBorrar->sgte!=NULL) aBorrar= aBorrar->sgte; // CHEQUEO DE LLEGAR A FIN DE LISTAAA-------------------
+		if(!aBorrar) // ESTA BIEWN LA CONDICION????----------------------------------------------------
 		{
 			printf ("El proceso no se encuentra en el swap \n");
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			aEnviar.contenidoPagina=NULL;
 			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			if(!i) printf("No se pudo enviar mensaje al ADM\n"); //INSTRUCCION =i, i es la cantidad de datos que enviaa,
 			return 0;
 		}
+		printf("Por liberar memoria para finalizar el proceos\n"); // NO LLEGA HASTA ACA Y YA TIRO SEG FAULT.------------------
 		liberarMemoria(aBorrar);
 		aEnviar.contenidoPagina=NULL;
 		break;
@@ -749,3 +717,43 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 	}
 	return 1;
 }
+
+int main()
+{
+	mensaje_ADM_SWAP mensaje;
+	if(iniciarConfiguracion(&configuracion)==-1) return -1;
+	printf("Iniciando Administrador de SWAP.. \n");
+	printf("Estableciendo conexion.. \n");
+	int socketEscucha;
+	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
+	if(socketEscucha < 0)
+	{
+		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);
+		return -1;
+	}
+
+	if(listen(socketEscucha,10)< 0)
+	{
+		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);
+		return -1;
+	}
+	struct sockaddr_in addr;
+	socklen_t addrlen = sizeof(addr);
+	printf("Esperando conexiones en puerto %s..\n",configuracion.PUERTO_ESCUCHA);
+	int socketADM = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
+	int status = 1;		// Estructura que manjea el status de los recieve.
+	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
+	while (status != 0)
+	{
+		status = recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
+		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
+		interpretarMensaje(mensaje,socketADM);
+	}
+	close(socketADM);
+	close(socketEscucha);
+	return 0;
+}
+
+
+
+

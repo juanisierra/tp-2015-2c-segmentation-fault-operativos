@@ -94,11 +94,15 @@ int main()
 	if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
 	if(mensajeARecibir.instruccion == INICIAR)
 	{printf("RECIBI INICIAR\n");
+	mensajeParaSWAP.pid=mensajeARecibir.pid;
 		mensajeParaSWAP.instruccion=INICIAR;
 		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
 		mensajeParaSWAP.contenidoPagina=NULL;
+		printf("Mensaje a mandar %d %d\n",mensajeParaSWAP.instruccion,mensajeParaSWAP.parametro);
 		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+		printf("mande INICIAR A SWAP %d %d %d\n",mensajeParaSWAP.pid,mensajeParaSWAP.instruccion,mensajeParaSWAP.parametro);
 		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+		printf("RECIBI DE SWAP %d %d\n",mensajeDeSWAP.estado,mensajeDeSWAP.instruccion);
 		mensajeAMandar.parametro = mensajeDeSWAP.estado;
 		mensajeAMandar.tamanoMensaje = 0;
 		mensajeAMandar.texto = NULL;
@@ -107,6 +111,7 @@ int main()
 	}
 	if(mensajeARecibir.instruccion == LEER)
 	{printf("RECIBI LEER\n");
+	mensajeParaSWAP.pid=mensajeARecibir.pid;
 		mensajeParaSWAP.instruccion=LEER;
 		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
 		mensajeParaSWAP.contenidoPagina=NULL;
@@ -123,6 +128,7 @@ int main()
 	}
 	if(mensajeARecibir.instruccion == ESCRIBIR)
 	{printf("RECIBI ESCRIBIR\n");
+	mensajeParaSWAP.pid=mensajeARecibir.pid;
 	mensajeParaSWAP.instruccion=ESCRIBIR;
 		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
 		mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
@@ -137,6 +143,7 @@ int main()
 	}
 	if(mensajeARecibir.instruccion ==FINALIZAR)
 	{printf("RECIBI FINALIZAR\n");
+	mensajeParaSWAP.pid=mensajeARecibir.pid;
 	mensajeParaSWAP.instruccion=FINALIZAR;
 	mensajeParaSWAP.parametro=mensajeARecibir.parametro;
 	mensajeParaSWAP.contenidoPagina=NULL;
@@ -149,42 +156,7 @@ int main()
 	}
 	if(mensajeARecibir.tamTexto!=0) free(mensajeARecibir.texto);
 	}
-/*
-	while (status != 0)
-	{
-		status = recv(socketCPU, (void*) mensaje, TAMANOPAQUETE, 0);
-		if(mensaje[0]!=2)
-		{
-			printf("El mensaje recibido por el socket del CPU no pertenece al mismo \n");
-			close(socketSWAP);
-			close(socketCPU);
-			close(socketEscucha);
-			return -1;
 
-
-		}
-		if(mensaje[1]!=3)
-				{
-					printf("El mensaje recibido por el socket del CPU no tiene como destino el Administrador de memoria \n");
-					close(socketSWAP);
-					close(socketCPU);
-					close(socketEscucha);
-					return -1;
-				}
-		if(mensaje[2]==1)
-		{
-			printf("Mensaje Recibido\n");
-			mensaje[0]=3;
-			mensaje[1]=4;
-
-			send(socketSWAP, mensaje, strlen(mensaje)+1, 0);
-			close(socketSWAP);
-			close(socketCPU);
-			close(socketEscucha);
-			return 0;
-		}
-	}
-	*/
 	close(socketCPU);
 	close(socketEscucha);
 	return 0;
