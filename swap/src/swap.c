@@ -158,7 +158,7 @@ int hayEspacio(int espacio)//espacio esta en paginas
 
 void unirBloquesLibres(void)
 {
-    espacioLibre* nodoABorrar;
+   espacioLibre* nodoABorrar;
    libreRaiz->cantPag=libreRaiz->cantPag + (libreRaiz->sgte)->cantPag;
    if(!(libreRaiz->sgte->sgte))//solo son dos nodos
    {
@@ -738,7 +738,7 @@ void eliminarListas(void)
 		{
 			ultimoOcupado=ultimoOcupado->sgte;
 		}
-		espacioLibre* anterior= ultimoOcupado->ant;
+		espacioOcupado* anterior= ultimoOcupado->ant;
 		while(anterior)
 		{
 			free(ultimoOcupado);
