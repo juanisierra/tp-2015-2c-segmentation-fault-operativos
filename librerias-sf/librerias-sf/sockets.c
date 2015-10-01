@@ -243,10 +243,13 @@ int recibirPaginaDeADM(int socket, mensaje_ADM_SWAP* mensajeARecibir, int tamPag
 	memcpy(&(mensajeARecibir->instruccion), buffer, sizeof(instruccion_t));
 	memcpy(&(mensajeARecibir->pid),buffer+sizeof(instruccion_t), sizeof(uint32_t) );
 	memcpy(&(mensajeARecibir->parametro),buffer+sizeof(instruccion_t)+sizeof(uint32_t), sizeof(uint32_t) );
-	if(mensajeARecibir->instruccion==ESCRIBIR){
-	mensajeARecibir->contenidoPagina=malloc(tamPagina);
-	resultado = recv(socket,mensajeARecibir->contenidoPagina,tamPagina,0);
-	} else {
+	if(mensajeARecibir->instruccion==ESCRIBIR)
+	{
+		mensajeARecibir->contenidoPagina=malloc(tamPagina);
+		resultado = recv(socket,mensajeARecibir->contenidoPagina,tamPagina,0);
+	}
+	else
+	{
 		mensajeARecibir->contenidoPagina=NULL;
 	}
 	free(buffer);

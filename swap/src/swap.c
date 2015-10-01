@@ -383,7 +383,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 	else if(atrasVar==0 && adelanteVar==1)//tiene un libre adelante
 	{
 		libreRaiz->comienzo=1;
-		libreRaiz->cantPag= libreRaiz->cantPag + aBorrar->cantPag;
+		libreRaiz->cantPag= libreRaiz->cantPag + aBorrar->cantPag;//ACA NO HACE FALTA FREE CREO
 		borrarNodoOcupado(aBorrar);
 		return 1;
 	}
@@ -478,19 +478,11 @@ int liberarMemoria(espacioOcupado* aBorrar)
 	}
 	else if(atrasVar==2 && adelanteVar==1)//esta entre un ocupado y un libre
 	{
-			if(aBorrar->comienzo + aBorrar->cantPag == libreRaiz->comienzo)//tiene la raiz a la derecha
-			{
-				libreRaiz->cantPag= aBorrar->cantPag + libreRaiz->cantPag;
-				libreRaiz->comienzo= aBorrar->comienzo;
-				borrarNodoOcupado(aBorrar);
-				return 1;
+			espacioLibre* siguiente= libreRaiz;
+			while(siguiente->comienzo != aBorrar->comienzo + aBorrar->cantPag)
+			{//si a la derecha esta la raiz anda igual
+				siguiente= siguiente->sgte;
 			}
-			espacioLibre* anterior= libreRaiz;
-			while(anterior->sgte->comienzo + anterior->sgte->cantPag != aBorrar->comienzo)
-			{
-				anterior= anterior->sgte;
-			}
-			espacioLibre* siguiente= anterior->sgte;
 			siguiente->comienzo= aBorrar->comienzo;
 			siguiente->cantPag= siguiente->cantPag + aBorrar->cantPag;
 			borrarNodoOcupado(aBorrar);
@@ -705,10 +697,18 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		printf("No se pudo enviar mensaje al ADM\n");
 		return 0;
 	}
-	if(aEnviar.contenidoPagina!=NULL) free(aEnviar.contenidoPagina); //////////////////////
-	aEnviar.contenidoPagina=NULL;
-	if(mensaje.contenidoPagina!=NULL) free(mensaje.contenidoPagina);
-	mensaje.contenidoPagina=NULL;
+	if(aEnviar.contenidoPagina!=NULL)
+		{
+			free(aEnviar.contenidoPagina);
+			aEnviar.contenidoPagina=NULL;
+		}
+
+	if(mensaje.contenidoPagina!=NULL)
+		{
+			free(mensaje.contenidoPagina);
+			mensaje.contenidoPagina=NULL;
+		}
+
 	return 1;
 }
 
@@ -776,7 +776,6 @@ int main()
 	int socketADM = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	int status = 1;		// Estructura que manjea el status de los recieve.
 	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
-
 	int exito= crearArchivo();
 	if(exito) printf("se creo el archivo correctamente\n");
 	while (status != 0)
