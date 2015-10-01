@@ -617,7 +617,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 	switch (mensaje.instruccion)
 	{
 	case INICIAR:
-		resultado=asignarMemoria(mensaje.pid, mensaje.parametro);// aca el comienzo esta en tres lo cual es muy raro, deberia ser 1
+		resultado=asignarMemoria(mensaje.pid, mensaje.parametro);
 		aEnviar.contenidoPagina=NULL;
 		if (resultado==0)
 		{
