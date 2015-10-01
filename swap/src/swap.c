@@ -58,7 +58,7 @@ int iniciarConfiguracion(void)
 void inicializarArchivo(void)
 {
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
-    char* s = string_repeat('a', tamanioArchivo);//\0
+    char* s = string_repeat('\0', tamanioArchivo);
     fprintf(archivo,"%s", s);
     return;
 }
@@ -87,7 +87,7 @@ int crearArchivo(void)//0 mal 1 bien
 	return 1;
 }
 
-void ocupar(int posicion, int espacio)//no estoy seguro que este bien, mirenla porfavor
+void ocupar(int posicion, int espacio)
 {
 	espacioLibre* aBorrar=libreRaiz;
 	if(libreRaiz->cantPag == espacio)//si el espacio dado es el primer nodo completo
@@ -96,6 +96,7 @@ void ocupar(int posicion, int espacio)//no estoy seguro que este bien, mirenla p
 		{
 			free(libreRaiz);
 			libreRaiz=NULL;
+			return;
 		}
 		libreRaiz= libreRaiz->sgte;
 		libreRaiz->ant=NULL;
@@ -230,7 +231,7 @@ void desfragmentar(void)
     return;
 }
 
-int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//0 mal 1 bien
+int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NOCOS OCUPADOS SE APILAN NO HAY ORDEN RESPECTO A LO QUE OCUPAN EN MEMORIA
 {
 	if(!ocupadoRaiz)
 	{
@@ -247,7 +248,6 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//0 mal 1 bien
 		ocupadoRaiz->comienzo=comienzo;
 		return 1;
 	}
-
 	espacioOcupado* ultimo= ocupadoRaiz;
 	while(ultimo->sgte)//puntero al ultimo nodo de ocupados
 	{
@@ -271,7 +271,7 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//0 mal 1 bien
 int asignarMemoria( uint32_t pid, uint32_t cantPag)
 {
 	int inicio;
-	inicio= hayEspacio(cantPag); //---NO SE COMO FUNCIONA PERO NO PARACE ANDARR ACA-----------------------------------------
+	inicio= hayEspacio(cantPag);
 	if(!inicio)
 	{
 		desfragmentar();
@@ -594,15 +594,15 @@ int liberarMemoria(espacioOcupado* aBorrar)
 	return 0;//si llego hasta aca es porque algo salio mal
 }
 
-char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//esto casi seguro anda perfecto, ya lo testee
+char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 {
-	char * buffer= malloc(configuracion.TAMANIO_PAGINA);//cuando hariamos un free? dsp de mandar el msj?
+	char * buffer= malloc(configuracion.TAMANIO_PAGINA);
 	if(!buffer)
 	{
 		printf("Fallo la creacion del buffer en el swap funcion leer");
 		return buffer;
 	}
-	fseek(archivo,(aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  (pagALeer -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
+	fseek(archivo,(aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
 	fread(buffer, sizeof(char), (configuracion.TAMANIO_PAGINA)/sizeof(char), archivo);//leemos
 	printf("lo que lee es %s \n", buffer);
 	return buffer;
@@ -610,13 +610,13 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//esto casi seguro anda perf
 
 void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien
 {
-	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  (pagAEscribir -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);
+	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagAEscribir * configuracion.TAMANIO_PAGINA, SEEK_SET);
 	fwrite(texto, sizeof(char), strlen(texto), archivo);
 
 	return;
 }
 
-int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revisa esto porfa
+int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 {
 	mensaje_SWAP_ADM aEnviar;
 	int resultado;
@@ -629,7 +629,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 		aEnviar.contenidoPagina=NULL;
 		if (resultado==0)
 		{
-			aEnviar.estado=1; //ESTO LO HABIA TOCADO JUANI, LO VUELVO COMO ESTABA
+			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
 			printf("mensaje enviado: %d %d\n",aEnviar.estado,aEnviar.instruccion);
@@ -673,7 +673,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 		char* leido= leer(aLeer, mensaje.parametro);
 		aEnviar.contenidoPagina=malloc(configuracion.TAMANIO_PAGINA);
 		memcpy((aEnviar.contenidoPagina),leido,configuracion.TAMANIO_PAGINA); //COPIO Y FATA FREE DE AENVIAR
-		free(leido);//creo que aca hariamos el free,dsp corramos valgrid
+		free(leido);
 		break;
 
 	case ESCRIBIR:
@@ -706,6 +706,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 		printf("No se pudo enviar mensaje al ADM\n");
 		return 0;
 	}
+	free(aEnviar.contenidoPagina);//nose bien esto
 	return 1;
 }
 
