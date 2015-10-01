@@ -1,2 +1,4 @@
 iniciar 5;
+escribir 2 "jua";
+leer 2;
 finalizar;

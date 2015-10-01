@@ -19,7 +19,6 @@ config_pl configuracion;
 nodo_Lista_CPU CPU1; //Va a ser lista
 pthread_mutex_t MUTEXLISTOS;
 pthread_mutex_t MUTEXBLOQUEADOS;
-pthread_mutex_t MUTEXPANTALLA;
 pthread_t hConsola;
 nodoPCB* raizListos;
 nodoPCB* raizBloqueados;
@@ -54,6 +53,7 @@ void hiloConsola(void)
 	char parametro[50];
 	int pid_cuenta =0; //PID ACTUAL
 	nodoPCB* aFinalizar;
+	aFinalizar=NULL;////////////////////*
 	raizListos=NULL;
 	printf("Conectado al CPU, ya puede enviar mensajes. Escriba 'salir' para salir\n");
 	while(estado_consola)
@@ -103,7 +103,7 @@ void hiloConsola(void)
 }
 
 void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
-{	printf("RECIBID DENUEVO PCB\n");
+{	printf("RECIBI DENUEVO PCB\n");
 	switch(mensajeRecibido->nuevoEstado)
 	{
 	case LISTO:
@@ -168,20 +168,28 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
 
 void manejadorCPU(void) //id Que CPU SOS
 {	mensaje_CPU_PL mensajeRecibido;
-
-	while(1) // AGEGAR CORTE
+	mensaje_CPU_PL chequeoDeStatus;
+	int status=1;
+	while(status!=0) // AGEGAR CORTE // ESTA RARO, no sirve con el join
 	{	sleep(4);
 		sem_wait(&SEMAFOROLISTOS);
 		pthread_mutex_lock(&MUTEXLISTOS);
+		if(recv(CPU1.socket,&chequeoDeStatus,sizeof(mensaje_CPU_PL),MSG_PEEK | MSG_DONTWAIT)==0) //Chequeo si esta prendido el socket.
+		{
+			printf("Se desconecto el CPU1\n");
+			pthread_mutex_unlock(&MUTEXLISTOS);
+			return;
+		}
+
 		CPU1.ejecutando=sacarNodoPCB(&raizListos);
 		CPU1.ejecutando->info.estado=EJECUTANDO;
 		CPU1.ant=NULL;
 		CPU1.sgte=NULL;
 		printf("\nPor enviar a ejecutar: Path: %s Pid: %d\n",CPU1.ejecutando->info.path,CPU1.ejecutando->info.pid);
 		pthread_mutex_unlock(&MUTEXLISTOS);
-
 		enviarPCB(CPU1.socket,CPU1.ejecutando,quantum);
-		recibirPCBDeCPU(CPU1.socket,&mensajeRecibido);//DEFINIR y cuidado con IP al finalziar
+		status=recibirPCBDeCPU(CPU1.socket,&mensajeRecibido);//DEFINIR y cuidado con IP al finalziar
+		if(status==0) break;
 		interPretarMensajeCPU(&mensajeRecibido,&(CPU1.ejecutando));
 		printf("La rafaga fue: %s\n",mensajeRecibido.payload);
 		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
@@ -213,7 +221,7 @@ int hiloServidor(void)
 	CPU1.socket = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
 	pthread_create(&(CPU1.thread),NULL, manejadorCPU,NULL); //Chequear pasaje de parametro de id del cpu.
-	pthread_join(hConsola,NULL);
+	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
 	pthread_mutex_destroy(&(CPU1.MUTEXCPU));
 	close(socketEscucha); //DEJO DE ESCUCHAR AL FINALIZAR LA CONSOLA
 	printf("cierro socket escucha\n");
@@ -224,7 +232,6 @@ int main()
 {
 	pthread_mutex_init(&MUTEXLISTOS,NULL); //Inicializacion de los semaforos
 	pthread_mutex_init(&MUTEXBLOQUEADOS,NULL);
-	pthread_mutex_init(&MUTEXPANTALLA,NULL);
 	sem_init(&SEMAFOROLISTOS,0,0);
 	sem_init(&SEMAFOROBLOQUEADOS,0,0);
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
