@@ -83,26 +83,21 @@ int main()
 	mensaje_SWAP_ADM mensajeDeSWAP;
 	mensaje_ADM_CPU mensajeAMandar;//es el mensaje que le mandaremos al CPU
 	int status = 1;		// Estructura que manjea el status de los recieve.
-	while(1)
+	while(status!=0)
 	{
-	printf("esperando que el CPU mande \n");
 	status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
-	printf("%d \n", mensajeARecibir.instruccion);
-	printf("%d \n", mensajeARecibir.parametro);
-	printf("%d \n", mensajeARecibir.pid);
-	printf("%d \n", mensajeARecibir.tamTexto);
+	if(status==0) break;
+	printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
 	if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
+	if(mensajeARecibir.tamTexto==0) printf("\n");
 	if(mensajeARecibir.instruccion == INICIAR)
-	{printf("RECIBI INICIAR\n");
+	{
 	mensajeParaSWAP.pid=mensajeARecibir.pid;
 		mensajeParaSWAP.instruccion=INICIAR;
 		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
 		mensajeParaSWAP.contenidoPagina=NULL;
-		printf("Mensaje a mandar %d %d\n",mensajeParaSWAP.instruccion,mensajeParaSWAP.parametro);
 		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
-		printf("mande INICIAR A SWAP %d %d %d\n",mensajeParaSWAP.pid,mensajeParaSWAP.instruccion,mensajeParaSWAP.parametro);
 		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-		printf("RECIBI DE SWAP %d %d\n",mensajeDeSWAP.estado,mensajeDeSWAP.instruccion);
 		mensajeAMandar.parametro = mensajeDeSWAP.estado;
 		mensajeAMandar.tamanoMensaje = 0;
 		mensajeAMandar.texto = NULL;
@@ -110,7 +105,7 @@ int main()
 
 	}
 	if(mensajeARecibir.instruccion == LEER)
-	{printf("RECIBI LEER\n");
+	{
 	mensajeParaSWAP.pid=mensajeARecibir.pid;
 		mensajeParaSWAP.instruccion=LEER;
 		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
@@ -122,13 +117,9 @@ int main()
 		mensajeAMandar.texto=malloc(mensajeAMandar.tamanoMensaje);
 		strcpy(mensajeAMandar.texto,mensajeDeSWAP.contenidoPagina); /// NO SIRVE CON LAS A PORUQE NO LLEVAN /0
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-		free(mensajeDeSWAP.contenidoPagina);
-		mensajeDeSWAP.contenidoPagina=NULL;
-		free(mensajeAMandar.texto);
-		mensajeAMandar.texto=NULL;
 	}
 	if(mensajeARecibir.instruccion == ESCRIBIR)
-	{printf("RECIBI ESCRIBIR\n");
+	{
 	mensajeParaSWAP.pid=mensajeARecibir.pid;
 	mensajeParaSWAP.instruccion=ESCRIBIR;
 		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
@@ -140,10 +131,9 @@ int main()
 		mensajeAMandar.tamanoMensaje =0;
 		mensajeAMandar.texto =NULL;
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-		free(mensajeParaSWAP.contenidoPagina);
 	}
 	if(mensajeARecibir.instruccion ==FINALIZAR)
-	{printf("RECIBI FINALIZAR\n");
+	{
 	mensajeParaSWAP.pid=mensajeARecibir.pid;
 	mensajeParaSWAP.instruccion=FINALIZAR;
 	mensajeParaSWAP.parametro=mensajeARecibir.parametro;
@@ -155,7 +145,12 @@ int main()
 	mensajeAMandar.texto = NULL;
 	enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 	}
-	if(mensajeARecibir.tamTexto!=0) free(mensajeARecibir.texto);
+	if(mensajeARecibir.texto!=NULL) free(mensajeARecibir.texto);
+	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
+	if(mensajeParaSWAP.contenidoPagina!=NULL) free(mensajeParaSWAP.contenidoPagina);
+	mensajeARecibir.texto=NULL;
+	mensajeDeSWAP.contenidoPagina=NULL;
+	mensajeParaSWAP.contenidoPagina=NULL;
 	}
 
 	close(socketCPU);

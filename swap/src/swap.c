@@ -596,7 +596,8 @@ int liberarMemoria(espacioOcupado* aBorrar)
 
 char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 {
-	char * buffer= malloc(configuracion.TAMANIO_PAGINA);
+	char * buffer =NULL;
+	buffer= malloc(configuracion.TAMANIO_PAGINA);
 	if(!buffer)
 	{
 		printf("Fallo la creacion del buffer en el swap funcion leer");
@@ -604,7 +605,8 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 	}
 	fseek(archivo,(aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
 	fread(buffer, sizeof(char), (configuracion.TAMANIO_PAGINA)/sizeof(char), archivo);//leemos
-	printf("lo que lee es %s \n", buffer);
+
+	if(buffer!=NULL) printf("Se lee: %s \n", buffer); //////////////////////valgrind
 	return buffer;
 }
 
@@ -632,7 +634,6 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			printf("mensaje enviado: %d %d\n",aEnviar.estado,aEnviar.instruccion);
 			if(!i) printf("No se pudo enviar mensaje al ADM\n"); // Distinto de i no sirve, i es cuanto manda.--------------------
 			return 0;
 		}
@@ -700,13 +701,16 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 	aEnviar.estado=0;// si llegó hasta acá es porque esta OK (estado=0)
 
 	int i=0;
-	i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);//aca aEnviar.contenidoPagina pasa a tener cualquier cosa
+	i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
 	if(!i)
 	{
 		printf("No se pudo enviar mensaje al ADM\n");
 		return 0;
 	}
-	free(aEnviar.contenidoPagina);//nose bien esto
+	if(aEnviar.contenidoPagina!=NULL) free(aEnviar.contenidoPagina); //////////////////////
+	aEnviar.contenidoPagina=NULL;
+	if(mensaje.contenidoPagina!=NULL) free(mensaje.contenidoPagina);
+	mensaje.contenidoPagina=NULL;
 	return 1;
 }
 
@@ -741,6 +745,7 @@ int main()
 	while (status != 0)
 	{
 		status = recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
+		if(status==0) break; //SACAR PARA VER DOBLE FREEE!!!!
 		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
 		interpretarMensaje(mensaje,socketADM);
 	}

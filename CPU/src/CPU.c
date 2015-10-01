@@ -73,7 +73,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		break;
 	}
 	case LEER:
-	{	printf("Instruccion leer parametro: %d\n",parametro1);//*********************
+	{	printf("Instruccion leer parametro: %d ",parametro1);//*********************
 		mensajeParaADM.texto=NULL;
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -94,7 +94,8 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		pthread_mutex_unlock(&mutexComADM);
-		printf("Recibi: %s\n",mensajeDeADM.texto);
+		//////////////////////////////////////////////////////
+		mensajeDeADM.texto=strdup(parametro2); // AGREGO ESTO PARA QUE EL TEXTO QUE SE ESCRIBE SEA E DE PARAMETRO 2 porque no retorna lo escrito.
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeParaADM.texto);
 		free(mensajeDeADM.texto);
@@ -159,11 +160,12 @@ void hiloCPU(void* datoCPUACastear)
 	status=1;
 	while(status != 0)
 	{	status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
+		if(status==0) break; //CIERRA EL RPOCESO
 		entrada_salida = 0;//REINICIAMOS ESTOS VALORES PARA CADA VEZ QUE LEA UNA NUEVA PCB
 		finArchivo = 0; //Indica el final del mcod
 		datos_CPU.listaRetornos = NULL; // ACA HAGO QUE LA LISTA REINICIE AL LEER UN MCOD COMPLETO,la lista es liberada en la funcion desempaquetar
 		printf("CPU numero: %d \n", datos_CPU.id);
-		printf("PCB RECIBIDO:\n PID: %d \n PATH: %s \n\n",datos_CPU.pid,datos_CPU.path);
+		printf("PCB RECIBIDO: PID: %d  PATH: %s\n",datos_CPU.pid,datos_CPU.path);
 		mCod = fopen(datos_CPU.path, "r");
 		if(mCod==NULL)
 			{
@@ -178,13 +180,11 @@ void hiloCPU(void* datoCPUACastear)
 			datos_CPU.ip++;
 			quantum--; // RESTAMOS EL QUANTUM DESPUES DE LEER UNA LINEA
 			instruccion = interpretarMcod(lineaAEjecutar,&parametro1,parametro2);
-			printf("Ins: %d\n Param1: %d\n Param2: %s\n",instruccion,parametro1,parametro2);
 			ejecutarInstruccion(&datos_CPU, instruccion, parametro1, parametro2, &entrada_salida, &finArchivo, &estado);
 			//printf("%s \n",datos_CPU.listaRetornos->info.texto);
 		}
 		fclose(mCod);
 		tamPayload = desempaquetarLista(&mensajeParaPL, datos_CPU.listaRetornos);//pasa la lista a un array de datos que es mensajeParaPL
-		printf("Todas las instrucciones a devolver son: \n%s", mensajeParaPL); //no se va a mostrar todo porque corta en el \0, muestra 1
 		enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL,tamPayload);
 		free(mensajeParaPL);
 		printf("Termino rafaga\n");

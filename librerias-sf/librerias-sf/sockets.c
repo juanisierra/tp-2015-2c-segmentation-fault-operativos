@@ -246,6 +246,8 @@ int recibirPaginaDeADM(int socket, mensaje_ADM_SWAP* mensajeARecibir, int tamPag
 	if(mensajeARecibir->instruccion==ESCRIBIR){
 	mensajeARecibir->contenidoPagina=malloc(tamPagina);
 	resultado = recv(socket,mensajeARecibir->contenidoPagina,tamPagina,0);
+	} else {
+		mensajeARecibir->contenidoPagina=NULL;
 	}
 	free(buffer);
 	return resultado;
@@ -258,7 +260,7 @@ int enviarDeSwapAlADM(int socket, mensaje_SWAP_ADM* mensajeAEnviar, int tamPagin
 	if(mensajeAEnviar->contenidoPagina!=NULL){
 		buffer = malloc(sizeof(uint32_t) + sizeof(instruccion_t)+ tamPagina);
 	} else{
-		buffer = malloc(sizeof(uint32_t));
+		buffer = malloc(sizeof(uint32_t)+sizeof(instruccion_t));
 	}
 	memcpy(buffer, &(mensajeAEnviar->estado), sizeof(uint32_t));
 	memcpy(buffer+sizeof(uint32_t),&(mensajeAEnviar->instruccion),sizeof(instruccion_t));
@@ -270,7 +272,6 @@ int enviarDeSwapAlADM(int socket, mensaje_SWAP_ADM* mensajeAEnviar, int tamPagin
 		resultado = send(socket, buffer, sizeof(uint32_t)+sizeof(instruccion_t), 0 );
 	}
 	if(mensajeAEnviar->contenidoPagina!=NULL){
-	printf("**********\n Envio texto: %s\n",mensajeAEnviar->contenidoPagina);
 	}
 	free(buffer);
 	return resultado;
@@ -286,6 +287,8 @@ int recibirMensajeDeSwap(int socket, mensaje_SWAP_ADM* mensajeRecibido, int tamP
 	if(mensajeRecibido->instruccion==LEER){
 		mensajeRecibido->contenidoPagina=malloc(tamPagina);
 		resultado = recv(socket, mensajeRecibido->contenidoPagina,tamPagina,0); // BUFFER PAGINA DEBERIA SER CONTENIDOPAGINA
+	} else {
+		mensajeRecibido->contenidoPagina=NULL;
 	}
 	free(buffer);
 	return resultado;

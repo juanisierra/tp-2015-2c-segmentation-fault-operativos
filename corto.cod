@@ -1,3 +1,4 @@
-iniciar 5;
-leer 2;
+iniciar 2;
+leer 0;
+leer 1;
 finalizar;

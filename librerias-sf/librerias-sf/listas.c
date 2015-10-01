@@ -222,14 +222,12 @@ uint32_t desempaquetarLista(void** mensaje, nodo_Retorno_Instruccion* lista) // 
 	*nulo = '\0';
 	nodo_Retorno_Instruccion* aux; //auxiliar para recorrer la lista por primera vez
 	aux = lista;
-	printf("\n %d \n", tamTextoFinal);
 	while(aux != NULL)
 	{
 		tamTextoFinal += aux->info.tamTexto;
 		aux = aux->sgte;
 		i++;
 	}
-	printf("%d \n", tamTextoFinal);
 	(*mensaje) = malloc(tamTextoFinal + 1);
 	for(; j < i; j++)
 	{
