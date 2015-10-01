@@ -124,10 +124,8 @@ void ocupar(int posicion, int espacio)
 			return;
 		}
 		aux= aux->sgte;
-		(aux->ant) = (aBorrar->ant);
-		aBorrar= aBorrar->ant;
-		aBorrar->sgte = aux;
-		aBorrar= aBorrar->sgte;
+		aux->ant = aBorrar->ant;
+		aBorrar->ant->sgte=aux;
 		free(aBorrar);
 		return;
 	}
@@ -652,8 +650,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			if(!i) printf("No se pudo enviar mensaje al ADM\n"); //INSTRUCCION =i, i es la cantidad de datos que enviaa,
 			return 0;
 		}
-		printf("Por liberar memoria para finalizar el proceso\n");
 		liberarMemoria(aBorrar);
+		printf("Se libero la memoria del proceso\n");
 		aEnviar.contenidoPagina=NULL;
 		break;
 
@@ -714,6 +712,45 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 	return 1;
 }
 
+void eliminarListas(void)
+{
+	if(libreRaiz)//si hay nodos libres
+	{
+		espacioLibre* ultimoLibre=libreRaiz;
+		while(ultimoLibre->sgte)
+		{
+			ultimoLibre=ultimoLibre->sgte;
+		}
+		espacioLibre* anterior= ultimoLibre->ant;
+		while(anterior)
+		{
+			free(ultimoLibre);
+			ultimoLibre=anterior;
+			anterior= ultimoLibre->ant;
+		}
+		free(ultimoLibre);
+		libreRaiz=NULL;
+	}
+	if(ocupadoRaiz)//si hay nodos ocupados
+	{
+		espacioOcupado* ultimoOcupado=ocupadoRaiz;
+		while(ultimoOcupado->sgte)
+		{
+			ultimoOcupado=ultimoOcupado->sgte;
+		}
+		espacioLibre* anterior= ultimoOcupado->ant;
+		while(anterior)
+		{
+			free(ultimoOcupado);
+			ultimoOcupado=anterior;
+			anterior= ultimoOcupado->ant;
+		}
+		free(ultimoOcupado);
+		ocupadoRaiz=NULL;
+	}
+	return;
+}
+
 int main()
 {
 	mensaje_ADM_SWAP mensaje;
@@ -751,5 +788,7 @@ int main()
 	}
 	close(socketADM);
 	close(socketEscucha);
+	fclose(archivo);
+	eliminarListas();
 	return 0;
 }

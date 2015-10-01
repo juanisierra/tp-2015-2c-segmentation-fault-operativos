@@ -1,7 +1,2 @@
 iniciar 5;
-escribir 2 "hol";
-leer 2;
-escribir 4 "jua";
-leer 2;
-leer 4;
 finalizar;
