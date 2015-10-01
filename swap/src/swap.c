@@ -626,11 +626,11 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 	{
 	case INICIAR:
 		resultado=asignarMemoria(mensaje.pid, mensaje.parametro);// aca el comienzo esta en tres lo cual es muy raro, deberia ser 1
+		aEnviar.contenidoPagina=NULL;
 		if (resultado==0)
 		{
 			aEnviar.estado=1; //ESTO LO HABIA TOCADO JUANI, LO VUELVO COMO ESTABA
 			aEnviar.instruccion=mensaje.instruccion;
-			aEnviar.contenidoPagina=NULL;
 			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
 			printf("mensaje enviado: %d %d\n",aEnviar.estado,aEnviar.instruccion);
 			if(!i) printf("No se pudo enviar mensaje al ADM\n"); // Distinto de i no sirve, i es cuanto manda.--------------------
@@ -641,12 +641,12 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 	case FINALIZAR:
 		aBorrar=ocupadoRaiz;
 		while (aBorrar && aBorrar->pid != mensaje.pid) aBorrar= aBorrar->sgte;
+		aEnviar.contenidoPagina=NULL;
 		if(!aBorrar)
 		{
 			printf ("El proceso no se encuentra en el swap \n");
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
-			aEnviar.contenidoPagina=NULL;
 			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
 			if(!i) printf("No se pudo enviar mensaje al ADM\n"); //INSTRUCCION =i, i es la cantidad de datos que enviaa,
 			return 0;
@@ -671,7 +671,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 			return 0;
 		}
 		char* leido= leer(aLeer, mensaje.parametro);
-		aEnviar.contenidoPagina= leido;
+		aEnviar.contenidoPagina=malloc(configuracion.TAMANIO_PAGINA);
+		memcpy((aEnviar.contenidoPagina),leido,configuracion.TAMANIO_PAGINA); //COPIO Y FATA FREE DE AENVIAR
 		free(leido);//creo que aca hariamos el free,dsp corramos valgrid
 		break;
 
@@ -679,12 +680,13 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)// dsp juani revi
 
 		aEscribir=ocupadoRaiz;
 		while(aEscribir && aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
+		aEnviar.contenidoPagina=NULL;
 		if(!aEscribir)
 		{
 			printf ("El proceso no se encuentra en el swap \n");
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
-			aEnviar.contenidoPagina=NULL;
+
 			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
 			if(!i) printf("No se pudo enviar mensaje al ADM\n");
 			return 0;

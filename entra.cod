@@ -1,0 +1,4 @@
+iniciar 64;
+leer 0;
+leer 63;
+finalizar;

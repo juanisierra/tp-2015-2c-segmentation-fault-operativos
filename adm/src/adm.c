@@ -119,7 +119,8 @@ int main()
 		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 		mensajeAMandar.parametro=mensajeDeSWAP.estado;
 		mensajeAMandar.tamanoMensaje = strlen(mensajeDeSWAP.contenidoPagina) +1;
-		strcpy(mensajeAMandar.texto,mensajeDeSWAP.contenidoPagina);
+		mensajeAMandar.texto=malloc(mensajeAMandar.tamanoMensaje);
+		strcpy(mensajeAMandar.texto,mensajeDeSWAP.contenidoPagina); /// NO SIRVE CON LAS A PORUQE NO LLEVAN /0
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 		free(mensajeDeSWAP.contenidoPagina);
 		mensajeDeSWAP.contenidoPagina=NULL;

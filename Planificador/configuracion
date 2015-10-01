@@ -1,4 +1,0 @@
-#[Archivo de Configuracion del Planificador]
-PUERTO_ESCUCHA = "6575"
-ALGORITMO_PLANIFICACION = "FIFO"
-QUANTUM = "3"
