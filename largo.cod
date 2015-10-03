@@ -4,7 +4,7 @@ leer 1;
 leer 2;
 leer 3;
 leer 4;
-escribir 9 "error";
+leer 8;
 leer 9;
 leer 7;
 leer 6;
