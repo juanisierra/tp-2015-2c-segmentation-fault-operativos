@@ -209,7 +209,7 @@ int main(void)
 		}
 
 	for(i = 0;i < configuracion.CANTIDAD_HILOS; i++) // Vamos creando un hilo por cada CPU.
-	{
+	{	printf("creando CPU %d\n",i);
 		CPUs[i].id = i;
 		if((CPUs[i].socket = crearSocketCliente(configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR))<0) // ponemos el socket de cada CPU
 		{
@@ -217,12 +217,10 @@ int main(void)
 			return 0;
 		}
 		pthread_create(&CPUs[i].thread, NULL, (void*)hiloCPU, (void*) &(CPUs[i]));
-		i++;
 	}
 	for(i = 0;i < configuracion.CANTIDAD_HILOS; i++)// hacemos los join de cada cpu para que no corte antes.
 	{
 		pthread_join(CPUs[i].thread, NULL);
-		i++;
 	}
 	close(socketADM);
 	return 0;

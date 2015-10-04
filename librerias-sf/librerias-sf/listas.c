@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include "tiposDato.h"
 #include <string.h>
+#include <pthread.h>
+#include <semaphore.h>
 nodoPCB* ultimoNodoPCB(nodoPCB* raiz)
 {
 	nodoPCB* aux=raiz;
@@ -242,3 +244,103 @@ uint32_t desempaquetarLista(void** mensaje, nodo_Retorno_Instruccion* lista) // 
 	free(nulo);//libero la memoria del nulo
 	return tamTextoFinal + 1; // retorna el tamaño final del payload con el nulo incluido
 }
+
+nodo_Lista_CPU* ultimoNodoCPU(nodo_Lista_CPU* raiz)
+{
+	nodo_Lista_CPU* aux;
+	aux=raiz;
+	if(aux!=NULL){
+    while(aux->sgte)
+    {
+        aux=aux->sgte;
+    }
+	}
+    return aux;
+}
+void agregarCPU(pthread_mutex_t* mutexCPU, sem_t* SEMAFOROCPULIBRES,int cuentaCPU, int socket,nodo_Lista_CPU** raiz )
+{
+	nodo_Lista_CPU* ultimoNodo;
+	nodo_Lista_CPU* aAgregar;
+	aAgregar=malloc(sizeof(nodo_Lista_CPU));
+	aAgregar->id=cuentaCPU;
+	aAgregar->socket=socket;
+	pthread_mutex_lock(mutexCPU);
+	ultimoNodo=ultimoNodoCPU(*raiz);
+	if(ultimoNodo!=NULL){
+	ultimoNodo->sgte=aAgregar;
+	} else {
+		(*raiz)=aAgregar;
+	}
+	aAgregar->ant=ultimoNodo;
+	aAgregar->sgte=NULL;
+	aAgregar->ejecutando=NULL;
+	aAgregar->finalizar=0;
+	pthread_mutex_unlock(mutexCPU);
+	sem_post(SEMAFOROCPULIBRES);
+	return;
+}
+nodo_Lista_CPU* buscarCPU(int id,nodo_Lista_CPU* raiz)
+{
+	nodo_Lista_CPU*aux;
+	aux=raiz;
+	while(aux!=NULL && aux->id!=id) aux=aux->sgte;
+	return aux;
+}
+void eliminarCPU(int id, sem_t* SEMAFOROCPULIBRES,nodo_Lista_CPU** raiz)
+{
+	nodo_Lista_CPU*aBorrar;
+	aBorrar=buscarCPU(id,*raiz);
+	if(aBorrar!=NULL && aBorrar->ant!=NULL)
+	{
+	aBorrar->ant->sgte=aBorrar->sgte;
+	}
+	if(aBorrar!=NULL && aBorrar->sgte!=NULL)
+	{
+		aBorrar->sgte->ant=aBorrar->ant;
+	}
+	if(*raiz==aBorrar) (*raiz)=NULL;
+	if(aBorrar->ejecutando==NULL)
+	{
+		sem_wait(SEMAFOROCPULIBRES); //Si ya estaba ejecutando no hace falta bajar los cpus libreas.
+	}
+	if(aBorrar->ejecutando!=NULL)
+	{
+		printf("El Proceso %d finaliza fallidamente debido a una falla en el CPU\n",aBorrar->ejecutando->info.pid);
+		free(aBorrar->ejecutando);
+	}
+	if(aBorrar!=NULL) free(aBorrar);
+}
+nodo_Lista_CPU* primerCPULibre(nodo_Lista_CPU* raiz)
+{	nodo_Lista_CPU* aux;
+	aux=raiz;
+	while(aux!=NULL && aux->ejecutando!=NULL) aux=aux->sgte;
+	return aux;
+}
+int cantidadCPUS(nodo_Lista_CPU* raiz)
+{	int i=1;
+	nodo_Lista_CPU*aux;
+	aux=raiz;
+	if(aux==NULL) return 0;
+	while(aux->sgte!=NULL)
+	{
+		i++;
+		aux=aux->sgte;
+	}
+	return i;
+}
+int socketCPUPosicion(nodo_Lista_CPU* raiz,int posicion)
+{	int i;
+	nodo_Lista_CPU* aux;
+	aux=raiz;
+	for(i=0; i<posicion;i++) aux=aux->sgte;
+	return aux->socket;
+}
+nodo_Lista_CPU*CPUPosicion(nodo_Lista_CPU* raiz,int posicion)
+{	int i;
+	nodo_Lista_CPU* aux;
+	aux=raiz;
+	for(i=0; i<posicion;i++) aux=aux->sgte;
+	return aux;
+}
+
+

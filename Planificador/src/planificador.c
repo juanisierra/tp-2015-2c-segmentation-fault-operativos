@@ -9,20 +9,26 @@
 #include <librerias-sf/tiposDato.h>
 #include <pthread.h>
 #include <librerias-sf/strings.h>
+#include <librerias-sf/listas.h>
 #include <semaphore.h>
+#include<sys/time.h>
 #define TAMANOCONSOLA 1024
 #define RUTACONFIG "configuracionPlanificador"
 
 //variables globales (usar con cuidado)
 
 config_pl configuracion;
-nodo_Lista_CPU CPU1; //Va a ser lista
+nodo_Lista_CPU* raizCPUS; //Va a ser lista
 pthread_mutex_t MUTEXLISTOS;
 pthread_mutex_t MUTEXBLOQUEADOS;
+pthread_mutex_t MUTEXCPUS;
 pthread_t hConsola;
+pthread_t hEnvios;
+pthread_t hRecibir;
 nodoPCB* raizListos;
 nodoPCB* raizBloqueados;
 pthread_t hServer;
+sem_t SEMAFOROCPUSLIBRES;
 sem_t SEMAFOROLISTOS;
 sem_t SEMAFOROBLOQUEADOS;
 int socketEscucha;
@@ -69,8 +75,8 @@ void hiloConsola(void)
 			pid_cuenta++; //Aumenta PID
 			pthread_mutex_unlock(&MUTEXLISTOS);
 			sem_post(&SEMAFOROLISTOS);
-		}
-		if(strcmp(instruccion,"finalizar")==0)
+		} //FALTA FINALIZAR
+		/*if(strcmp(instruccion,"finalizar")==0)
 		{		pthread_mutex_lock(&(CPU1.MUTEXCPU)); //CAMBIAR PARA MUCHOS CPU***************************************************************************************************************
 		printf("POR FINALIZAR PID: %d\n",atoi(parametro));
 		if(CPU1.ejecutando->info.pid==atoi(parametro))
@@ -96,27 +102,26 @@ void hiloConsola(void)
 			pthread_mutex_unlock(&MUTEXBLOQUEADOS);
 			}
 		}
+		*/
 	}
-	close(CPU1.socket); // Al terminar la consola no hace mas falta el cpu.
-	printf("cierro socket cpu\n");
+
 	return;
 }
 
-void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
+void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Lista_CPU* CPU)
 {	printf("RECIBI DENUEVO PCB\n");
 	switch(mensajeRecibido->nuevoEstado)
 	{
 	case LISTO:
-	{	pthread_mutex_lock(&(CPU1.MUTEXCPU));
-	if(CPU1.finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR
+	{
+	if(CPU->finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR
 		{(*PCB)->info.ip=mensajeRecibido->ip;
 		}
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		sem_post(&SEMAFOROLISTOS);
 		pthread_mutex_lock(&MUTEXLISTOS);					//MUTEX ADENTRO DE OTRO< CUIDADOOO, ADEMAS CAMBIAR PARA MUCHOS CPU
 		agregarNodoPCB(&raizListos,*PCB);
-		pthread_mutex_unlock(&MUTEXLISTOS);
-		pthread_mutex_unlock(&(CPU1.MUTEXCPU));
+		pthread_mutex_unlock(&MUTEXLISTOS);;
 		printf("EL PCB MANDADO A LA LISTA TIENE PID %d\n",(*PCB)->info.pid);
 		(*PCB)=NULL;
 		break;
@@ -129,8 +134,8 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
 		break;
 	}
 	case BLOQUEADO:
-	{	pthread_mutex_lock(&(CPU1.MUTEXCPU));
-	if(CPU1.finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR  //MUTEX DENTRO DE OTRO Y CAMBIAR PARA MAS DE UN CPU
+	{
+	if(CPU->finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR  //MUTEX DENTRO DE OTRO Y CAMBIAR PARA MAS DE UN CPU
 			{(*PCB)->info.ip=mensajeRecibido->ip;
 			}
 	(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
@@ -139,7 +144,6 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
 	pthread_mutex_lock(&MUTEXBLOQUEADOS);
 	agregarNodoPCB(&raizBloqueados,*PCB);
 	pthread_mutex_unlock(&MUTEXBLOQUEADOS);
-	pthread_mutex_unlock(&(CPU1.MUTEXCPU));
 	(*PCB)=NULL;
 		break;
 	}
@@ -165,7 +169,7 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB)
 	return;
 }
 
-
+/*
 void manejadorCPU(void) //id Que CPU SOS
 {	mensaje_CPU_PL mensajeRecibido;
 	mensaje_CPU_PL chequeoDeStatus;
@@ -188,6 +192,7 @@ void manejadorCPU(void) //id Que CPU SOS
 		printf("\nPor enviar a ejecutar: Path: %s Pid: %d\n",CPU1.ejecutando->info.path,CPU1.ejecutando->info.pid);
 		pthread_mutex_unlock(&MUTEXLISTOS);
 		enviarPCB(CPU1.socket,CPU1.ejecutando,quantum);
+
 		status=recibirPCBDeCPU(CPU1.socket,&mensajeRecibido);//DEFINIR y cuidado con IP al finalziar
 		if(status==0) break;
 		interPretarMensajeCPU(&mensajeRecibido,&(CPU1.ejecutando));
@@ -195,9 +200,10 @@ void manejadorCPU(void) //id Que CPU SOS
 		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
 	}
 	return;
-}
+} */
 int hiloServidor(void)
-{
+{	int cuentaCPU=0;
+	int socketCPU;
 	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
 	if(socketEscucha < 0)
 	{
@@ -214,34 +220,113 @@ int hiloServidor(void)
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones en puerto %s \n",configuracion.PUERTO_ESCUCHA);
 
-	////***************************CREACION DEL CPU1********************
-	CPU1.id = 1;
-	CPU1.finalizar=0;
-	pthread_mutex_init(&(CPU1.MUTEXCPU),NULL);
-	CPU1.socket = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
-	pthread_create(&(CPU1.thread),NULL, manejadorCPU,NULL); //Chequear pasaje de parametro de id del cpu.
-	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
-	pthread_mutex_destroy(&(CPU1.MUTEXCPU));
+	while(1){ //FALTA CONDICION DE CORTE
+	////***************************CREACION DEL CPU********************
+		printf("esperando Otro\n");
+	socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
+	printf("Por agrega CPU\n");
+	agregarCPU(&MUTEXCPUS,&SEMAFOROCPUSLIBRES,cuentaCPU,socketCPU,&raizCPUS);
+	cuentaCPU++;
+	printf("Se conecto el CPU %d\n",cuentaCPU-1);
+	}
 	close(socketEscucha); //DEJO DE ESCUCHAR AL FINALIZAR LA CONSOLA
 	printf("cierro socket escucha\n");
 	return 0;
 }
+int hiloEnvios (void)
+{	 nodo_Lista_CPU* cpuAEnviar;
+	while(1) //FALTA CONDICION
+	{
+		sem_wait(&SEMAFOROLISTOS);
+		sem_wait(&SEMAFOROCPUSLIBRES);
+		pthread_mutex_lock(&MUTEXLISTOS);
+		pthread_mutex_lock(&MUTEXCPUS);
+		cpuAEnviar=primerCPULibre(raizCPUS);
+		cpuAEnviar->ejecutando=sacarNodoPCB(&raizListos);
+		printf("\nPor enviar a ejecutar a CPU %d: Path: %s Pid: %d\n",cpuAEnviar->id,cpuAEnviar->ejecutando->info.path,cpuAEnviar->ejecutando->info.pid);
+		pthread_mutex_unlock(&MUTEXLISTOS);
+		enviarPCB(cpuAEnviar->socket,cpuAEnviar->ejecutando,quantum);
+		pthread_mutex_unlock(&MUTEXCPUS);
+	}
+}
+int hiloRecibir (void)
+{	struct timeval tiempo;
+	tiempo.tv_sec=1;
+	tiempo.tv_usec=0;
 
+	fd_set fdLeer;
+	fd_set fdACerrar;
+	nodo_Lista_CPU* aux;
+	int i=0;
+	int status;
+	int maximoSocket=0;
+	char buffer[100]; //Para guardarLoRecibido
+	mensaje_CPU_PL mensajeRecibido;
+	printf("Estoy por entrar en el bucle de receive\n");
+	while(1) //Condicion de corte-----------------------------
+	{
+	pthread_mutex_lock(&MUTEXCPUS);
+	for(i=0;i<cantidadCPUS(raizCPUS);i++)
+	{
+		FD_SET(socketCPUPosicion(raizCPUS,i),&fdLeer);
+		FD_SET(socketCPUPosicion(raizCPUS,i),&fdACerrar);
+		if(socketCPUPosicion(raizCPUS,i) > maximoSocket) maximoSocket=socketCPUPosicion(raizCPUS,i); //Setea el maximo numero de descriptor.
+	}
+	pthread_mutex_unlock(&MUTEXCPUS);
+	select(maximoSocket+1,&fdLeer,NULL,&fdACerrar,&tiempo);
+	pthread_mutex_lock(&MUTEXCPUS);
+	for(i=0;i<cantidadCPUS(raizCPUS);i++) //CHEQUEA CUALES SE CERRARON
+	{
+		aux=CPUPosicion(raizCPUS,i);
+		if(FD_ISSET(aux->socket,&fdACerrar))
+		{
+		status=	recv(aux->socket,&buffer,sizeof(mensaje_CPU_PL),MSG_PEEK | MSG_DONTWAIT);
+		if(status==0){
+			close(aux->socket);
+			eliminarCPU(aux->id,&SEMAFOROCPUSLIBRES,&raizCPUS);
+		}
+		}
+	}
+	for(i=0;i<cantidadCPUS(raizCPUS);i++)  //CHEQUEA CUALES MANDARON COSAS
+	{	aux=CPUPosicion(raizCPUS,i);
+		if(FD_ISSET(aux->socket,&fdLeer))
+		{
+		status=	status=recibirPCBDeCPU(aux->socket,&mensajeRecibido);
+		interPretarMensajeCPU(&mensajeRecibido,&(aux->ejecutando),aux);
+		printf("La rafaga fue: %s\n",mensajeRecibido.payload);
+		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
+		aux->ejecutando=NULL;
+		sem_post(&SEMAFOROCPUSLIBRES);
+		}
+	}
+	pthread_mutex_unlock(&MUTEXCPUS);
+	}
+	return 0;
+}
 int main()
-{
+{	raizCPUS=NULL;
+int statusP;
 	pthread_mutex_init(&MUTEXLISTOS,NULL); //Inicializacion de los semaforos
 	pthread_mutex_init(&MUTEXBLOQUEADOS,NULL);
+	pthread_mutex_init(&MUTEXCPUS,NULL);
 	sem_init(&SEMAFOROLISTOS,0,0);
 	sem_init(&SEMAFOROBLOQUEADOS,0,0);
+	sem_init(&SEMAFOROCPUSLIBRES,0,0);
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	if(configuracion.ALGORITMO_PLANIFICACION==1) quantum= -2;
 	if(configuracion.ALGORITMO_PLANIFICACION==2) quantum=configuracion.QUANTUM;
 	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
 	pthread_create(&hServer,NULL,hiloServidor,NULL);
-	pthread_join(hServer,NULL);
+	pthread_create(&hEnvios,NULL,hiloEnvios,NULL); //VER JOINS
+	printf("Por crear hilo Recibir\n");
+	statusP= pthread_create(&hRecibir,NULL,hiloRecibir,NULL);
+	printf("Cree el hilo recibir %d\n",statusP);
+	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
+	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
 	pthread_mutex_destroy(&MUTEXLISTOS);
 	pthread_mutex_destroy(&MUTEXBLOQUEADOS);
+	pthread_mutex_destroy(&MUTEXCPUS);
+	sem_destroy(&SEMAFOROCPUSLIBRES);
 	sem_destroy(&SEMAFOROLISTOS);
 	sem_destroy(&SEMAFOROBLOQUEADOS);
 	return 0;
