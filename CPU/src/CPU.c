@@ -110,7 +110,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		mensajeDeADM.tamanoMensaje = 0;
 		mensajeDeADM.texto = NULL;
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
-		(*entrada_salida) = 1; // marcara el tiempo de bloqueo
+		(*entrada_salida) = parametro1; // marcara el tiempo de bloqueo
 		break;
 	}
 

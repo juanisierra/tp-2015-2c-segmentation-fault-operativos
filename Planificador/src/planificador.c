@@ -22,6 +22,7 @@ nodo_Lista_CPU* raizCPUS; //Va a ser lista
 pthread_mutex_t MUTEXLISTOS;
 pthread_mutex_t MUTEXBLOQUEADOS;
 pthread_mutex_t MUTEXCPUS;
+pthread_t hBloqueados;
 pthread_t hConsola;
 pthread_t hEnvios;
 pthread_t hRecibir;
@@ -107,7 +108,23 @@ void hiloConsola(void)
 
 	return;
 }
+void hiloBloqueados(void)
+{	nodoPCB* PCBBloqueado;
+	while(1)   //FALTA CONDICION DE CORTEEE
+	{	sem_wait(&SEMAFOROBLOQUEADOS);
+		pthread_mutex_lock(&MUTEXBLOQUEADOS);
+		PCBBloqueado=sacarNodoPCB(&raizBloqueados);
+		pthread_mutex_unlock(&MUTEXBLOQUEADOS);
+		sleep(PCBBloqueado->info.bloqueo);
+		PCBBloqueado->info.bloqueo=0;
+		PCBBloqueado->info.estado=LISTO;
+		pthread_mutex_lock(&MUTEXLISTOS);
+		agregarNodoPCB(&raizListos,PCBBloqueado);
+		pthread_mutex_unlock(&MUTEXLISTOS);
+		sem_post(&SEMAFOROLISTOS);
+	}
 
+}
 void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Lista_CPU* CPU)
 {	printf("RECIBI DENUEVO PCB\n");
 	switch(mensajeRecibido->nuevoEstado)
@@ -121,7 +138,7 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		sem_post(&SEMAFOROLISTOS);
 		pthread_mutex_lock(&MUTEXLISTOS);					//MUTEX ADENTRO DE OTRO< CUIDADOOO, ADEMAS CAMBIAR PARA MUCHOS CPU
 		agregarNodoPCB(&raizListos,*PCB);
-		pthread_mutex_unlock(&MUTEXLISTOS);;
+		pthread_mutex_unlock(&MUTEXLISTOS);
 		printf("EL PCB MANDADO A LA LISTA TIENE PID %d\n",(*PCB)->info.pid);
 		(*PCB)=NULL;
 		break;
@@ -140,10 +157,10 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 			}
 	(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 	(*PCB)->info.bloqueo=mensajeRecibido->tiempoBloqueo;
-	sem_post(&SEMAFOROBLOQUEADOS);
 	pthread_mutex_lock(&MUTEXBLOQUEADOS);
 	agregarNodoPCB(&raizBloqueados,*PCB);
 	pthread_mutex_unlock(&MUTEXBLOQUEADOS);
+	sem_post(&SEMAFOROBLOQUEADOS);
 	(*PCB)=NULL;
 		break;
 	}
@@ -169,38 +186,6 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 	return;
 }
 
-/*
-void manejadorCPU(void) //id Que CPU SOS
-{	mensaje_CPU_PL mensajeRecibido;
-	mensaje_CPU_PL chequeoDeStatus;
-	int status=1;
-	while(status!=0) // AGEGAR CORTE // ESTA RARO, no sirve con el join
-	{	sleep(4);
-		sem_wait(&SEMAFOROLISTOS);
-		pthread_mutex_lock(&MUTEXLISTOS);
-		if(recv(CPU1.socket,&chequeoDeStatus,sizeof(mensaje_CPU_PL),MSG_PEEK | MSG_DONTWAIT)==0) //Chequeo si esta prendido el socket.
-		{
-			printf("Se desconecto el CPU1\n");
-			pthread_mutex_unlock(&MUTEXLISTOS);
-			return;
-		}
-
-		CPU1.ejecutando=sacarNodoPCB(&raizListos);
-		CPU1.ejecutando->info.estado=EJECUTANDO;
-		CPU1.ant=NULL;
-		CPU1.sgte=NULL;
-		printf("\nPor enviar a ejecutar: Path: %s Pid: %d\n",CPU1.ejecutando->info.path,CPU1.ejecutando->info.pid);
-		pthread_mutex_unlock(&MUTEXLISTOS);
-		enviarPCB(CPU1.socket,CPU1.ejecutando,quantum);
-
-		status=recibirPCBDeCPU(CPU1.socket,&mensajeRecibido);//DEFINIR y cuidado con IP al finalziar
-		if(status==0) break;
-		interPretarMensajeCPU(&mensajeRecibido,&(CPU1.ejecutando));
-		printf("La rafaga fue: %s\n",mensajeRecibido.payload);
-		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
-	}
-	return;
-} */
 int hiloServidor(void)
 {	int cuentaCPU=0;
 	int socketCPU;
@@ -243,6 +228,7 @@ int hiloEnvios (void)
 		pthread_mutex_lock(&MUTEXCPUS);
 		cpuAEnviar=primerCPULibre(raizCPUS);
 		cpuAEnviar->ejecutando=sacarNodoPCB(&raizListos);
+		cpuAEnviar->ejecutando->info.estado=EJECUTANDO;
 		printf("\nPor enviar a ejecutar a CPU %d: Path: %s Pid: %d\n",cpuAEnviar->id,cpuAEnviar->ejecutando->info.path,cpuAEnviar->ejecutando->info.pid);
 		pthread_mutex_unlock(&MUTEXLISTOS);
 		enviarPCB(cpuAEnviar->socket,cpuAEnviar->ejecutando,quantum);
@@ -305,7 +291,7 @@ int hiloRecibir (void)
 }
 int main()
 {	raizCPUS=NULL;
-int statusP;
+	raizBloqueados=NULL;
 	pthread_mutex_init(&MUTEXLISTOS,NULL); //Inicializacion de los semaforos
 	pthread_mutex_init(&MUTEXBLOQUEADOS,NULL);
 	pthread_mutex_init(&MUTEXCPUS,NULL);
@@ -318,9 +304,9 @@ int statusP;
 	printf("Bienvenido al proceso planificador \nEstableciendo conexion.. \n");
 	pthread_create(&hServer,NULL,hiloServidor,NULL);
 	pthread_create(&hEnvios,NULL,hiloEnvios,NULL); //VER JOINS
+	pthread_create(&hBloqueados,NULL,hiloBloqueados,NULL); //VER JOINS
 	printf("Por crear hilo Recibir\n");
-	statusP= pthread_create(&hRecibir,NULL,hiloRecibir,NULL);
-	printf("Cree el hilo recibir %d\n",statusP);
+	 pthread_create(&hRecibir,NULL,hiloRecibir,NULL);
 	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
 	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
 	pthread_mutex_destroy(&MUTEXLISTOS);
