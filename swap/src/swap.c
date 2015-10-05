@@ -184,7 +184,7 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 al
 }
 
 void desfragmentar(void)
-{
+{ printf("Por desfragmentar\n");
 	int sizeLibres=0;
 	espacioLibre* auxLibre=libreRaiz;
 	while(auxLibre)//contamos cuantos espacios libres hay
@@ -226,6 +226,7 @@ void desfragmentar(void)
             }
         }
     }
+    printf("Desfragmentado\n");
     return;
 }
 

@@ -19,9 +19,11 @@
 
 config_pl configuracion;
 nodo_Lista_CPU* raizCPUS; //Va a ser lista
+nodoPCB* PCBBloqueado; //PCB QUE ESTA SIENDO BLOQEUADO EN ES
 pthread_mutex_t MUTEXLISTOS;
 pthread_mutex_t MUTEXBLOQUEADOS;
 pthread_mutex_t MUTEXCPUS;
+pthread_mutex_t MUTEXPROCESOBLOQUEADO; //Se usa para finalizar el proceso que esta siendo bloqueado en el hilo de bloqueos.
 pthread_t hBloqueados;
 pthread_t hConsola;
 pthread_t hEnvios;
@@ -58,9 +60,11 @@ void hiloConsola(void)
 	char ingresado[TAMANOCONSOLA];
 	char instruccion[20];
 	char parametro[50];
+	int i;
 	int pid_cuenta =0; //PID ACTUAL
 	nodoPCB* aFinalizar;
-	aFinalizar=NULL;////////////////////*
+	nodo_Lista_CPU* CPUAux; // Contiene el cpu que se esta chequeando para ver si hay que finalizar su proceso.
+	aFinalizar=NULL;
 	raizListos=NULL;
 	printf("Conectado al CPU, ya puede enviar mensajes. Escriba 'salir' para salir\n");
 	while(estado_consola)
@@ -69,6 +73,10 @@ void hiloConsola(void)
 		separarInstruccionParametro(ingresado,instruccion,parametro);
 		//leemos por teclado instruccion y parametro
 		if (strcmp(instruccion,"salir")==0) estado_consola = 0;// Chequeo que el usuario no quiera salir
+		if(strcmp(instruccion,"ps")==0)
+		{
+		mostrarPCBS(raizListos, raizBloqueados,PCBBloqueado,raizCPUS);
+		}
 		if(strcmp(instruccion,"correr")==0)//el usuario corre un programa
 		{
 			pthread_mutex_lock(&MUTEXLISTOS);
@@ -77,19 +85,32 @@ void hiloConsola(void)
 			pthread_mutex_unlock(&MUTEXLISTOS);
 			sem_post(&SEMAFOROLISTOS);
 		} //FALTA FINALIZAR
-		/*if(strcmp(instruccion,"finalizar")==0)
-		{		pthread_mutex_lock(&(CPU1.MUTEXCPU)); //CAMBIAR PARA MUCHOS CPU***************************************************************************************************************
+		if(strcmp(instruccion,"finalizar")==0)
+		{		pthread_mutex_lock(&MUTEXCPUS); //CAMBIAR PARA MUCHOS CPU***************************************************************************************************************
 		printf("POR FINALIZAR PID: %d\n",atoi(parametro));
-		if(CPU1.ejecutando->info.pid==atoi(parametro))
-					{ aFinalizar=CPU1.ejecutando;
-					CPU1.ejecutando->info.ip=ultimaLinea(CPU1.ejecutando->info.path);
-					CPU1.finalizar=1;
-					printf("puesto para finalzia en cpu1\n");
-					} else {
-						aFinalizar=NULL;
-					}
-					pthread_mutex_unlock(&(CPU1.MUTEXCPU));
+		aFinalizar=NULL;
+		CPUAux=NULL;
+		for(i=0;i<cantidadCPUS(raizCPUS);i++)
+		{
+			CPUAux=CPUPosicion(raizCPUS,i);
+			if( CPUAux->ejecutando!=NULL && CPUAux->ejecutando->info.pid==atoi(parametro))
+			{
+				aFinalizar=CPUAux->ejecutando;
+				CPUAux->ejecutando->info.ip=ultimaLinea(CPUAux->ejecutando->info.path);
+				CPUAux->finalizar=1;
+			}
 
+		}
+			pthread_mutex_unlock(&MUTEXCPUS);
+			if(aFinalizar==NULL) { //LO BUSCA EN EL HILO DE BLOQUEOS
+				pthread_mutex_lock(&MUTEXPROCESOBLOQUEADO);
+				if(PCBBloqueado->info.pid==atoi(parametro))
+					{
+					PCBBloqueado->info.ip=ultimaLinea(PCBBloqueado->info.path);
+					aFinalizar=PCBBloqueado;
+					}
+				pthread_mutex_unlock(&MUTEXPROCESOBLOQUEADO);
+			}
 			if(aFinalizar==NULL){
 			pthread_mutex_lock(&MUTEXLISTOS);
 			aFinalizar=buscarNodoPCB(raizListos,atoi(parametro));
@@ -103,25 +124,28 @@ void hiloConsola(void)
 			pthread_mutex_unlock(&MUTEXBLOQUEADOS);
 			}
 		}
-		*/
+
 	}
 
 	return;
 }
 void hiloBloqueados(void)
-{	nodoPCB* PCBBloqueado;
+{
 	while(1)   //FALTA CONDICION DE CORTEEE
 	{	sem_wait(&SEMAFOROBLOQUEADOS);
 		pthread_mutex_lock(&MUTEXBLOQUEADOS);
 		PCBBloqueado=sacarNodoPCB(&raizBloqueados);
-		pthread_mutex_unlock(&MUTEXBLOQUEADOS);
+		pthread_mutex_unlock(&MUTEXBLOQUEADOS);  //MUTEX DENTRO DE MUTEX!!!!!!!!!!!!!!!!!
 		sleep(PCBBloqueado->info.bloqueo);
+		pthread_mutex_lock(&MUTEXPROCESOBLOQUEADO);
 		PCBBloqueado->info.bloqueo=0;
 		PCBBloqueado->info.estado=LISTO;
 		pthread_mutex_lock(&MUTEXLISTOS);
 		agregarNodoPCB(&raizListos,PCBBloqueado);
 		pthread_mutex_unlock(&MUTEXLISTOS);
+		pthread_mutex_unlock(&MUTEXPROCESOBLOQUEADO);
 		sem_post(&SEMAFOROLISTOS);
+		PCBBloqueado=NULL;
 	}
 
 }
@@ -135,10 +159,10 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		{(*PCB)->info.ip=mensajeRecibido->ip;
 		}
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
-		sem_post(&SEMAFOROLISTOS);
 		pthread_mutex_lock(&MUTEXLISTOS);					//MUTEX ADENTRO DE OTRO< CUIDADOOO, ADEMAS CAMBIAR PARA MUCHOS CPU
 		agregarNodoPCB(&raizListos,*PCB);
 		pthread_mutex_unlock(&MUTEXLISTOS);
+		sem_post(&SEMAFOROLISTOS);
 		printf("EL PCB MANDADO A LA LISTA TIENE PID %d\n",(*PCB)->info.pid);
 		(*PCB)=NULL;
 		break;
@@ -181,8 +205,9 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		free(*PCB);
 		(*PCB)=NULL;
 		break;
-}
 	}
+	}
+	CPU->finalizar=0; //Vuelve a poner en 0 para que pueda ejecutar denuevo.
 	return;
 }
 
@@ -294,6 +319,7 @@ int main()
 	raizBloqueados=NULL;
 	pthread_mutex_init(&MUTEXLISTOS,NULL); //Inicializacion de los semaforos
 	pthread_mutex_init(&MUTEXBLOQUEADOS,NULL);
+	pthread_mutex_init(&MUTEXPROCESOBLOQUEADO,NULL);
 	pthread_mutex_init(&MUTEXCPUS,NULL);
 	sem_init(&SEMAFOROLISTOS,0,0);
 	sem_init(&SEMAFOROBLOQUEADOS,0,0);
@@ -311,6 +337,7 @@ int main()
 	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
 	pthread_mutex_destroy(&MUTEXLISTOS);
 	pthread_mutex_destroy(&MUTEXBLOQUEADOS);
+	pthread_mutex_destroy(&MUTEXPROCESOBLOQUEADO);
 	pthread_mutex_destroy(&MUTEXCPUS);
 	sem_destroy(&SEMAFOROCPUSLIBRES);
 	sem_destroy(&SEMAFOROLISTOS);

@@ -342,5 +342,55 @@ nodo_Lista_CPU*CPUPosicion(nodo_Lista_CPU* raiz,int posicion)
 	for(i=0; i<posicion;i++) aux=aux->sgte;
 	return aux;
 }
+void mostrarPCBS(nodoPCB*raizListos, nodoPCB*raizBloqueados,nodoPCB*siendoBloqueado,nodo_Lista_CPU*raizCPUS)
+{
+	nodoPCB*auxPCB;
+	nodo_Lista_CPU*CPUAux;
+	int i;
+	int cuenta=0;
+	if(raizListos!=NULL)
+	{	auxPCB=raizListos;
+		while(auxPCB!=NULL && auxPCB->ant!=NULL)
+		{
+			printf("mProc %d: %s -> Listo\n",auxPCB->info.pid,auxPCB->info.path);
+			auxPCB=auxPCB->ant;
+			cuenta++;
+		}
+		if(auxPCB!=NULL)
+			{
+			printf("mProc %d: %s -> Listo\n",auxPCB->info.pid,auxPCB->info.path);
+			cuenta++;
+			}
+	}
+	if(raizBloqueados!=NULL)
+		{	auxPCB=raizBloqueados;
+			while(auxPCB!=NULL && auxPCB->ant!=NULL)
+			{
+				printf("mProc %d: %s -> Bloqueado\n",auxPCB->info.pid,auxPCB->info.path);
+				auxPCB=auxPCB->ant;
+				cuenta++;
+			}
+			if(auxPCB!=NULL)
+				{
+				printf("mProc %d: %s -> Bloqueado\n",auxPCB->info.pid,auxPCB->info.path);
+				cuenta++;
+				}
+		}
+	if(siendoBloqueado!=NULL)
+		{
+		printf("mProc %d: %s -> Bloqueado\n",siendoBloqueado->info.pid,siendoBloqueado->info.path);
+		cuenta++;
+		}
+	for(i=0;i<cantidadCPUS(raizCPUS);i++)
+		{
+			CPUAux=CPUPosicion(raizCPUS,i);
+			if( CPUAux->ejecutando!=NULL)
+			{
+				printf("mProc %d: %s -> Ejecutando\n",CPUAux->ejecutando->info.pid,CPUAux->ejecutando->info.path);
+				cuenta++;
+			}
 
-
+		}
+	if(cuenta==0) printf("No hay procesos en el sistema\n");
+	return;
+}

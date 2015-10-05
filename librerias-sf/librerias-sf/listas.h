@@ -33,5 +33,6 @@ nodo_Lista_CPU* primerCPULibre(nodo_Lista_CPU* raiz);
 int cantidadCPUS(nodo_Lista_CPU* raiz); //Devuelve la cantidad de CPUS, hay que hgacerle el mutex afuera.
 int socketCPUPosicion(nodo_Lista_CPU* raiz,int posicion); //Devuelve el socket en la posicion i de la lista, el mutex afuera.
 nodo_Lista_CPU*CPUPosicion(nodo_Lista_CPU* raiz,int posicion);
-
+void mostrarPCBS(nodoPCB*raizListos, nodoPCB*raizBloqueados,nodoPCB*siendoBloqueado,nodo_Lista_CPU*raizCPUS);
+//Muestra lista de PCBS
 #endif /* LIBRERIAS_SF_LISTAS_H_ */
