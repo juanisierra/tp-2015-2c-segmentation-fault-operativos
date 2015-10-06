@@ -158,17 +158,16 @@ int hayEspacio(int espacio)//espacio esta en paginas
 
 void unirBloquesLibres(void)
 {
-   espacioLibre* nodoABorrar;
-   libreRaiz->cantPag=libreRaiz->cantPag + (libreRaiz->sgte)->cantPag;
-   if(!(libreRaiz->sgte->sgte))//solo son dos nodos
+   espacioLibre* nodoABorrar= libreRaiz->sgte;
+   libreRaiz->cantPag= libreRaiz->cantPag + nodoABorrar->cantPag;
+   if(!(nodoABorrar->sgte))//solo son dos nodos
    {
-	   nodoABorrar=libreRaiz->sgte;
+	   libreRaiz->sgte= NULL;
 	   free(nodoABorrar);
 	   return;
    }
-    (libreRaiz->sgte->sgte)->ant=libreRaiz;
-    libreRaiz->sgte=(libreRaiz->sgte)->sgte;
-    nodoABorrar=libreRaiz->sgte;
+    nodoABorrar->sgte->ant= libreRaiz;
+    libreRaiz->sgte= nodoABorrar->sgte;
     free(nodoABorrar);
     return;
 }
