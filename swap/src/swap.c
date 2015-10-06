@@ -183,8 +183,9 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 al
 	return;//en el "nuevo" libre ahora hay basura
 }
 
+
 void desfragmentar(void)
-{ printf("Por desfragmentar\n");
+{
 	int sizeLibres=0;
 	espacioLibre* auxLibre=libreRaiz;
 	while(auxLibre)//contamos cuantos espacios libres hay
@@ -210,15 +211,14 @@ void desfragmentar(void)
         }
         else
         {
-            if(!auxO->sgte)// si ya ordenamos el ultimo nodo nos vamos
-
-            {
-            	return;
+            while(auxO && auxO->comienzo != libreRaiz->comienzo + libreRaiz->cantPag)
+            {//vamos al nodo ocupado a la derecha del nodo libre, si existe
+            	auxO=auxO->sgte;
             }
-        	auxO=auxO->sgte;//acomodamos el proximo proceso
+            if(!auxO) return;
         	moverInformacion(auxO->comienzo, auxO->cantPag, libreRaiz->comienzo);
-            auxO->comienzo=libreRaiz->comienzo;//lo colocamos al principio de los libres
-            libreRaiz->comienzo=libreRaiz->comienzo+auxO->cantPag;//movemos a libres
+            auxO->comienzo= libreRaiz->comienzo;//lo colocamos al principio de los libres
+            libreRaiz->comienzo= libreRaiz->comienzo + auxO->cantPag;//movemos a libres
             if(libreRaiz->sgte->comienzo == libreRaiz->comienzo + libreRaiz->cantPag)//si la pagina siguiente tmb esta libre
             {
             	unirBloquesLibres();
@@ -226,9 +226,9 @@ void desfragmentar(void)
             }
         }
     }
-    printf("Desfragmentado\n");
     return;
 }
+
 
 int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NOCOS OCUPADOS SE APILAN NO HAY ORDEN RESPECTO A LO QUE OCUPAN EN MEMORIA
 {
