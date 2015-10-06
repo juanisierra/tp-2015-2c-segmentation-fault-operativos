@@ -12,23 +12,6 @@
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
 
-typedef struct espacioLibre_t
-{
-	struct espacioLibre_t* sgte;
-	struct espacioLibre_t* ant;
-	uint32_t comienzo;
-	uint32_t cantPag;
-}espacioLibre;
-
-typedef struct espacioOcupado_t
-{
-	struct espacioOcupado_t* sgte;
-	struct espacioOcupado_t* ant;
-	uint32_t comienzo;
-	uint32_t cantPag;
-	uint32_t pid;
-}espacioOcupado;
-
 //****** OJO QUE SON VARIABLES GLOBALES ******
 FILE* archivo=NULL;
 config_SWAP configuracion;
@@ -36,7 +19,7 @@ espacioLibre* libreRaiz=NULL;
 espacioOcupado* ocupadoRaiz=NULL;
 
 int iniciarConfiguracion(void)
-{
+{//cargamos la configuracion del swap
 	printf("Cargando configuracion.. \n \n");
 	configuracion =  cargarConfiguracionSWAP(RUTACONFIG);
 	if (configuracion.estado!=1)
@@ -44,7 +27,8 @@ int iniciarConfiguracion(void)
 		printf("Error en el archivo de configuracion, cerrando Administrador de SWAP.. \n");
 		return -1;
 	}
-	if(configuracion.estado==1){
+	if(configuracion.estado==1)
+	{
 		printf("Configuracion cargada correctamente: \nPuerto Escucha: %s \n",configuracion.PUERTO_ESCUCHA);
 		printf("Nombre del Archivo de SWAP: %s \n", configuracion.NOMBRE_SWAP);
 		printf("Cantidad de Paginas: %d \n",configuracion.CANTIDAD_PAGINAS);
@@ -56,7 +40,7 @@ int iniciarConfiguracion(void)
 }
 
 void inicializarArchivo(void)
-{
+{//lo llenamos con el caracter correspondiente
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
     char* s = string_repeat('\0', tamanioArchivo);
     fprintf(archivo,"%s", s);
@@ -64,7 +48,7 @@ void inicializarArchivo(void)
 }
 
 int crearArchivo(void)//0 mal 1 bien
-{
+{//creamos el archivo y el primer nodo de listos
 	char nombre [30];
 	strcpy(nombre,configuracion.NOMBRE_SWAP );
 	archivo= fopen(nombre,"w+");
@@ -88,7 +72,7 @@ int crearArchivo(void)//0 mal 1 bien
 }
 
 void ocupar(int posicion, int espacio)
-{
+{//cambia un espacio libre a ocupado
 	espacioLibre* aBorrar=libreRaiz;
 	if(libreRaiz->cantPag == espacio)//si el espacio dado es el primer nodo completo
 	{
@@ -105,11 +89,11 @@ void ocupar(int posicion, int espacio)
 	}
 	else if(posicion==1)//es el primer nodo pero sobra espacio
 	{
-		libreRaiz->comienzo= espacio+1;//creo que tiene sentido
+		libreRaiz->comienzo= espacio+1;
 		libreRaiz->cantPag= libreRaiz->cantPag - espacio;
 		return;
 	}
-	espacioLibre* aux=libreRaiz;//no modificamos a la var global
+	espacioLibre* aux=libreRaiz;
 	while(aux->comienzo != posicion)//vamos al nodo elegido
 	{
 		aux= aux->sgte;
@@ -138,14 +122,14 @@ void ocupar(int posicion, int espacio)
 }
 
 int hayEspacio(int espacio)//espacio esta en paginas
-{
+{//te dice si hay un nodo libre con es el espacio requerido
 	int hay=0;
 	espacioLibre* raiz=libreRaiz;//para no cambiar al puntero
 	while((!hay) && raiz)
 	{
 		if(raiz->cantPag >= espacio)
 		{
-			hay= raiz->comienzo;//comienzo !=0
+			hay= raiz->comienzo;//el comienzo minimo es 1
 		}
 		raiz= raiz->sgte;
 	}
@@ -157,7 +141,7 @@ int hayEspacio(int espacio)//espacio esta en paginas
 }
 
 void unirBloquesLibres(void)
-{
+{//une dos nodos libres en uno solo mas grande
    espacioLibre* nodoABorrar= libreRaiz->sgte;
    libreRaiz->cantPag= libreRaiz->cantPag + nodoABorrar->cantPag;
    if(!(nodoABorrar->sgte))//solo son dos nodos
@@ -173,7 +157,7 @@ void unirBloquesLibres(void)
 }
 
 void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 alguien que me confime que tiene sentido
-{
+{//intercambia lo escrito en el swap para cuando movemos un nodo ocupado al desfragmentar
 	char buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
 	fseek(archivo, (inicioDe -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
 	fread(buffer, sizeof(char), strlen(buffer), archivo);//leemos
@@ -183,21 +167,21 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 al
 }
 
 int alcanzanPaginas(int cantPags)//0 no alcanzan, 1 alcanzan
-{
+{//nos dice si vale la pena desfragmentar (si hay paginas libres suficientes)
 	espacioLibre* auxL=libreRaiz;
 	int pagsTotales=0;
 	while (auxL)
 	{
-		pagsTotales=pagsTotales+auxL->cantPag;//sumamos todas las paginas libres en pagsTotales
-		auxL=auxL->sgte;
+		pagsTotales= pagsTotales + auxL->cantPag;//sumamos todas las paginas libres en pagsTotales
+		auxL= auxL->sgte;
 	}
-
-	if (cantPags > pagsTotales) return 0;//si es mayor a las paginasTotales, nos vimo en disney
-	else return 1;
+	if(cantPags > pagsTotales) return 0;//si es mayor a las paginasTotales, nos vimo en disney
+	return 1;
 }
 
+
 void desfragmentar(void)
-{
+{//movemos los nodos ocupados y juntamos los espacios libres en uno solo
 	printf("se desfragmenta el archivo... \n");
 	int sizeLibres=0;
 	espacioLibre* auxLibre=libreRaiz;
@@ -226,8 +210,9 @@ void desfragmentar(void)
 	return;
 }
 
-int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NOCOS OCUPADOS SE APILAN NO HAY ORDEN RESPECTO A LO QUE OCUPAN EN MEMORIA
-{
+
+int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NOCOS OCUPADOS SE APILAN SIN ORDEN
+{//llega un proceso nuevo y le asignamos un nodo correspondiente
 	if(!ocupadoRaiz)
 	{
 		ocupadoRaiz= malloc(sizeof(espacioOcupado));
@@ -263,13 +248,17 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NOCOS OCUP
 	return 1;
 }
 
+
 int asignarMemoria( uint32_t pid, uint32_t cantPag)
-{
+{//le damos memoria al proceso nuevo
 	int inicio;
 	inicio= hayEspacio(cantPag);
 	if(!inicio)
 	{
-		if(alcanzanPaginas (cantPag)) desfragmentar();//si las paginas libres totales alcanzan, que desfragmente
+		if(alcanzanPaginas (cantPag)) //si las paginas libres totales alcanzan, que desfragmente
+		{
+			desfragmentar();
+		}
 		else
 		{
 			printf("no hay espacio suficiente para el proceso de pid: %u \n", pid);
@@ -281,8 +270,9 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 	return exito;
 }
 
-int atras(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
-{
+
+int atras(espacioOcupado* nodo)//0 no hay nada 1 libre 2 ocupado
+{//recibe un nodo ocupado y nos dice si la pagina de atras es libre u ocupada
 	int comienzo = nodo->comienzo;
 	espacioLibre* libreAux= libreRaiz;
 	espacioOcupado* ocupadoAux= ocupadoRaiz;
@@ -306,8 +296,9 @@ int atras(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
 	return encontrado;
 }
 
+
 int adelante(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
-{
+{//recibe un nodo ocupado y nos dice si la pagina de adelante es libre u ocupada
 	int comienzo = nodo->comienzo;
 	int cantPag = nodo->cantPag;
 	espacioLibre* libreAux= libreRaiz;
@@ -332,8 +323,9 @@ int adelante(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
 	return encontrado;
 }
 
+
 void borrarNodoOcupado(espacioOcupado* aBorrar)
-{
+{//se va un proceso y borramos su nodo
 	if(ocupadoRaiz == aBorrar)
 	{
 		if(ocupadoRaiz->sgte)
@@ -357,13 +349,14 @@ void borrarNodoOcupado(espacioOcupado* aBorrar)
 	return;
 }
 
+
 int liberarMemoria(espacioOcupado* aBorrar)
-{
+{//se va un proceso y borramos su nodo ocupado y agregamos un libre
 	int atrasVar= atras(aBorrar);
 	int adelanteVar= adelante(aBorrar);
 	if(atrasVar==0 && adelanteVar==0)//el proceso ocupa el archivo entero
 	{
-		inicializarArchivo();//no hace falta pero bueno ya que estamos
+		inicializarArchivo();
 		libreRaiz=malloc(sizeof(espacioLibre));//creamos el primero nodo libre (que esTodo el archivo)
 		if(!libreRaiz)
 		{
@@ -380,7 +373,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 	else if(atrasVar==0 && adelanteVar==1)//tiene un libre adelante
 	{
 		libreRaiz->comienzo=1;
-		libreRaiz->cantPag= libreRaiz->cantPag + aBorrar->cantPag;//ACA NO HACE FALTA FREE CREO
+		libreRaiz->cantPag= libreRaiz->cantPag + aBorrar->cantPag;
 		borrarNodoOcupado(aBorrar);
 		return 1;
 	}
@@ -581,9 +574,10 @@ int liberarMemoria(espacioOcupado* aBorrar)
 	return 0;//si llego hasta aca es porque algo salio mal
 }
 
+
 char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
-{
-	char * buffer =NULL;
+{//leemos una pagina del archivo de swap
+	char * buffer= NULL;
 	buffer= malloc(configuracion.TAMANIO_PAGINA);
 	if(!buffer)
 	{
@@ -592,21 +586,24 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 	}
 	fseek(archivo,(aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
 	fread(buffer, sizeof(char), (configuracion.TAMANIO_PAGINA)/sizeof(char), archivo);//leemos
-
-	if(buffer!=NULL) printf("Se lee: %s \n", buffer); //////////////////////valgrind
+	if(buffer)
+	{
+		printf("Se lee: %s \n", buffer);
+	}
 	return buffer;
 }
 
+
 void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien
-{
+{//escribimos en el archivo de swap
 	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagAEscribir * configuracion.TAMANIO_PAGINA, SEEK_SET);
 	fwrite(texto, sizeof(char), strlen(texto), archivo);
-
 	return;
 }
 
+
 int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
-{
+{//depende de la instruccion tomamos acciones
 	mensaje_SWAP_ADM aEnviar;
 	int resultado;
 	espacioOcupado* aBorrar;
@@ -683,10 +680,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		aEnviar.contenidoPagina=NULL;
 		break;
 	}
-
 	aEnviar.instruccion=mensaje.instruccion;
 	aEnviar.estado=0;// si llegó hasta acá es porque esta OK (estado=0)
-
 	int i=0;
 	i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
 	if(!i)
@@ -699,18 +694,17 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			free(aEnviar.contenidoPagina);
 			aEnviar.contenidoPagina=NULL;
 		}
-
 	if(mensaje.contenidoPagina!=NULL)
 		{
 			free(mensaje.contenidoPagina);
 			mensaje.contenidoPagina=NULL;
 		}
-
 	return 1;
 }
 
+
 void eliminarListas(void)
-{
+{//liberamos la memoria de las listas de ocupados y de libres
 	if(libreRaiz)//si hay nodos libres
 	{
 		espacioLibre* ultimoLibre=libreRaiz;
@@ -748,6 +742,7 @@ void eliminarListas(void)
 	return;
 }
 
+
 int main()
 {
 	mensaje_ADM_SWAP mensaje;
@@ -761,7 +756,6 @@ int main()
 		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);
 		return -1;
 	}
-
 	if(listen(socketEscucha,10)< 0)
 	{
 		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);

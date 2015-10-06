@@ -100,4 +100,21 @@ typedef struct nodo_Lista_CPU_t //Cada uno contiene los datos para el manejador 
 	nodoPCB *ejecutando;
 } nodo_Lista_CPU;
 
+typedef struct espacioLibre_t
+{
+	struct espacioLibre_t* sgte;
+	struct espacioLibre_t* ant;
+	uint32_t comienzo;
+	uint32_t cantPag;
+}espacioLibre;
+
+typedef struct espacioOcupado_t
+{
+	struct espacioOcupado_t* sgte;
+	struct espacioOcupado_t* ant;
+	uint32_t comienzo;
+	uint32_t cantPag;
+	uint32_t pid;
+}espacioOcupado;
+
 #endif /* LIBRERIAS_SF_TIPOSDATO_H_ */
