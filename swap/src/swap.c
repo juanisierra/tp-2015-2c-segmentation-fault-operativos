@@ -183,9 +183,9 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 al
 	return;//en el "nuevo" libre ahora hay basura
 }
 
-
 void desfragmentar(void)
 {
+	printf("se desgramenta el archivo... \n");
 	int sizeLibres=0;
 	espacioLibre* auxLibre=libreRaiz;
 	while(auxLibre)//contamos cuantos espacios libres hay
@@ -193,42 +193,25 @@ void desfragmentar(void)
         auxLibre=auxLibre->sgte;
         sizeLibres= sizeLibres+1;
 	}
-
     espacioOcupado* auxO=ocupadoRaiz;
     while (sizeLibres>1)
     {
-        if(libreRaiz->comienzo == 1)//si esta libre la primera pagina (o mas)
-        {
-        	moverInformacion(ocupadoRaiz->comienzo, ocupadoRaiz->cantPag, 1);
-        	ocupadoRaiz->comienzo=1;//pasamos lo ocupado a la primera pagina
-            libreRaiz->comienzo= 1 + ocupadoRaiz->cantPag;
-            auxO=ocupadoRaiz;
-            if(libreRaiz->sgte->comienzo == libreRaiz->comienzo + libreRaiz->cantPag)//si la pagina siguiente tmb esta libre
-            {
-            	unirBloquesLibres();
-            	sizeLibres--;
-            }
-        }
-        else
-        {
-            while(auxO && auxO->comienzo != libreRaiz->comienzo + libreRaiz->cantPag)
-            {//vamos al nodo ocupado a la derecha del nodo libre, si existe
-            	auxO=auxO->sgte;
-            }
-            if(!auxO) return;
-        	moverInformacion(auxO->comienzo, auxO->cantPag, libreRaiz->comienzo);
-            auxO->comienzo= libreRaiz->comienzo;//lo colocamos al principio de los libres
-            libreRaiz->comienzo= libreRaiz->comienzo + auxO->cantPag;//movemos a libres
-            if(libreRaiz->sgte->comienzo == libreRaiz->comienzo + libreRaiz->cantPag)//si la pagina siguiente tmb esta libre
-            {
-            	unirBloquesLibres();
-            	sizeLibres--;
-            }
-        }
+    	while(auxO && auxO->comienzo != libreRaiz->comienzo + libreRaiz->cantPag)
+    	{//vamos al nodo ocupado a la derecha del nodo libre, si existe
+    		auxO=auxO->sgte;
+    	}
+    	if(!auxO) return;//si no hay nodos a la derecha nos vamos
+    	moverInformacion(auxO->comienzo, auxO->cantPag, libreRaiz->comienzo);
+    	auxO->comienzo= libreRaiz->comienzo;//lo colocamos al principio de los libres
+    	libreRaiz->comienzo= libreRaiz->comienzo + auxO->cantPag;//movemos la raiz al final del nodo ocupado
+    	if(libreRaiz->sgte->comienzo == libreRaiz->comienzo + libreRaiz->cantPag)
+    	{//si la pagina siguiente tmb esta libre los unimos en un solo nodo
+    		unirBloquesLibres();
+    		sizeLibres--;
+    	}
     }
-    return;
+	return;
 }
-
 
 int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NOCOS OCUPADOS SE APILAN NO HAY ORDEN RESPECTO A LO QUE OCUPAN EN MEMORIA
 {
