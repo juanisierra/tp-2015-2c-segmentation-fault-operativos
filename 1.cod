@@ -1,6 +1,5 @@
 iniciar 2;
-leer 0;
-leer 0;
+escribir 1 "ju"
+entrada-salida 100;
 leer 1;
-leer 2;
 finalizar;

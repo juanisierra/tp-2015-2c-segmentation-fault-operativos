@@ -257,7 +257,7 @@ nodo_Lista_CPU* ultimoNodoCPU(nodo_Lista_CPU* raiz)
 	}
     return aux;
 }
-void agregarCPU(pthread_mutex_t* mutexCPU, sem_t* SEMAFOROCPULIBRES,int cuentaCPU, int socket,nodo_Lista_CPU** raiz )
+void agregarCPU(pthread_mutex_t* mutexCPU,int cuentaCPU, int socket,nodo_Lista_CPU** raiz )
 {
 	nodo_Lista_CPU* ultimoNodo;
 	nodo_Lista_CPU* aAgregar;
@@ -276,7 +276,7 @@ void agregarCPU(pthread_mutex_t* mutexCPU, sem_t* SEMAFOROCPULIBRES,int cuentaCP
 	aAgregar->ejecutando=NULL;
 	aAgregar->finalizar=0;
 	pthread_mutex_unlock(mutexCPU);
-	sem_post(SEMAFOROCPULIBRES);
+	printf("Posteo de semaforoCPULIBRES\n");
 	return;
 }
 nodo_Lista_CPU* buscarCPU(int id,nodo_Lista_CPU* raiz)

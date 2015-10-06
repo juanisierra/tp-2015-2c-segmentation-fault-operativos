@@ -23,7 +23,7 @@ uint32_t desempaquetarLista(retornoInstruccion* mensaje, nodo_Retorno_Instruccio
 // funcion que pasa la lista a un array que sera casteado posteriormente, y retorna el tamaño del payload a enviar al PL
 nodoPCB* buscarNodoPCB(nodoPCB*raiz,int pid); //Busca un PCB por su pid en una lista.
 nodo_Lista_CPU* ultimoNodoCPU(nodo_Lista_CPU* raiz); //Retorna el ultimo CPU en la lista;
-void agregarCPU(pthread_mutex_t* mutexCPU,sem_t*SEMAFOROCPULIBRES,int cuentaCPU, int socket,nodo_Lista_CPU** raiz );
+void agregarCPU(pthread_mutex_t* mutexCPU,int cuentaCPU, int socket,nodo_Lista_CPU** raiz );
 //Agregar un CPU a  la lista y ademas hace un signal para cpus libres.
 nodo_Lista_CPU* buscarCPU(int id,nodo_Lista_CPU* raiz); // Retorna un CPU segun su Id
 void eliminarCPU(int id, sem_t* SEMAFOROCPULIBRES,nodo_Lista_CPU** raiz);

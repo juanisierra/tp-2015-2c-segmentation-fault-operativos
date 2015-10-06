@@ -235,9 +235,10 @@ int hiloServidor(void)
 		printf("esperando Otro\n");
 	socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	printf("Por agrega CPU\n");
-	agregarCPU(&MUTEXCPUS,&SEMAFOROCPUSLIBRES,cuentaCPU,socketCPU,&raizCPUS);
+	agregarCPU(&MUTEXCPUS,cuentaCPU,socketCPU,&raizCPUS);
 	cuentaCPU++;
 	printf("Se conecto el CPU %d\n",cuentaCPU-1);
+	sem_post(&SEMAFOROCPUSLIBRES);
 	}
 	close(socketEscucha); //DEJO DE ESCUCHAR AL FINALIZAR LA CONSOLA
 	printf("cierro socket escucha\n");
@@ -248,7 +249,9 @@ int hiloEnvios (void)
 	while(1) //FALTA CONDICION
 	{
 		sem_wait(&SEMAFOROLISTOS);
+		printf("Hay Proceso libreS\n"); ////-------------------
 		sem_wait(&SEMAFOROCPUSLIBRES);
+		printf("Hay CPUS LIBRES\n"); ////-------------------
 		pthread_mutex_lock(&MUTEXLISTOS);
 		pthread_mutex_lock(&MUTEXCPUS);
 		cpuAEnviar=primerCPULibre(raizCPUS);
@@ -302,12 +305,19 @@ int hiloRecibir (void)
 	{	aux=CPUPosicion(raizCPUS,i);
 		if(FD_ISSET(aux->socket,&fdLeer))
 		{
-		status=	status=recibirPCBDeCPU(aux->socket,&mensajeRecibido);
+		status=recibirPCBDeCPU(aux->socket,&mensajeRecibido);
+		if(status!=0){
 		interPretarMensajeCPU(&mensajeRecibido,&(aux->ejecutando),aux);
 		printf("La rafaga fue: %s\n",mensajeRecibido.payload);
 		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
-		aux->ejecutando=NULL;
+
 		sem_post(&SEMAFOROCPUSLIBRES);
+		} else {
+									///Si TERMINA MAL EL CPU Y NO CIERRA EL SOCKET LO BORRA IGUAL
+		close(aux->socket);
+		eliminarCPU(aux->id,&SEMAFOROCPUSLIBRES,&raizCPUS);
+		}
+		aux->ejecutando=NULL;
 		}
 	}
 	pthread_mutex_unlock(&MUTEXCPUS);
