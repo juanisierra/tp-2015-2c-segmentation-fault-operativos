@@ -182,6 +182,20 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 al
 	return;//en el "nuevo" libre ahora hay basura
 }
 
+int alcanzanPaginas(int cantPags)//0 no alcanzan, 1 alcanzan
+{
+	espacioLibre* auxL=libreRaiz;
+	int pagsTotales=0;
+	while (auxL)
+	{
+		pagsTotales=pagsTotales+auxL->cantPag;//sumamos todas las paginas libres en pagsTotales
+		auxL=auxL->sgte;
+	}
+
+	if (cantPags > pagsTotales) return 0;//si es mayor a las paginasTotales, nos vimo en disney
+	else return 1;
+}
+
 void desfragmentar(void)
 {
 	printf("se desfragmenta el archivo... \n");
@@ -255,13 +269,13 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 	inicio= hayEspacio(cantPag);
 	if(!inicio)
 	{
-		desfragmentar();
-		inicio = hayEspacio(cantPag);
-		if(!inicio)
+		if(alcanzanPaginas (cantPag)) desfragmentar();//si las paginas libres totales alcanzan, que desfragmente
+		else
 		{
 			printf("no hay espacio suficiente para el proceso de pid: %u \n", pid);
 			return 0;
 		}
+		inicio = hayEspacio(cantPag);
 	}
 	int exito= agregarOcupado(pid, cantPag, inicio);
 	return exito;
