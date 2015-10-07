@@ -90,8 +90,11 @@ void ocupar(int posicion, int espacio)
 		{
 			aux->sgte->ant= aux->ant;
 		}
+		if(aux == libreRaiz)
+		{
+			libreRaiz= NULL;
+		}
 		free(aux);
-		return;
 	}
 	return;
 }
@@ -251,24 +254,23 @@ int atras(espacioOcupado* nodo)//0 no hay nada 1 libre 2 ocupado
 	int comienzo = nodo->comienzo;
 	espacioLibre* libreAux= libreRaiz;
 	espacioOcupado* ocupadoAux= ocupadoRaiz;
-	int encontrado= 0;
-	while(!encontrado && libreAux)
+	while(libreAux)
 	{
 		if(comienzo == libreAux->comienzo + libreAux->cantPag)
 		{
-			encontrado=1;
+			return 1;
 		}
 		libreAux= libreAux->sgte;
 	}
-	while(!encontrado && ocupadoAux)
+	while(ocupadoAux)
 	{
 		if(comienzo == ocupadoAux->comienzo + ocupadoAux->cantPag)
 		{
-			encontrado=2;
+			return 2;
 		}
 		ocupadoAux= ocupadoAux->sgte;
 	}
-	return encontrado;
+	return 0;
 }
 
 
@@ -278,24 +280,23 @@ int adelante(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
 	int cantPag = nodo->cantPag;
 	espacioLibre* libreAux= libreRaiz;
 	espacioOcupado* ocupadoAux= ocupadoRaiz;
-	int encontrado= 0;
-	while(!encontrado && libreAux)
+	while(libreAux)
 	{
 		if(comienzo + cantPag == libreAux->comienzo)
 		{
-			encontrado=1;
+			return 1;
 		}
 		libreAux= libreAux->sgte;
 	}
-	while(!encontrado && ocupadoAux)
+	while(ocupadoAux)
 	{
 		if(comienzo + cantPag == ocupadoAux->comienzo)
 		{
-			encontrado=2;
+			return 2;
 		}
 		ocupadoAux= ocupadoAux->sgte;
 	}
-	return encontrado;
+	return 0;
 }
 
 
@@ -664,12 +665,12 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		printf("No se pudo enviar mensaje al ADM\n");
 		return 0;
 	}
-	if(aEnviar.contenidoPagina!=NULL)
+	if(aEnviar.contenidoPagina)
 		{
 			free(aEnviar.contenidoPagina);
 			aEnviar.contenidoPagina=NULL;
 		}
-	if(mensaje.contenidoPagina!=NULL)
+	if(mensaje.contenidoPagina)
 		{
 			free(mensaje.contenidoPagina);
 			mensaje.contenidoPagina=NULL;

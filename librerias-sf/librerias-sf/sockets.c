@@ -259,21 +259,28 @@ int enviarDeSwapAlADM(int socket, mensaje_SWAP_ADM* mensajeAEnviar, int tamPagin
 {
 	int resultado;
 	void* buffer;
-	if(mensajeAEnviar->contenidoPagina!=NULL){
+	if(mensajeAEnviar->contenidoPagina!=NULL)
+	{
 		buffer = malloc(sizeof(uint32_t) + sizeof(instruccion_t)+ tamPagina);
-	} else{
+	}
+	else
+	{
 		buffer = malloc(sizeof(uint32_t)+sizeof(instruccion_t));
 	}
 	memcpy(buffer, &(mensajeAEnviar->estado), sizeof(uint32_t));
 	memcpy(buffer+sizeof(uint32_t),&(mensajeAEnviar->instruccion),sizeof(instruccion_t));
-	if(mensajeAEnviar->contenidoPagina!=NULL){
-	memcpy(buffer+sizeof(uint32_t)+sizeof(instruccion_t), mensajeAEnviar->contenidoPagina, tamPagina); //PRUEBO SIN AMPERSANT
-	resultado = send(socket, buffer, sizeof(uint32_t) + sizeof(instruccion_t) + tamPagina, 0 );
-	} else
+	if(mensajeAEnviar->contenidoPagina!=NULL)
+	{
+		memcpy(buffer+sizeof(uint32_t)+sizeof(instruccion_t), mensajeAEnviar->contenidoPagina, tamPagina); //PRUEBO SIN AMPERSANT
+		resultado = send(socket, buffer, sizeof(uint32_t) + sizeof(instruccion_t) + tamPagina, 0 );
+	}
+	else
 	{
 		resultado = send(socket, buffer, sizeof(uint32_t)+sizeof(instruccion_t), 0 );
 	}
-	if(mensajeAEnviar->contenidoPagina!=NULL){
+	if(mensajeAEnviar->contenidoPagina!=NULL)
+	{
+		//
 	}
 	free(buffer);
 	return resultado;
