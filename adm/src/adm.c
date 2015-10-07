@@ -117,6 +117,7 @@ int main()
 		mensajeAMandar.texto=malloc(mensajeAMandar.tamanoMensaje);
 		strcpy(mensajeAMandar.texto,mensajeDeSWAP.contenidoPagina); /// NO SIRVE CON LAS A PORUQE NO LLEVAN /0
 		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
+
 	}
 	if(mensajeARecibir.instruccion == ESCRIBIR)
 	{
@@ -145,6 +146,7 @@ int main()
 	mensajeAMandar.texto = NULL;
 	enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 	}
+	if(mensajeAMandar.texto!=NULL) free(mensajeAMandar.texto);
 	if(mensajeARecibir.texto!=NULL) free(mensajeARecibir.texto);
 	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
 	if(mensajeParaSWAP.contenidoPagina!=NULL) free(mensajeParaSWAP.contenidoPagina);

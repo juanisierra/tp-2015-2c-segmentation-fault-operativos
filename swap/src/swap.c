@@ -73,52 +73,27 @@ int crearArchivo(void)//0 mal 1 bien
 
 void ocupar(int posicion, int espacio)
 {//cambia un espacio libre a ocupado
-	espacioLibre* aBorrar=libreRaiz;
-	if(libreRaiz->cantPag == espacio)//si el espacio dado es el primer nodo completo
-	{
-		if(!(libreRaiz->sgte))//era el unico nodo libre
-		{
-			free(libreRaiz);
-			libreRaiz=NULL;
-			return;
-		}
-		libreRaiz= libreRaiz->sgte;
-		libreRaiz->ant=NULL;
-		free(aBorrar);//eliminamos el nodo
-		return;
-	}
-	else if(posicion==1)//es el primer nodo pero sobra espacio
-	{
-		libreRaiz->comienzo= espacio+1;
-		libreRaiz->cantPag= libreRaiz->cantPag - espacio;
-		return;
-	}
 	espacioLibre* aux=libreRaiz;
-	while(aux->comienzo != posicion)//vamos al nodo elegido
+	while(aux->comienzo != posicion)//vamos al nodo a ocupar
 	{
 		aux= aux->sgte;
 	}
-	if(aux->cantPag == espacio)// nos piden el nodo entero
+	aux->comienzo= aux->comienzo + espacio;
+	aux->cantPag= aux->cantPag - espacio;
+	if(aux->cantPag == 0)//si nos piden el nodo entero
 	{
-		aBorrar=aux;
-		if(aux->sgte == NULL) //si aux es el ultimo nodo
+		if(aux->ant)
 		{
-			(aBorrar->ant)->sgte=NULL;
-			free(aBorrar);
-			return;
+			aux->ant->sgte= aux->sgte;
 		}
-		aux= aux->sgte;
-		aux->ant = aBorrar->ant;
-		aBorrar->ant->sgte=aux;
-		free(aBorrar);
+		if(aux->sgte)
+		{
+			aux->sgte->ant= aux->ant;
+		}
+		free(aux);
 		return;
 	}
-	else
-	{
-		aux->comienzo= espacio+1;
-		aux->cantPag= libreRaiz->cantPag - espacio;
-		return;
-	}
+	return;
 }
 
 int hayEspacio(int espacio)//espacio esta en paginas

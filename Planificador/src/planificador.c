@@ -12,6 +12,7 @@
 #include <librerias-sf/listas.h>
 #include <semaphore.h>
 #include<sys/time.h>
+#include <signal.h> //pthread_kill
 #define TAMANOCONSOLA 1024
 #define RUTACONFIG "configuracionPlanificador"
 
@@ -124,7 +125,6 @@ void hiloConsola(void)
 			pthread_mutex_unlock(&MUTEXBLOQUEADOS);
 			}
 		}
-
 	}
 
 	return;
@@ -240,8 +240,6 @@ int hiloServidor(void)
 	printf("Se conecto el CPU %d\n",cuentaCPU-1);
 	sem_post(&SEMAFOROCPUSLIBRES);
 	}
-	close(socketEscucha); //DEJO DE ESCUCHAR AL FINALIZAR LA CONSOLA
-	printf("cierro socket escucha\n");
 	return 0;
 }
 int hiloEnvios (void)
@@ -345,6 +343,30 @@ int main()
 	 pthread_create(&hRecibir,NULL,hiloRecibir,NULL);
 	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
 	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
+	pthread_kill(hServer,9);
+	pthread_kill(hEnvios,9);
+	pthread_kill(hRecibir,9);
+	pthread_kill(hBloqueados,9);
+	pthread_join(hServer,NULL);
+	pthread_join(hEnvios,NULL);
+	pthread_join(hRecibir,NULL);
+	pthread_join(hBloqueados,NULL);
+	pthread_mutex_lock(&MUTEXLISTOS);
+	eliminarListaPCB(&raizListos);
+	pthread_mutex_unlock(&MUTEXLISTOS);
+	printf("Borre la lista de listos\n");
+	pthread_mutex_lock(&MUTEXBLOQUEADOS);
+	eliminarListaPCB(&raizBloqueados);
+	pthread_mutex_unlock(&MUTEXBLOQUEADOS); //FINALIZAR SIN UNLOCK???
+	printf("Borre la lista de bloqueados\n");
+	pthread_mutex_lock(&MUTEXCPUS);
+	eliminarListaCPU(&raizCPUS);
+	pthread_mutex_unlock(&MUTEXCPUS);
+	printf("Borre la lista de CPUS\n");
+	pthread_mutex_lock(&MUTEXPROCESOBLOQUEADO);
+	if(PCBBloqueado!=NULL) free(PCBBloqueado);
+	pthread_mutex_unlock(&MUTEXPROCESOBLOQUEADO);
+	printf("Borre el bloqueado\n");
 	pthread_mutex_destroy(&MUTEXLISTOS);
 	pthread_mutex_destroy(&MUTEXBLOQUEADOS);
 	pthread_mutex_destroy(&MUTEXPROCESOBLOQUEADO);
@@ -352,5 +374,13 @@ int main()
 	sem_destroy(&SEMAFOROCPUSLIBRES);
 	sem_destroy(&SEMAFOROLISTOS);
 	sem_destroy(&SEMAFOROBLOQUEADOS);
+	pthread_kill(&hServer,9);
+	pthread_kill(&hEnvios,9);
+	pthread_kill(&hRecibir,9);
+	pthread_kill(&hBloqueados,9);
+
+	close(socketEscucha); //DEJO DE ESCUCHAR AL FINALIZAR LA CONSOLA
+	printf("cierro socket escucha\n");
+
 	return 0;
 }
