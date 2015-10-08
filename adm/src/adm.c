@@ -147,7 +147,7 @@ int main()
 	enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 	}
 	if(mensajeAMandar.texto!=NULL) free(mensajeAMandar.texto);
-	if(mensajeARecibir.texto!=NULL) free(mensajeARecibir.texto);
+	if(mensajeARecibir.texto!=NULL) free(mensajeARecibir.texto); ///////
 	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
 	if(mensajeParaSWAP.contenidoPagina!=NULL) free(mensajeParaSWAP.contenidoPagina);
 	mensajeARecibir.texto=NULL;

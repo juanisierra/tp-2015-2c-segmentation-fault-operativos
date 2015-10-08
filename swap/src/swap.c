@@ -90,29 +90,33 @@ void ocupar(int posicion, int espacio)
 		{
 			aux->sgte->ant= aux->ant;
 		}
+
+		if(aux == libreRaiz)
+		{
+			libreRaiz= libreRaiz->sgte;
+			libreRaiz->ant= NULL;
+		}
 		free(aux);
-		return;
+
 	}
 	return;
 }
 
 int hayEspacio(int espacio)//espacio esta en paginas
 {//te dice si hay un nodo libre con es el espacio requerido
-	int hay=0;
+	int hay;
 	espacioLibre* raiz=libreRaiz;//para no cambiar al puntero
-	while((!hay) && raiz)
+	while(raiz)
 	{
 		if(raiz->cantPag >= espacio)
 		{
 			hay= raiz->comienzo;//el comienzo minimo es 1
+			ocupar(hay, espacio);//ocupamos el espacio requerido por el proceso
+			return hay;//devolvemos la posicion inicial del espacio
 		}
 		raiz= raiz->sgte;
 	}
-	if(hay)
-	{
-		ocupar(hay, espacio);
-	}
-	return hay;//devolvemos 0 si no hay o la posicion inicial del hueco necesitado
+	return 0;
 }
 
 void unirBloquesLibres(void)
@@ -185,8 +189,7 @@ void desfragmentar(void)
 	return;
 }
 
-
-int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NOCOS OCUPADOS SE APILAN SIN ORDEN
+int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NODOS OCUPADOS SE APILAN SIN ORDEN
 {//llega un proceso nuevo y le asignamos un nodo correspondiente
 	if(!ocupadoRaiz)
 	{
@@ -233,42 +236,40 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 		if(alcanzanPaginas (cantPag)) //si las paginas libres totales alcanzan, que desfragmente
 		{
 			desfragmentar();
+			inicio = hayEspacio(cantPag);
 		}
 		else
 		{
 			printf("no hay espacio suficiente para el proceso de pid: %u \n", pid);
 			return 0;
 		}
-		inicio = hayEspacio(cantPag);
 	}
 	int exito= agregarOcupado(pid, cantPag, inicio);
 	return exito;
 }
-
 
 int atras(espacioOcupado* nodo)//0 no hay nada 1 libre 2 ocupado
 {//recibe un nodo ocupado y nos dice si la pagina de atras es libre u ocupada
 	int comienzo = nodo->comienzo;
 	espacioLibre* libreAux= libreRaiz;
 	espacioOcupado* ocupadoAux= ocupadoRaiz;
-	int encontrado= 0;
-	while(!encontrado && libreAux)
+	while(libreAux)
 	{
 		if(comienzo == libreAux->comienzo + libreAux->cantPag)
 		{
-			encontrado=1;
+			return 1;
 		}
 		libreAux= libreAux->sgte;
 	}
-	while(!encontrado && ocupadoAux)
+	while(ocupadoAux)
 	{
 		if(comienzo == ocupadoAux->comienzo + ocupadoAux->cantPag)
 		{
-			encontrado=2;
+			return 2;
 		}
 		ocupadoAux= ocupadoAux->sgte;
 	}
-	return encontrado;
+	return 0;
 }
 
 
@@ -278,24 +279,23 @@ int adelante(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
 	int cantPag = nodo->cantPag;
 	espacioLibre* libreAux= libreRaiz;
 	espacioOcupado* ocupadoAux= ocupadoRaiz;
-	int encontrado= 0;
-	while(!encontrado && libreAux)
+	while(libreAux)
 	{
 		if(comienzo + cantPag == libreAux->comienzo)
 		{
-			encontrado=1;
+			return 1;
 		}
 		libreAux= libreAux->sgte;
 	}
-	while(!encontrado && ocupadoAux)
+	while(ocupadoAux)
 	{
 		if(comienzo + cantPag == ocupadoAux->comienzo)
 		{
-			encontrado=2;
+			return 2;
 		}
 		ocupadoAux= ocupadoAux->sgte;
 	}
-	return encontrado;
+	return 0;
 }
 
 
@@ -664,12 +664,12 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		printf("No se pudo enviar mensaje al ADM\n");
 		return 0;
 	}
-	if(aEnviar.contenidoPagina!=NULL)
+	if(aEnviar.contenidoPagina)
 		{
 			free(aEnviar.contenidoPagina);
 			aEnviar.contenidoPagina=NULL;
 		}
-	if(mensaje.contenidoPagina!=NULL)
+	if(mensaje.contenidoPagina)
 		{
 			free(mensaje.contenidoPagina);
 			mensaje.contenidoPagina=NULL;
