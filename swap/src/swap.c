@@ -94,10 +94,12 @@ void ocupar(int posicion, int espacio)
 		if(aux == libreRaiz)
 		{
 			libreRaiz= libreRaiz->sgte;
-			libreRaiz->ant= NULL;
+			if(libreRaiz)
+			{
+				libreRaiz->ant= NULL;
+			}
 		}
 		free(aux);
-
 	}
 	return;
 }
@@ -226,7 +228,6 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NODOS OCUP
 	return 1;
 }
 
-
 int asignarMemoria( uint32_t pid, uint32_t cantPag)
 {//le damos memoria al proceso nuevo
 	int inicio;
@@ -272,7 +273,6 @@ int atras(espacioOcupado* nodo)//0 no hay nada 1 libre 2 ocupado
 	return 0;
 }
 
-
 int adelante(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
 {//recibe un nodo ocupado y nos dice si la pagina de adelante es libre u ocupada
 	int comienzo = nodo->comienzo;
@@ -297,7 +297,6 @@ int adelante(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
 	}
 	return 0;
 }
-
 
 void borrarNodoOcupado(espacioOcupado* aBorrar)
 {//se va un proceso y borramos su nodo
@@ -549,7 +548,6 @@ int liberarMemoria(espacioOcupado* aBorrar)
 	return 0;//si llego hasta aca es porque algo salio mal
 }
 
-
 char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 {//leemos una pagina del archivo de swap
 	char * buffer= NULL;
@@ -568,14 +566,12 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 	return buffer;
 }
 
-
 void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien
 {//escribimos en el archivo de swap
 	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagAEscribir * configuracion.TAMANIO_PAGINA, SEEK_SET);
 	fwrite(texto, sizeof(char), strlen(texto), archivo);
 	return;
 }
-
 
 int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 {//depende de la instruccion tomamos acciones
@@ -677,7 +673,6 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 	return 1;
 }
 
-
 void eliminarListas(void)
 {//liberamos la memoria de las listas de ocupados y de libres
 	if(libreRaiz)//si hay nodos libres
@@ -716,7 +711,6 @@ void eliminarListas(void)
 	}
 	return;
 }
-
 
 int main()
 {
