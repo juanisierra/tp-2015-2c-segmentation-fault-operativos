@@ -79,6 +79,21 @@ nodoPCB* buscarNodoPCB(nodoPCB*raiz,int pid)
 	}
 	return NULL;
 }
+void eliminarListaPCB(nodoPCB**raiz)
+{
+	nodoPCB* aux;
+	aux=ultimoNodoPCB(*raiz);
+	while(aux!=NULL && aux->sgte!=NULL)
+	{
+		aux=aux->sgte;
+		free(aux->ant);
+		aux->ant=NULL;
+	}
+	if(*raiz!=NULL) free(*raiz);
+	(*raiz)=NULL;
+	aux=NULL;
+	return;
+}
 void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, instruccion_t instruccion)//funcion que almacena en la lista de retornos del CPU
 {
 	char mensajeAGuardar[50+mensaje.tamanoMensaje];
@@ -249,12 +264,10 @@ nodo_Lista_CPU* ultimoNodoCPU(nodo_Lista_CPU* raiz)
 {
 	nodo_Lista_CPU* aux;
 	aux=raiz;
-	if(aux!=NULL){
-    while(aux->sgte)
+    while(aux && aux->sgte)
     {
         aux=aux->sgte;
     }
-	}
     return aux;
 }
 void agregarCPU(pthread_mutex_t* mutexCPU,int cuentaCPU, int socket,nodo_Lista_CPU** raiz )
@@ -341,6 +354,32 @@ nodo_Lista_CPU*CPUPosicion(nodo_Lista_CPU* raiz,int posicion)
 	aux=raiz;
 	for(i=0; i<posicion;i++) aux=aux->sgte;
 	return aux;
+}
+void eliminarListaCPU(nodo_Lista_CPU**raiz)
+{
+	nodo_Lista_CPU* aux;
+	printf("Entrando a ultimonodoCPU\n");
+	aux=ultimoNodoCPU(*raiz);
+	while(aux!=NULL && aux->ant!=NULL)
+	{	printf("POR ELIMINAR CPU\n");
+		aux=aux->ant;
+		if(aux->sgte->ejecutando!=NULL)
+		{
+		free(aux->sgte->ejecutando);
+		aux->sgte->ejecutando=NULL;
+		}
+		close(aux->sgte->socket);
+		free(aux->sgte);
+		aux->sgte=NULL;
+	}
+	if((*raiz)!=NULL)
+	{	close((*raiz)->socket);
+		if((*raiz)->ejecutando!=NULL) free((*raiz)->ejecutando);
+		free(*raiz);
+	}
+	(*raiz)=NULL;
+	aux=NULL;
+	return;
 }
 void mostrarPCBS(nodoPCB*raizListos, nodoPCB*raizBloqueados,nodoPCB*siendoBloqueado,nodo_Lista_CPU*raizCPUS)
 {

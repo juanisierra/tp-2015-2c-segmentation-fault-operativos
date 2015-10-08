@@ -120,9 +120,8 @@ int recibirInstruccionDeCPU(int socket, mensaje_CPU_ADM* mensajeRecibido) //el A
 	memcpy(&(mensajeRecibido->pid),buffer+sizeof(instruccion_t),sizeof(uint32_t));
 	memcpy(&(mensajeRecibido->parametro),buffer+sizeof(instruccion_t)+sizeof(uint32_t),sizeof(uint32_t));
 	memcpy(&(mensajeRecibido->tamTexto),buffer+sizeof(instruccion_t)+2*sizeof(uint32_t),sizeof(uint32_t));
-	mensajeRecibido->texto=malloc(mensajeRecibido->tamTexto);
 	if(mensajeRecibido->tamTexto!=0)
-	{
+	{	mensajeRecibido->texto=malloc(mensajeRecibido->tamTexto);
 		resultado = recv(socket,mensajeRecibido->texto,mensajeRecibido->tamTexto,0);
 	}
 	free(buffer);
