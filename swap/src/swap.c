@@ -160,7 +160,6 @@ int alcanzanPaginas(int cantPags)//0 no alcanzan, 1 alcanzan
 	return 1;
 }
 
-
 void desfragmentar(void)
 {//movemos los nodos ocupados y juntamos los espacios libres en uno solo
 	printf("se desfragmenta el archivo... \n");
@@ -169,7 +168,7 @@ void desfragmentar(void)
 	while(auxLibre)//contamos cuantos espacios libres hay
     {
         auxLibre=auxLibre->sgte;
-        sizeLibres= sizeLibres+1;
+        sizeLibres++;
 	}
     espacioOcupado* auxO=ocupadoRaiz;
     while (sizeLibres>1)
@@ -300,29 +299,25 @@ int adelante(espacioOcupado* nodo)// 0 no hay nada 1 libre 2 ocupado
 
 void borrarNodoOcupado(espacioOcupado* aBorrar)
 {//se va un proceso y borramos su nodo
-	if(ocupadoRaiz == aBorrar)
+	if(aBorrar->ant)
 	{
-		if(ocupadoRaiz->sgte)
-		{
-			ocupadoRaiz= ocupadoRaiz->sgte;
-			ocupadoRaiz->ant= NULL;
-		}
-		else
-		{
-			ocupadoRaiz=NULL;
-		}
-		free(aBorrar);
-		return;
+		aBorrar->ant->sgte=aBorrar->sgte;
 	}
-	aBorrar->ant->sgte= aBorrar->sgte;
 	if(aBorrar->sgte)
 	{
 		aBorrar->sgte->ant= aBorrar->ant;
 	}
+	if(aBorrar == ocupadoRaiz)
+	{
+		ocupadoRaiz= ocupadoRaiz->sgte;
+		if(ocupadoRaiz)
+		{
+			ocupadoRaiz->ant= NULL;
+		}
+	}
 	free(aBorrar);
 	return;
 }
-
 
 int liberarMemoria(espacioOcupado* aBorrar)
 {//se va un proceso y borramos su nodo ocupado y agregamos un libre
@@ -677,37 +672,27 @@ void eliminarListas(void)
 {//liberamos la memoria de las listas de ocupados y de libres
 	if(libreRaiz)//si hay nodos libres
 	{
-		espacioLibre* ultimoLibre=libreRaiz;
-		while(ultimoLibre->sgte)
+		espacioLibre* siguiente= libreRaiz->sgte;
+		while(siguiente)
 		{
-			ultimoLibre=ultimoLibre->sgte;
+			free(libreRaiz);
+			libreRaiz= siguiente;
+			siguiente= siguiente->sgte;
 		}
-		espacioLibre* anterior= ultimoLibre->ant;
-		while(anterior)
-		{
-			free(ultimoLibre);
-			ultimoLibre=anterior;
-			anterior= ultimoLibre->ant;
-		}
-		free(ultimoLibre);
-		libreRaiz=NULL;
+		free(liberRaiz);
+		libreRaiz= NULL;
 	}
 	if(ocupadoRaiz)//si hay nodos ocupados
 	{
-		espacioOcupado* ultimoOcupado=ocupadoRaiz;
-		while(ultimoOcupado->sgte)
+		espacioOcupado* siguiente= ocupadoRaiz->sgte;
+		while(siguiente)
 		{
-			ultimoOcupado=ultimoOcupado->sgte;
+			free(ocupadoRaiz);
+			ocupadoRaiz= siguiente;
+			siguiente= siguiente->sgte;
 		}
-		espacioOcupado* anterior= ultimoOcupado->ant;
-		while(anterior)
-		{
-			free(ultimoOcupado);
-			ultimoOcupado=anterior;
-			anterior= ultimoOcupado->ant;
-		}
-		free(ultimoOcupado);
-		ocupadoRaiz=NULL;
+		free(ocupadoRaiz);
+		ocupadoRaiz= NULL;
 	}
 	return;
 }
