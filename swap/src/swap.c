@@ -192,38 +192,28 @@ void desfragmentar(void)
 
 int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NODOS OCUPADOS SE APILAN SIN ORDEN
 {//llega un proceso nuevo y le asignamos un nodo correspondiente
-	if(!ocupadoRaiz)
+	espacioOcupado* aux= ocupadoRaiz;
+	while(aux && aux->sgte)//vamos al ultimo nodo si hay una lista
 	{
-		ocupadoRaiz= malloc(sizeof(espacioOcupado));
-		if(!ocupadoRaiz)
-			{
-				printf("fallo el malloc para la lista de ocupados en swap.c \n");
-				return 0;
-			}
-		ocupadoRaiz->ant=NULL;
-		ocupadoRaiz->sgte=NULL;
-		ocupadoRaiz->pid=pid;
-		ocupadoRaiz->cantPag=cantPag;
-		ocupadoRaiz->comienzo=comienzo;
-		return 1;
-	}
-	espacioOcupado* ultimo= ocupadoRaiz;
-	while(ultimo->sgte)//puntero al ultimo nodo de ocupados
-	{
-		ultimo=ultimo->sgte;
+		aux= aux->sgte;
 	}
 	espacioOcupado* nuevo= malloc(sizeof(espacioOcupado));
 	if(!nuevo)
 	{
-		printf("fallo el malloc para la lista de ocupados en swap.c \n");
+		printf("fallo el malloc para la listade ocupados \n");
 		return 0;
 	}
-	ultimo->sgte=nuevo;
-	nuevo->sgte=NULL;
-	nuevo->ant=ultimo;
-	nuevo->pid=pid;
-	nuevo->cantPag=cantPag;
-	nuevo->comienzo=comienzo;
+	nuevo->pid= pid;
+	nuevo->cantPag= cantPag;
+	nuevo->comienzo= comienzo;
+	nuevo->sgte= NULL;
+	nuevo->ant= aux;
+	if(!aux)//si no habia nodos
+	{
+		ocupadoRaiz= nuevo;
+		return 1;
+	}
+	aux->sgte= nuevo;//si habia
 	return 1;
 }
 
