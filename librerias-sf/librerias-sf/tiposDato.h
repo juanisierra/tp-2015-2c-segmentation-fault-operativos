@@ -118,7 +118,6 @@ typedef struct espacioOcupado_t
 }espacioOcupado;
 typedef struct tablaPag_t
 {
-	int nPag;
 	int valido; //0 si no esta en memoria 1 si si
 	int numMarco;//marco en el que se encuentra si valido vale 1
 } tablaPag;
