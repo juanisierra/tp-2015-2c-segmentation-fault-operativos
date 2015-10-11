@@ -233,10 +233,10 @@ config_ADM cargarConfiguracionADM(char * ruta) {
 	char linea[200];
 		char campo[50];
 		char valor[50];
-		char cargados[9]; //Vector que avisa si se cargo el dato, 0 PE , 1 AP, 2 QUANTUM
+		char cargados[10]; //Vector que avisa si se cargo el dato, 0 PE , 1 AP, 2 QUANTUM
 		int verifica; // Cuando vale 1 se cargaron todos los datos
 		int m=0;
-		for(m=0;m<9;m++) cargados[m]=0; //Lo inicializo en 0 sin datos cargados
+		for(m=0;m<10;m++) cargados[m]=0; //Lo inicializo en 0 sin datos cargados
 	archivoConfiguracion= fopen(ruta,"r");
 	if(archivoConfiguracion==NULL)
 	{
@@ -322,10 +322,33 @@ config_ADM cargarConfiguracionADM(char * ruta) {
 				config.RETARDO_MEMORIA = atoi(valor);
 				cargados[8]=1;
 		}
-}
+//CARGAR ALGORITMO REEMPLAZO *********************
+			if(strcmp(campo,"ALGORITMO_REEMPLAZO")==0)
+			{
+						if(strcmp(valor,"FIFO")==0){
+							config.ALGORITMO_REEMPLAZO=0;
+							cargados[9]=1;
+						}
+						if(strcmp(valor,"LRU")==0){
+								config.ALGORITMO_REEMPLAZO=1;
+								cargados[9]=1;
+						}
+						if(strcmp(valor,"CLOCK-M")==0) {
+							config.ALGORITMO_REEMPLAZO=2;
+							cargados[9]=1;
+						}
+						if(strcmp(valor,"FIFO")&& strcmp(valor,"LRU") && strcmp(valor,"CLOCK-M")){
+							config.ALGORITMO_REEMPLAZO=-1;
+							printf("Ingrese un algoritmo de reemplazo adecuado\n");
+							config.estado=-1;
+							fclose(archivoConfiguracion);
+							return config;
+						}
+			}
+			}
 } //VERIFICACION DEL INGRESO DE TODOS LOS PARAMETROS***************************
 	verifica=1;
-		for(m=0;m<9;m++) {
+		for(m=0;m<10;m++) {
 			if(cargados[m]==0)
 				{verifica=0;
 				}

@@ -40,6 +40,7 @@ typedef struct {
 	int ENTRADAS_TLB;
 	int TLB_HABILITADA; //0 -> NO   1-> SI
 	int RETARDO_MEMORIA;
+	int ALGORITMO_REEMPLAZO; //0 FIFO 1 LRU 2 CLOCK-M
 } config_ADM;
 
 typedef struct {

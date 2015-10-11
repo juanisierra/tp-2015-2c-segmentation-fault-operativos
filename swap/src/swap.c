@@ -679,7 +679,7 @@ void eliminarListas(void)
 			libreRaiz= siguiente;
 			siguiente= siguiente->sgte;
 		}
-		free(liberRaiz);
+		free(libreRaiz);
 		libreRaiz= NULL;
 	}
 	if(ocupadoRaiz)//si hay nodos ocupados

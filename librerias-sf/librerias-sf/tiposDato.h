@@ -116,5 +116,35 @@ typedef struct espacioOcupado_t
 	uint32_t cantPag;
 	uint32_t pid;
 }espacioOcupado;
+typedef struct tablaPag_t
+{
+	int nPag;
+	int valido; //0 si no esta en memoria 1 si si
+	int numMarco;//marco en el que se encuentra si valido vale 1
+} tablaPag;
+typedef struct nodoListaTP_t //Nodos de la lista de tablas de paginas del adm
+{
+	struct nodoListaTP_t* ant;
+	struct nodoListaTP_t* sgte;
+	int pid;
+	int cantPaginas;
+	int marcosAsignados; //Chequear si es menor al tamanio de marcos maximo.
+	int cantPaginasAcc;
+	int cantFallosPag;
+	tablaPag* tabla; //aca va la tabla en si malloc(sizeof(tablaPag)*cantPaginas)
+} nodoListaTP;
 
+typedef struct tlb_t //Registros de la tlb
+{	int indice; //Cada vez que se asigna una se le da un indice, el indice menor es el que se saca. (-1 si esta libre)
+	int pid;
+	int nPag;
+	int numMarco;
+} tlb;
+typedef struct tMarco_t { //Registro de la tabla de marcos
+	int pid;
+	int nPag;
+	int indice; //-1 si esta libre
+	int modif; // 0 no, 1 si
+	char* contenido;  //Debemos hacer un malloc del tamanio elegido de marcos al principio.
+} tMarco;
 #endif /* LIBRERIAS_SF_TIPOSDATO_H_ */

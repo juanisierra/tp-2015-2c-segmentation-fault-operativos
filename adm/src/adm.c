@@ -15,7 +15,15 @@
 #define RUTACONFIG "configuracion"
 #define TAMANIOMAXIMOTEXTO 200
 #define TAMANIOMAXIMOLINEA 200
+#define RUTACONFIG "configuracion"
 
+
+config_ADM configuracion;
+int aciertosTLB;
+int fallosTLB;
+nodoListaTP* raizTP;
+tlb* TLB;
+tMarco* tMarcos;
 int iniciarConfiguracion(config_ADM* configuracion)
 {
 	printf("Cargando Configuracion..\n");
@@ -34,15 +42,58 @@ int iniciarConfiguracion(config_ADM* configuracion)
 			printf("Tamanio Marco: %d\n",configuracion->TAMANIO_MARCO);
 			printf("Entradas TLB: %d\n",configuracion->ENTRADAS_TLB);
 			printf("TLB Habilitada: %d\n",configuracion->TLB_HABILITADA);
-			printf("Retardo Memoria: %d\n\n",configuracion->RETARDO_MEMORIA);
+			printf("Retardo Memoria: %d\n",configuracion->RETARDO_MEMORIA);
+			printf("Algoritmo de Reemplazo %d\n\n",configuracion->ALGORITMO_REEMPLAZO);
 			return 0;
 		}
 	return -1;
 }
-#define RUTACONFIG "configuracion"
+int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
+{	int i=0;
+	int fallo=0;
+if(configuracion.TLB_HABILITADA==1){
+	TLB=malloc(sizeof(tlb)*(configuracion.ENTRADAS_TLB));
+	if(TLB==NULL) fallo=-1;
+	for(i=0;i<configuracion.ENTRADAS_TLB;i++) TLB[i].indice=-1;
+} else {
+	TLB=NULL;
+}
+	tMarcos=malloc(sizeof(tMarco)*(configuracion.CANTIDAD_MARCOS));
+	if(tMarcos!=NULL) {
+	for(i=0;i<(configuracion.CANTIDAD_MARCOS);i++) //Inicia los marcos con el tamanio de cada uno.
+	{	tMarcos[i].indice=-1; //Inicializamos todos los marcos como libres
+		tMarcos[i].contenido=malloc(configuracion.TAMANIO_MARCO);
+		if (tMarcos[i].contenido==NULL) fallo=-1;
+	}
+	} else {
+		fallo=-1;
+	}
+	raizTP=NULL;
+
+	if(fallo==0) printf("Tablas iniciadas\n");
+	return fallo;
+}
+void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
+{	int i=0;
+	if(TLB!=NULL) free(TLB);
+	if(tMarcos!=NULL)
+	{
+		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
+		{
+			if(tMarcos[i].contenido!=NULL)
+				{
+				free(tMarcos[i].contenido);
+				tMarcos[i].contenido=NULL;
+				}
+		}
+		free(tMarcos);
+	}
+	printf("Tablas finalizadas\n");
+}
+
 int main()
 {
-	config_ADM configuracion;
+
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Administrador de Memoria \nEstableciendo conexion.. \n");
 	int socketSWAP;
@@ -67,17 +118,19 @@ int main()
 			printf("No se pudo crear socket de conexion al SWAP \n"); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 			return 0;
 		}
-
-
-
-
-
+	if(iniciarTablas()==-1)
+	{
+		printf("Fallo la creacion de las tablas\n");
+		return -1;
+	}
 
 	struct sockaddr_in addr;
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones.. \n");
 	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	printf("Conectado al CPU en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
+//EMPIEZA EJECUCION*********************************************************************
+
 	mensaje_CPU_ADM mensajeARecibir;
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
@@ -154,7 +207,7 @@ int main()
 	mensajeDeSWAP.contenidoPagina=NULL;
 	mensajeParaSWAP.contenidoPagina=NULL;
 	}
-
+	finalizarTablas();
 	close(socketCPU);
 	close(socketEscucha);
 	return 0;
