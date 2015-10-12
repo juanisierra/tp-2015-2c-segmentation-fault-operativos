@@ -9,6 +9,7 @@
 #include <librerias-sf/config.h>
 #include <librerias-sf/config.c>
 #include <pthread.h>
+#include <semaphore.h>
 #include <librerias-sf/strings.h>
 #include <librerias-sf/tiposDato.h>
 #define TAMANOPAQUETE 4
@@ -24,6 +25,9 @@ int fallosTLB;
 nodoListaTP* raizTP;
 tlb* TLB;
 tMarco* tMarcos;
+pthread_mutex_t MUTEXTLB;
+pthread_mutex_t MUTEXTM;
+pthread_mutex_t MUTEXLP;
 int iniciarConfiguracion(config_ADM* configuracion)
 {
 	printf("Cargando Configuracion..\n");
@@ -51,13 +55,16 @@ int iniciarConfiguracion(config_ADM* configuracion)
 int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
 {	int i=0;
 	int fallo=0;
+
 if(configuracion.TLB_HABILITADA==1){
+
 	TLB=malloc(sizeof(tlb)*(configuracion.ENTRADAS_TLB));
 	if(TLB==NULL) fallo=-1;
 	for(i=0;i<configuracion.ENTRADAS_TLB;i++) TLB[i].indice=-1;
 } else {
 	TLB=NULL;
 }
+
 	tMarcos=malloc(sizeof(tMarco)*(configuracion.CANTIDAD_MARCOS));
 	if(tMarcos!=NULL) {
 	for(i=0;i<(configuracion.CANTIDAD_MARCOS);i++) //Inicia los marcos con el tamanio de cada uno.
@@ -68,6 +75,7 @@ if(configuracion.TLB_HABILITADA==1){
 	} else {
 		fallo=-1;
 	}
+
 	raizTP=NULL;
 
 	if(fallo==0) printf("Tablas iniciadas\n");
@@ -75,25 +83,36 @@ if(configuracion.TLB_HABILITADA==1){
 }
 int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
 { 	int i;
+
 	if(TLB!=NULL){
 	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
 	{
-		if(TLB[i].pid==pid && TLB[i].nPag==numPag) return i;
+		if(TLB[i].pid==pid && TLB[i].nPag==numPag) {
+
+			return i;
+		}
 	}
 }
+
 return -1;
 }
 int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si devuelve -1 es porqeu no hay tlb.
 {	int i=0;
 	int posMenor=0;
+
 	if(TLB!=NULL) {
 		for(i=0;i<configuracion.ENTRADAS_TLB;i++)
 		{
-			if(TLB[i].indice==-1) return i;
+			if(TLB[i].indice==-1) {
+
+				return i;
+			}
 			if(TLB[i].indice<=TLB[posMenor].indice) posMenor=i;
 		}
+
 		return posMenor;
 	}
+
 	return -1;
 
 }
@@ -101,27 +120,36 @@ int entradaTMarcoAReemplazar(void) //FALTA IMPLEMENTACION PARA CLOCK M
 {
 	int i=0;
 	int posMenor=0;
+
 	if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1)
 	{
 	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
-	{	if(tMarcos[i].indice==-1) return i;
+	{	if(tMarcos[i].indice==-1){
+
+		return i;
+	}
 		if(tMarcos[i].indice<=tMarcos[posMenor].indice) posMenor=i;
 
 	}
+
 	return posMenor;
 	}
+
 	return -1;
 }
 nodoListaTP* ultimoNodoTP(void)
 {
 	nodoListaTP*aux;
+
 	aux=raizTP;
 	while(aux!=NULL && aux->sgte!=NULL) aux=aux->sgte;
+
 	return aux;
 }
 void agregarProceso(int pid, int cantPaginas)
 {	int i;
 	nodoListaTP* ultimoNodo=ultimoNodoTP();
+
 	if(ultimoNodo==raizTP)
 		{
 		ultimoNodo=malloc(sizeof(nodoListaTP));
@@ -143,21 +171,28 @@ void agregarProceso(int pid, int cantPaginas)
 		{
 			ultimoNodo->tabla[i].valido=0;
 		}
+
 		return;
 }
 nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
 { nodoListaTP* aux;
 	aux=raizTP;
+
 	while(aux!=NULL && aux->sgte!=NULL)
-	{	if(aux->pid==pid) return aux;
+	{	if(aux->pid==pid) {
+
+		return aux;
+	}
 		aux=aux->sgte;
 	}
+
 	return NULL;
 }
 void eliminarProceso(int pid)
 {	int i;
 	nodoListaTP* aEliminar;
 	aEliminar=buscarProceso(pid);
+
 	if(aEliminar!=NULL)
 	{
 		if(aEliminar->sgte!=NULL) aEliminar->sgte->ant=aEliminar->ant;
@@ -165,6 +200,7 @@ void eliminarProceso(int pid)
 		if(aEliminar->tabla!=NULL) free(aEliminar->tabla);
 		free(aEliminar);
 	}
+
 	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //BORRA LOS MARCOS DEL PROCESO
 	{
 		if(tMarcos[i].indice!=-1 && tMarcos[i].pid==pid)
@@ -174,6 +210,7 @@ void eliminarProceso(int pid)
 			tMarcos[i].pid=-1;
 			}
 	}
+
 	if(configuracion.TLB_HABILITADA==1)
 	{
 	for(i=0;i<configuracion.ENTRADAS_TLB;i++) //BORRA LAS ENTRADAS DE LA TLB DEL PROCESO
@@ -185,6 +222,7 @@ void eliminarProceso(int pid)
 		}
 	}
 	}
+
 	return;
 }
 void finalizarListaTP(void)
@@ -201,9 +239,10 @@ void finalizarListaTP(void)
 		free(aux->tabla);
 		free(aux);
 	}
+
 	return;
 }
-int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memoria, sino -1 y -2 si hubo error
+int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memoria, sino -1 y -2 si hubo error, NO USA MUTEX!!!
 {	nodoListaTP* nodo;
 	tablaPag* tabla;
 	nodo=buscarProceso(pid);
@@ -217,6 +256,7 @@ int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memo
 void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
 {	int i=0;
 	if(TLB!=NULL) free(TLB);
+
 	if(tMarcos!=NULL)
 	{
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
@@ -230,11 +270,14 @@ void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
 		free(tMarcos);
 	}
 	if(raizTP!=NULL) finalizarListaTP();
+
 	printf("Tablas finalizadas\n");
 }
 int main()
 {
-
+	pthread_mutex_init(&MUTEXTLB,NULL);
+	pthread_mutex_init(&MUTEXTM,NULL);
+	pthread_mutex_init(&MUTEXLP,NULL);
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	printf("Administrador de Memoria \nEstableciendo conexion.. \n");
 	int socketSWAP;
@@ -294,8 +337,9 @@ int main()
 		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
 		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 		if(mensajeDeSWAP.estado==0)
-		{
+		{	pthread_mutex_lock(&MUTEXLP);
 			agregarProceso(mensajeARecibir.pid,mensajeARecibir.parametro);
+			pthread_mutex_unlock(&MUTEXLP);
 		}
 		mensajeAMandar.parametro = mensajeDeSWAP.estado;
 		mensajeAMandar.tamanoMensaje = 0;
@@ -340,7 +384,13 @@ int main()
 	mensajeParaSWAP.contenidoPagina=NULL;
 	enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
 	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+	pthread_mutex_lock(&MUTEXLP);
+	pthread_mutex_lock(&MUTEXTM);
+	pthread_mutex_lock(&MUTEXTLB);
 	eliminarProceso(mensajeARecibir.pid); //FINALIZA EL PROCESO EN LA LISTA DE TABLAS DE PAG Y DEMAS
+	pthread_mutex_unlock(&MUTEXLP);
+	pthread_mutex_unlock(&MUTEXTM);
+	pthread_mutex_unlock(&MUTEXTLB);
 	mensajeAMandar.parametro = mensajeDeSWAP.estado;
 	mensajeAMandar.tamanoMensaje = 0;
 	mensajeAMandar.texto = NULL;
@@ -359,5 +409,8 @@ int main()
 	finalizarTablas();
 	close(socketCPU);
 	close(socketEscucha);
+	pthread_mutex_destroy(&MUTEXTLB);
+	pthread_mutex_destroy(&MUTEXTM);
+	pthread_mutex_destroy(&MUTEXLP);
 	return 0;
 }
