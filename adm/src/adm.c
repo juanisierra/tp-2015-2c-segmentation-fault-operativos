@@ -73,6 +73,147 @@ if(configuracion.TLB_HABILITADA==1){
 	if(fallo==0) printf("Tablas iniciadas\n");
 	return fallo;
 }
+int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
+{ 	int i;
+	if(TLB!=NULL){
+	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
+	{
+		if(TLB[i].pid==pid && TLB[i].nPag==numPag) return i;
+	}
+}
+return -1;
+}
+int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si devuelve -1 es porqeu no hay tlb.
+{	int i=0;
+	int posMenor=0;
+	if(TLB!=NULL) {
+		for(i=0;i<configuracion.ENTRADAS_TLB;i++)
+		{
+			if(TLB[i].indice==-1) return i;
+			if(TLB[i].indice<=TLB[posMenor].indice) posMenor=i;
+		}
+		return posMenor;
+	}
+	return -1;
+
+}
+int entradaTMarcoAReemplazar(void) //FALTA IMPLEMENTACION PARA CLOCK M
+{
+	int i=0;
+	int posMenor=0;
+	if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1)
+	{
+	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
+	{	if(tMarcos[i].indice==-1) return i;
+		if(tMarcos[i].indice<=tMarcos[posMenor].indice) posMenor=i;
+
+	}
+	return posMenor;
+	}
+	return -1;
+}
+nodoListaTP* ultimoNodoTP(void)
+{
+	nodoListaTP*aux;
+	aux=raizTP;
+	while(aux!=NULL && aux->sgte!=NULL) aux=aux->sgte;
+	return aux;
+}
+void agregarProceso(int pid, int cantPaginas)
+{	int i;
+	nodoListaTP* ultimoNodo=ultimoNodoTP();
+	if(ultimoNodo==raizTP)
+		{
+		ultimoNodo=malloc(sizeof(nodoListaTP));
+		ultimoNodo->ant=NULL;
+		raizTP=ultimoNodo;
+		} else {
+		ultimoNodo->sgte=malloc(sizeof(nodoListaTP));
+		ultimoNodo->sgte->ant=ultimoNodo;
+		ultimoNodo=ultimoNodo->sgte;
+		}
+		ultimoNodo->sgte=NULL;
+		ultimoNodo->cantPaginas=cantPaginas;
+		ultimoNodo->pid=pid;
+		ultimoNodo->marcosAsignados=0;
+		ultimoNodo->cantFallosPag=0;
+		ultimoNodo->cantPaginasAcc=0;
+		ultimoNodo->tabla=malloc(sizeof(tablaPag)*cantPaginas);
+		for(i=0;i<cantPaginas;i++)
+		{
+			ultimoNodo->tabla[i].valido=0;
+		}
+		return;
+}
+nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
+{ nodoListaTP* aux;
+	aux=raizTP;
+	while(aux!=NULL && aux->sgte!=NULL)
+	{	if(aux->pid==pid) return aux;
+		aux=aux->sgte;
+	}
+	return NULL;
+}
+void eliminarProceso(int pid)
+{	int i;
+	nodoListaTP* aEliminar;
+	aEliminar=buscarProceso(pid);
+	if(aEliminar!=NULL)
+	{
+		if(aEliminar->sgte!=NULL) aEliminar->sgte->ant=aEliminar->ant;
+		if(aEliminar->ant!=NULL) aEliminar->ant->sgte=aEliminar->sgte;
+		if(aEliminar->tabla!=NULL) free(aEliminar->tabla);
+		free(aEliminar);
+	}
+	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //BORRA LOS MARCOS DEL PROCESO
+	{
+		if(tMarcos[i].indice!=-1 && tMarcos[i].pid==pid)
+			{
+			tMarcos[i].indice=-1;
+			tMarcos[i].modif=0;
+			tMarcos[i].pid=-1;
+			}
+	}
+	if(configuracion.TLB_HABILITADA==1)
+	{
+	for(i=0;i<configuracion.ENTRADAS_TLB;i++) //BORRA LAS ENTRADAS DE LA TLB DEL PROCESO
+	{
+		if(TLB[i].indice!=-1 && TLB[i].pid==pid)
+		{
+			TLB[i].indice=-1;
+			TLB[i].pid=-1;
+		}
+	}
+	}
+	return;
+}
+void finalizarListaTP(void)
+{	nodoListaTP* aux;
+	aux=ultimoNodoTP();
+	while(aux!=NULL && aux->ant!=NULL)
+	{
+	aux=aux->ant;
+	if(aux->sgte->tabla!=NULL) free(aux->sgte->tabla);
+	free(aux->sgte);
+	}
+	if(aux!=NULL)
+	{	if(aux==raizTP) raizTP=NULL;
+		free(aux->tabla);
+		free(aux);
+	}
+	return;
+}
+int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memoria, sino -1 y -2 si hubo error
+{	nodoListaTP* nodo;
+	tablaPag* tabla;
+	nodo=buscarProceso(pid);
+	if(nodo!=NULL) //ENCONTRO EL NODO
+	{	tabla=nodo->tabla;
+		if(tabla[nPag].valido==1) return tabla->numMarco;
+		if(tabla[nPag].valido==0) return -1;
+	}
+	return -2;
+}
 void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
 {	int i=0;
 	if(TLB!=NULL) free(TLB);
@@ -88,9 +229,9 @@ void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
 		}
 		free(tMarcos);
 	}
+	if(raizTP!=NULL) finalizarListaTP();
 	printf("Tablas finalizadas\n");
 }
-
 int main()
 {
 
@@ -143,14 +284,19 @@ int main()
 	printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
 	if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
 	if(mensajeARecibir.tamTexto==0) printf("\n");
+
 	if(mensajeARecibir.instruccion == INICIAR)
 	{
-	mensajeParaSWAP.pid=mensajeARecibir.pid;
+		mensajeParaSWAP.pid=mensajeARecibir.pid;
 		mensajeParaSWAP.instruccion=INICIAR;
 		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
 		mensajeParaSWAP.contenidoPagina=NULL;
 		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
 		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+		if(mensajeDeSWAP.estado==0)
+		{
+			agregarProceso(mensajeARecibir.pid,mensajeARecibir.parametro);
+		}
 		mensajeAMandar.parametro = mensajeDeSWAP.estado;
 		mensajeAMandar.tamanoMensaje = 0;
 		mensajeAMandar.texto = NULL;
@@ -194,11 +340,14 @@ int main()
 	mensajeParaSWAP.contenidoPagina=NULL;
 	enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
 	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+	eliminarProceso(mensajeARecibir.pid); //FINALIZA EL PROCESO EN LA LISTA DE TABLAS DE PAG Y DEMAS
 	mensajeAMandar.parametro = mensajeDeSWAP.estado;
 	mensajeAMandar.tamanoMensaje = 0;
 	mensajeAMandar.texto = NULL;
 	enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 	}
+
+
 	if(mensajeAMandar.texto!=NULL) free(mensajeAMandar.texto);
 	if(mensajeARecibir.texto!=NULL) free(mensajeARecibir.texto); ///////
 	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);

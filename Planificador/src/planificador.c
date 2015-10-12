@@ -56,7 +56,7 @@ int iniciarConfiguracion(config_pl* configuracion)
 	return -1;
 }
 void hiloConsola(void)
-{
+{  FILE* pruebaPath;
 	int estado_consola = 1;
 	char ingresado[TAMANOCONSOLA];
 	char instruccion[20];
@@ -79,13 +79,18 @@ void hiloConsola(void)
 		mostrarPCBS(raizListos, raizBloqueados,PCBBloqueado,raizCPUS);
 		}
 		if(strcmp(instruccion,"correr")==0)//el usuario corre un programa
-		{
+		{ if((pruebaPath=fopen(parametro,"r"))!=NULL) { //EL PATH ES VALIDO
+			fclose(pruebaPath);
 			pthread_mutex_lock(&MUTEXLISTOS);
 			agregarNodoPCB(&raizListos,crearNodoPCB(pid_cuenta,parametro));//agregamos el PCB a la lista de listos, uno a la vez.
 			pid_cuenta++; //Aumenta PID
 			pthread_mutex_unlock(&MUTEXLISTOS);
 			sem_post(&SEMAFOROLISTOS);
-		} //FALTA FINALIZAR
+		} else
+		{
+			printf("El archivo %s es invalido\n",parametro);
+		}
+		}
 		if(strcmp(instruccion,"finalizar")==0)
 		{		pthread_mutex_lock(&MUTEXCPUS); //CAMBIAR PARA MUCHOS CPU***************************************************************************************************************
 		printf("POR FINALIZAR PID: %d\n",atoi(parametro));
