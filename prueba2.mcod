@@ -3,6 +3,8 @@ escribir 2 "k";
 leer 2;
 escribir 1 "m";
 leer 1;
+entrada-salida 10;
 escribir 0 "la";
 leer 0;
+leer 2;
 finalizar;

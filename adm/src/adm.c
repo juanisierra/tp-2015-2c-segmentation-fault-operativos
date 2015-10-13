@@ -63,7 +63,13 @@ if(configuracion.TLB_HABILITADA==1){
 
 	TLB=malloc(sizeof(tlb)*(configuracion.ENTRADAS_TLB));
 	if(TLB==NULL) fallo=-1;
-	for(i=0;i<configuracion.ENTRADAS_TLB;i++) TLB[i].indice=-1;
+	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
+		{
+		TLB[i].pid=-1;
+		TLB[i].indice=-1;
+		TLB[i].nPag=0;
+		TLB[i].numMarco=-1;
+		}
 } else {
 	TLB=NULL;
 }
@@ -87,11 +93,11 @@ if(configuracion.TLB_HABILITADA==1){
 int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
 {
 	int i;
-	if(TLB!=NULL)
+	if(TLB!=NULL && configuracion.TLB_HABILITADA==1)
 	{
 		for(i=0;i<configuracion.ENTRADAS_TLB;i++)
 		{
-			if(TLB[i].pid==pid && TLB[i].nPag==numPag)
+			if((TLB[i].pid)==pid && (TLB[i]).nPag==numPag)
 			{
 				return i;
 			}
@@ -145,11 +151,12 @@ void agregarProceso(int pid, int cantPaginas)
 {
 	int i;
 	nodoListaTP* ultimoNodo=ultimoNodoTP();
-	if(ultimoNodo==raizTP)
+
+	if(raizTP==NULL)
 	{
-		ultimoNodo=malloc(sizeof(nodoListaTP));
-		ultimoNodo->ant=NULL;
-		raizTP=ultimoNodo;
+		raizTP=malloc(sizeof(nodoListaTP));
+		raizTP->ant=NULL;
+		ultimoNodo=raizTP;
 	}
 	else
 	{
@@ -177,9 +184,13 @@ nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
 	aux=raizTP;
 	while(aux!=NULL)
 	{
-		if(aux->pid==pid) return aux;
+		if(aux->pid==pid)
+		{
+			return aux;
+		}
 		aux=aux->sgte;
 	}
+
 	return NULL;
 }
 
@@ -189,11 +200,17 @@ void eliminarProceso(int pid)
 	nodoListaTP* aEliminar;
 	aEliminar=buscarProceso(pid);
 	if(aEliminar!=NULL)
-	{
+	{	if(aEliminar==raizTP)
+		{
+		raizTP=aEliminar->sgte;
+		}
 		if(aEliminar->sgte!=NULL) aEliminar->sgte->ant=aEliminar->ant;
 		if(aEliminar->ant!=NULL) aEliminar->ant->sgte=aEliminar->sgte;
 		if(aEliminar->tabla!=NULL) free(aEliminar->tabla);
+		aEliminar->tabla=NULL;
+		printf("TERMINO Y ELMINO EL PROCEO %d\n",aEliminar->pid);///////////////////////
 		free(aEliminar);
+		aEliminar=NULL;
 	}
 	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //BORRA LOS MARCOS DEL PROCESO
 	{
@@ -215,6 +232,7 @@ void eliminarProceso(int pid)
 			}
 		}
 	}
+
 	return;
 }
 
@@ -226,13 +244,18 @@ void finalizarListaTP(void)
 	{
 		aux=aux->ant;
 		if(aux->sgte->tabla!=NULL) free(aux->sgte->tabla);
+		aux->sgte->tabla=NULL;
 		free(aux->sgte);
+		aux->sgte=NULL;
 	}
+
 	if(aux!=NULL)
 	{
 		if(aux==raizTP) raizTP=NULL;
 		free(aux->tabla);
+		aux->tabla=NULL;
 		free(aux);
+		aux=NULL;
 	}
 	return;
 }
@@ -244,7 +267,7 @@ int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memo
 	if(nodo!=NULL) //ENCONTRO EL NODO
 	{
 		tabla=nodo->tabla;
-		if(tabla[nPag].valido==1) return tabla->numMarco;
+		if(tabla[nPag].valido==1) return tabla[nPag].numMarco;
 		if(tabla[nPag].valido==0) return -1;
 	}
 	return -2;
@@ -254,6 +277,7 @@ void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
 {
 	int i=0;
 	if(TLB!=NULL) free(TLB);
+	TLB=NULL;
 	if(tMarcos!=NULL)
 	{
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
@@ -265,6 +289,7 @@ void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
 				}
 		}
 		free(tMarcos);
+		tMarcos=NULL;
 	}
 	if(raizTP!=NULL) finalizarListaTP();
 	printf("Tablas finalizadas\n");
@@ -298,6 +323,11 @@ int reemplazarMarco(int pid,int pagina)
 				mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
 				strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[aReemplazar].contenido);
 				enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO); //MANDA LAPAGINA A ESCRIBIRSE
+				if(mensajeParaSWAP.contenidoPagina!=NULL)
+				{
+					free(mensajeParaSWAP.contenidoPagina);
+					mensajeParaSWAP.contenidoPagina=NULL;
+				}
 				recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 				if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
 				nodoProcesoViejo=buscarProceso(tMarcos[aReemplazar].pid);
@@ -324,6 +354,11 @@ int reemplazarMarco(int pid,int pagina)
 	mensajeParaSWAP.parametro=pagina;
 	mensajeParaSWAP.contenidoPagina=NULL;
 	enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+	if(mensajeParaSWAP.contenidoPagina!=NULL)
+	{
+		free(mensajeParaSWAP.contenidoPagina);
+		mensajeParaSWAP.contenidoPagina=NULL;
+	}
 	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 	strcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina); ///ESCRIOBIMOS LA PAGINA
 	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
@@ -333,8 +368,9 @@ int reemplazarMarco(int pid,int pagina)
 	tMarcos[aReemplazar].pid=pid;
 	tMarcos[aReemplazar].nPag=pagina;
 	nodoProceso->marcosAsignados++;
-	nodoProceso->tabla[pagina].valido=1; //CARGAMOS LA PAGINA COMO VALIDA
-	nodoProceso->tabla[pagina].numMarco=aReemplazar;
+	(nodoProceso->tabla)[pagina].valido=1; //CARGAMOS LA PAGINA COMO VALIDA  ////***
+	(nodoProceso->tabla)[pagina].numMarco=aReemplazar;
+
 	return aReemplazar;
 }
 
@@ -478,13 +514,7 @@ int main()
 	}
 	if(mensajeARecibir.instruccion == LEER)
 	{
-	/*mensajeParaSWAP.pid=mensajeARecibir.pid;
-		mensajeParaSWAP.instruccion=LEER;
-		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
-		mensajeParaSWAP.contenidoPagina=NULL;
-		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
-		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-		*/
+
 		marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
 		if(marcoAUsar!=-4) { //EL MARCO ESTA O PUEDEN DARLE UNO
 		mensajeAMandar.parametro=mensajeARecibir.parametro;
@@ -500,14 +530,7 @@ int main()
 	}
 	if(mensajeARecibir.instruccion == ESCRIBIR)
 	{
-		/*mensajeParaSWAP.pid=mensajeARecibir.pid;
-		mensajeParaSWAP.instruccion=ESCRIBIR;
-		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
-		mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
-		strcpy(mensajeParaSWAP.contenidoPagina,mensajeARecibir.texto);
-		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
-		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-		*/
+
 		marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
 		if(marcoAUsar!=-4){
 		pthread_mutex_lock(&MUTEXTM);
@@ -553,6 +576,7 @@ int main()
 	mensajeDeSWAP.contenidoPagina=NULL;
 	mensajeParaSWAP.contenidoPagina=NULL;
 	}
+	printf("La cantidad de aciertos de TLB fue: %d, y la de errores: %d\n",aciertosTLB,fallosTLB);
 	finalizarTablas();
 	close(socketCPU);
 	close(socketEscucha);
