@@ -18,7 +18,6 @@
 #define TAMANIOMAXIMOLINEA 200
 #define RUTACONFIG "configuracion"
 
-
 config_ADM configuracion;
 int aciertosTLB;
 int fallosTLB;
@@ -86,117 +85,109 @@ if(configuracion.TLB_HABILITADA==1){
 	return fallo;
 }
 int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
-{ 	int i;
-
-	if(TLB!=NULL){
-	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
+{
+	int i;
+	if(TLB!=NULL)
 	{
-		if(TLB[i].pid==pid && TLB[i].nPag==numPag) {
-
-			return i;
-		}
-	}
-	return -1;
-}
-
-return -1;
-}
-int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si devuelve -1 es porqeu no hay tlb.
-{	int i=0;
-	int posMenor=0;
-
-	if(TLB!=NULL) {
 		for(i=0;i<configuracion.ENTRADAS_TLB;i++)
 		{
-			if(TLB[i].indice==-1) {
-
+			if(TLB[i].pid==pid && TLB[i].nPag==numPag)
+			{
 				return i;
 			}
+		}
+		return -1;
+	}
+	return -1;
+}
+
+int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si devuelve -1 es porqeu no hay tlb.
+{
+	int i=0;
+	int posMenor=0;
+	if(TLB!=NULL)
+	{
+		for(i=0;i<configuracion.ENTRADAS_TLB;i++)
+		{
+			if(TLB[i].indice==-1) return i;
 			if(TLB[i].indice<=TLB[posMenor].indice) posMenor=i;
 		}
-
 		return posMenor;
 	}
-
 	return -1;
-
 }
+
 int entradaTMarcoAReemplazar(void) //FALTA IMPLEMENTACION PARA CLOCK M
 {
 	int i=0;
 	int posMenor=0;
-
 	if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1)
 	{
-	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
-	{	if(tMarcos[i].indice==-1){
-
-		return i;
+		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
+		{
+			if(tMarcos[i].indice==-1) return i;
+			if(tMarcos[i].indice<=tMarcos[posMenor].indice) posMenor=i;
+		}
+		return posMenor;
 	}
-		if(tMarcos[i].indice<=tMarcos[posMenor].indice) posMenor=i;
-
-	}
-
-	return posMenor;
-	}
-
 	return -1;
 }
+
 nodoListaTP* ultimoNodoTP(void)
 {
 	nodoListaTP*aux;
-	if(raizTP==NULL) return raizTP;
 	aux=raizTP;
 	while(aux!=NULL && aux->sgte!=NULL) aux=aux->sgte;
 	return aux;
 }
-void agregarProceso(int pid, int cantPaginas)
-{	int i;
-	nodoListaTP* ultimoNodo=ultimoNodoTP();
 
+void agregarProceso(int pid, int cantPaginas)
+{
+	int i;
+	nodoListaTP* ultimoNodo=ultimoNodoTP();
 	if(ultimoNodo==raizTP)
-		{
+	{
 		ultimoNodo=malloc(sizeof(nodoListaTP));
 		ultimoNodo->ant=NULL;
 		raizTP=ultimoNodo;
-		} else {
+	}
+	else
+	{
 		ultimoNodo->sgte=malloc(sizeof(nodoListaTP));
 		ultimoNodo->sgte->ant=ultimoNodo;
 		ultimoNodo=ultimoNodo->sgte;
-		}
-		ultimoNodo->sgte=NULL;
-		ultimoNodo->cantPaginas=cantPaginas;
-		ultimoNodo->pid=pid;
-		ultimoNodo->marcosAsignados=0;
-		ultimoNodo->cantFallosPag=0;
-		ultimoNodo->cantPaginasAcc=0;
-		ultimoNodo->tabla=malloc(sizeof(tablaPag)*cantPaginas);
-		for(i=0;i<cantPaginas;i++)
-		{
-			ultimoNodo->tabla[i].valido=0;
-		}
-
-		return;
-}
-nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
-{ nodoListaTP* aux;
-	aux=raizTP;
-	while(aux!=NULL && aux->sgte!=NULL)
-	{	if(aux->pid==pid) {
-
-		return aux;
 	}
+	ultimoNodo->sgte=NULL;
+	ultimoNodo->cantPaginas=cantPaginas;
+	ultimoNodo->pid=pid;
+	ultimoNodo->marcosAsignados=0;
+	ultimoNodo->cantFallosPag=0;
+	ultimoNodo->cantPaginasAcc=0;
+	ultimoNodo->tabla=malloc(sizeof(tablaPag)*cantPaginas);
+	for(i=0;i<cantPaginas;i++)
+	{
+		ultimoNodo->tabla[i].valido=0;
+	}
+	return;
+}
+
+nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
+{
+	nodoListaTP* aux;
+	aux=raizTP;
+	while(aux!=NULL)
+	{
+		if(aux->pid==pid) return aux;
 		aux=aux->sgte;
 	}
-	if(aux->pid==pid) return aux;
-
 	return NULL;
 }
+
 void eliminarProceso(int pid)
-{	int i;
+{
+	int i;
 	nodoListaTP* aEliminar;
 	aEliminar=buscarProceso(pid);
-
 	if(aEliminar!=NULL)
 	{
 		if(aEliminar->sgte!=NULL) aEliminar->sgte->ant=aEliminar->ant;
@@ -204,79 +195,81 @@ void eliminarProceso(int pid)
 		if(aEliminar->tabla!=NULL) free(aEliminar->tabla);
 		free(aEliminar);
 	}
-
 	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //BORRA LOS MARCOS DEL PROCESO
 	{
 		if(tMarcos[i].indice!=-1 && tMarcos[i].pid==pid)
-			{
+		{
 			tMarcos[i].indice=-1;
 			tMarcos[i].modif=0;
 			tMarcos[i].pid=-1;
-			}
-	}
-
-	if(configuracion.TLB_HABILITADA==1)
-	{
-	for(i=0;i<configuracion.ENTRADAS_TLB;i++) //BORRA LAS ENTRADAS DE LA TLB DEL PROCESO
-	{
-		if(TLB[i].indice!=-1 && TLB[i].pid==pid)
-		{
-			TLB[i].indice=-1;
-			TLB[i].pid=-1;
 		}
 	}
+	if(configuracion.TLB_HABILITADA==1)
+	{
+		for(i=0;i<configuracion.ENTRADAS_TLB;i++) //BORRA LAS ENTRADAS DE LA TLB DEL PROCESO
+		{
+			if(TLB[i].indice!=-1 && TLB[i].pid==pid)
+			{
+				TLB[i].indice=-1;
+				TLB[i].pid=-1;
+			}
+		}
 	}
-
 	return;
 }
+
 void finalizarListaTP(void)
-{	nodoListaTP* aux;
+{
+	nodoListaTP* aux;
 	aux=ultimoNodoTP();
 	while(aux!=NULL && aux->ant!=NULL)
 	{
-	aux=aux->ant;
-	if(aux->sgte->tabla!=NULL) free(aux->sgte->tabla);
-	free(aux->sgte);
+		aux=aux->ant;
+		if(aux->sgte->tabla!=NULL) free(aux->sgte->tabla);
+		free(aux->sgte);
 	}
 	if(aux!=NULL)
-	{	if(aux==raizTP) raizTP=NULL;
+	{
+		if(aux==raizTP) raizTP=NULL;
 		free(aux->tabla);
 		free(aux);
 	}
-
 	return;
 }
+
 int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memoria, sino -1 y -2 si hubo error, NO USA MUTEX!!!
 {	nodoListaTP* nodo;
 	tablaPag* tabla;
 	nodo=buscarProceso(pid);
 	if(nodo!=NULL) //ENCONTRO EL NODO
-	{	tabla=nodo->tabla;
+	{
+		tabla=nodo->tabla;
 		if(tabla[nPag].valido==1) return tabla->numMarco;
 		if(tabla[nPag].valido==0) return -1;
 	}
 	return -2;
 }
-void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
-{	int i=0;
-	if(TLB!=NULL) free(TLB);
 
+void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
+{
+	int i=0;
+	if(TLB!=NULL) free(TLB);
 	if(tMarcos!=NULL)
 	{
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 		{
 			if(tMarcos[i].contenido!=NULL)
 				{
-				free(tMarcos[i].contenido);
-				tMarcos[i].contenido=NULL;
+					free(tMarcos[i].contenido);
+					tMarcos[i].contenido=NULL;
 				}
 		}
 		free(tMarcos);
 	}
 	if(raizTP!=NULL) finalizarListaTP();
-
 	printf("Tablas finalizadas\n");
 }
+
 void agregarATLB(int pid,int pagina,int marco)
 {
 	int aAgregar;
@@ -287,6 +280,7 @@ void agregarATLB(int pid,int pagina,int marco)
 	TLB[aAgregar].indice=indiceTLB;
 	indiceTLB++;
 }
+
 int reemplazarMarco(int pid,int pagina)
 {	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
@@ -317,22 +311,22 @@ int reemplazarMarco(int pid,int pagina)
 	if(tMarcos[aReemplazar].indice!=-1 && tMarcos[aReemplazar].modif==0) //SI NO HAY QUE GUARDAR LA PAG PERO SI BORRAR OS DATOS
 	{
 		nodoProcesoViejo=buscarProceso(tMarcos[aReemplazar].pid);
-						nodoProcesoViejo->marcosAsignados--;
-						nodoProcesoViejo->tabla[tMarcos[aReemplazar].nPag].valido=0; //MARCA COMO INVALIDO SU MARCO
-						if((entradaTLBVieja=estaEnTLB(tMarcos[aReemplazar].pid,tMarcos[aReemplazar].nPag))!=-1)
-						{
-							TLB[entradaTLBVieja].indice=-1; //BORRA SU ENTRADA EN LA TLB
-						}
+		nodoProcesoViejo->marcosAsignados--;
+		nodoProcesoViejo->tabla[tMarcos[aReemplazar].nPag].valido=0; //MARCA COMO INVALIDO SU MARCO
+		if((entradaTLBVieja=estaEnTLB(tMarcos[aReemplazar].pid,tMarcos[aReemplazar].nPag))!=-1)
+		{
+			TLB[entradaTLBVieja].indice=-1; //BORRA SU ENTRADA EN LA TLB
+		}
 	}
 	//PEDIMOS PAGINA BUSCADA AL SWAP
-		mensajeParaSWAP.pid=pid;
-		mensajeParaSWAP.instruccion=LEER;
-		mensajeParaSWAP.parametro=pagina;
-		mensajeParaSWAP.contenidoPagina=NULL;
-		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
-		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-		strcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina); ///ESCRIOBIMOS LA PAGINA
-		if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
+	mensajeParaSWAP.pid=pid;
+	mensajeParaSWAP.instruccion=LEER;
+	mensajeParaSWAP.parametro=pagina;
+	mensajeParaSWAP.contenidoPagina=NULL;
+	enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+	strcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina); ///ESCRIOBIMOS LA PAGINA
+	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
 	tMarcos[aReemplazar].modif=0;
 	tMarcos[aReemplazar].indice=indiceMarcos;   //REVISAR PARA CLOCK-M
 	indiceMarcos++;
@@ -343,40 +337,45 @@ int reemplazarMarco(int pid,int pagina)
 	nodoProceso->tabla[pagina].numMarco=aReemplazar;
 	return aReemplazar;
 }
+
 int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
-{	nodoListaTP* nodo;
+{
+	nodoListaTP* nodo;
 	nodo=buscarProceso(pid); //APUNTA AL NODO EN LA LISTA DE LA TABLAD E PAGINAS
 	int ubicada = -1;
 	if(configuracion.TLB_HABILITADA==1) //BUSCA EN LA TLB Y SE FIJA SI ESTA O NO ALLI
-	{	pthread_mutex_lock(&MUTEXTLB);
+	{
+		pthread_mutex_lock(&MUTEXTLB);
 		ubicada= estaEnTLB(pid,numPag);
 		pthread_mutex_unlock(&MUTEXTLB);
 		if(ubicada>=0)
-			{
+		{
 			aciertosTLB++;
 			pthread_mutex_lock(&MUTEXLP);
 			nodo->cantPaginasAcc++;
 			pthread_mutex_unlock(&MUTEXLP);
-			if(configuracion.ALGORITMO_REEMPLAZO==1) { //AL LEER MODIFICA
-			pthread_mutex_lock(&MUTEXTM);
-			tMarcos[ubicada].indice=indiceMarcos;
-			indiceMarcos++;
-			pthread_mutex_unlock(&MUTEXTM);
+			if(configuracion.ALGORITMO_REEMPLAZO==1)//AL LEER MODIFICA
+			{
+				pthread_mutex_lock(&MUTEXTM);
+				tMarcos[ubicada].indice=indiceMarcos;
+				indiceMarcos++;
+				pthread_mutex_unlock(&MUTEXTM);
 			}
 			return ubicada;
-			}
+		}
 		if(ubicada==-1) fallosTLB++;
-
 	}
 	ubicada=estaEnMemoria(pid,numPag); //VE SI ESTA CARGADA EN MEMORIA
 	if(ubicada>0)
-	{	pthread_mutex_lock(&MUTEXLP);
+	{
+		pthread_mutex_lock(&MUTEXLP);
 		nodo->cantPaginasAcc++;
 		pthread_mutex_unlock(&MUTEXLP);
 		pthread_mutex_lock(&MUTEXTLB);
 		if(configuracion.TLB_HABILITADA==1) agregarATLB(pid,numPag,ubicada);
 		pthread_mutex_unlock(&MUTEXTLB);
-		if(configuracion.ALGORITMO_REEMPLAZO==1) { //AL LEER MODIFICA
+		if(configuracion.ALGORITMO_REEMPLAZO==1) //AL LEER MODIFICA
+		{
 			pthread_mutex_lock(&MUTEXTM);
 			tMarcos[ubicada].indice=indiceMarcos;
 			indiceMarcos++;
@@ -385,7 +384,8 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
 		return ubicada;
 	}
 	if(ubicada==-1) //HAY QUE TRAERLA DEL SWAP
-	{	if(nodo->marcosAsignados>=configuracion.MAXIMO_MARCOS_POR_PROCESO) return -4; //SI EL PROCESO NO PUEDE TENER MAS DEVUELVE ERROR.
+	{
+		if(nodo->marcosAsignados>=configuracion.MAXIMO_MARCOS_POR_PROCESO) return -4; //SI EL PROCESO NO PUEDE TENER MAS DEVUELVE ERROR.
 		pthread_mutex_lock(&MUTEXLP);
 		pthread_mutex_lock(&MUTEXTM);
 		pthread_mutex_lock(&MUTEXTLB);
@@ -395,12 +395,10 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
 		pthread_mutex_unlock(&MUTEXTM);
 		if(configuracion.TLB_HABILITADA==1) agregarATLB(pid,numPag,ubicada); //AGREGAMOS A ENTRADA EN LA TLB
 		pthread_mutex_unlock(&MUTEXTLB);
-
-
 	}
-
 	return ubicada;
 }
+
 int main()
 {
 	aciertosTLB=0;
