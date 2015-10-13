@@ -1,9 +1,9 @@
-iniciar 5;
-escribir 2 "jua";
+iniciar 2;
+escribir 0 "jua";
+leer 2;
+escribir 1 "ja";
+leer 3;
 leer 2;
 leer 2;
-leer 2;
-leer 2;
-entrada-salida 10;
 leer 2;
 finalizar;
