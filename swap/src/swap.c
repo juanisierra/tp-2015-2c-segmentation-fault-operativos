@@ -232,6 +232,7 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 		if(alcanzanPaginas (cantPag)) //si las paginas libres totales alcanzan, que desfragmente
 		{
 			log_info(log, "Se inicia la compactacion del archivo");
+			sleep(configuracion.RETARDO_COMPACTACION);//antes de compactar hacemos el sleep
 			desfragmentar();
 			log_info(log, "Finaliza la compactacion del archivo");
 			inicio = hayEspacio(cantPag);
