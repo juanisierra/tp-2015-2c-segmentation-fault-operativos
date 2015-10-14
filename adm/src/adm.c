@@ -469,7 +469,6 @@ int main()
 	}
 
 	printf("Creando Socket de conexion al SWAP en puerto %s \n",configuracion.PUERTO_SWAP);
-
 	if((socketSWAP = crearSocketCliente(configuracion.IP_SWAP,configuracion.PUERTO_SWAP))<0)
 		{
 			printf("No se pudo crear socket de conexion al SWAP \n"); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
@@ -495,94 +494,94 @@ int main()
 	int status = 1;		// Estructura que manjea el status de los recieve.
 	while(status!=0)
 	{
-	status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
-	if(status==0) break;
-	printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
-	if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
-	if(mensajeARecibir.tamTexto==0) printf("\n");
+		status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
+		if(status==0) break;
+		printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
+		if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
+		if(mensajeARecibir.tamTexto==0) printf("\n");
+		if(mensajeARecibir.instruccion == INICIAR)
+		{
+			mensajeParaSWAP.pid=mensajeARecibir.pid;
+			mensajeParaSWAP.instruccion=INICIAR;
+			mensajeParaSWAP.parametro=mensajeARecibir.parametro;
+			mensajeParaSWAP.contenidoPagina=NULL;
+			enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+			recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+			if(mensajeDeSWAP.estado==0)
+			{
+				pthread_mutex_lock(&MUTEXLP);
+				agregarProceso(mensajeARecibir.pid,mensajeARecibir.parametro);
+				pthread_mutex_unlock(&MUTEXLP);
+			}
+			mensajeAMandar.parametro = mensajeDeSWAP.estado;
+			mensajeAMandar.tamanoMensaje = 0;
+			mensajeAMandar.texto = NULL;
+			enviarInstruccionACPU(socketCPU, &mensajeAMandar);
+		}
+		if(mensajeARecibir.instruccion == LEER)
+		{
+			marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
+			if(marcoAUsar!=-4) //EL MARCO ESTA O PUEDEN DARLE UNO
+			{
+				mensajeAMandar.parametro=mensajeARecibir.parametro;
+				printf("EL CONTENIDO DE LA PAGINA ES %s \n",tMarcos[marcoAUsar].contenido);
+				mensajeAMandar.tamanoMensaje = strlen(tMarcos[marcoAUsar].contenido) +1;
+				mensajeAMandar.texto=malloc(mensajeAMandar.tamanoMensaje);
+				strcpy(mensajeAMandar.texto,tMarcos[marcoAUsar].contenido); /// NO SIRVE CON LAS A PORUQE NO LLEVAN /0
+				enviarInstruccionACPU(socketCPU, &mensajeAMandar);
+			}
+			else
+			{
+				//SOPORTAR ERROR AL LEER POR MAXIMO DE MARCOS DEVUELVE -1
+			}
 
-	if(mensajeARecibir.instruccion == INICIAR)
-	{
-		mensajeParaSWAP.pid=mensajeARecibir.pid;
-		mensajeParaSWAP.instruccion=INICIAR;
-		mensajeParaSWAP.parametro=mensajeARecibir.parametro;
-		mensajeParaSWAP.contenidoPagina=NULL;
-		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
-		recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-		if(mensajeDeSWAP.estado==0)
-		{	pthread_mutex_lock(&MUTEXLP);
-			agregarProceso(mensajeARecibir.pid,mensajeARecibir.parametro);
+		}
+		if(mensajeARecibir.instruccion == ESCRIBIR)
+		{
+			marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
+			if(marcoAUsar!=-4)
+			{
+				pthread_mutex_lock(&MUTEXTM);
+				strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
+				tMarcos[marcoAUsar].modif=1;
+				pthread_mutex_unlock(&MUTEXTM);
+				mensajeAMandar.parametro =0;
+				mensajeAMandar.tamanoMensaje =0;
+				mensajeAMandar.texto =NULL;
+				enviarInstruccionACPU(socketCPU, &mensajeAMandar);
+			}
+			else
+			{
+				//MANEJAR ERROR DE CANT MARCOS
+			}
+		}
+		if(mensajeARecibir.instruccion ==FINALIZAR)
+		{
+			mensajeParaSWAP.pid=mensajeARecibir.pid;
+			mensajeParaSWAP.instruccion=FINALIZAR;
+			mensajeParaSWAP.parametro=mensajeARecibir.parametro;
+			mensajeParaSWAP.contenidoPagina=NULL;
+			enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+			recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+			pthread_mutex_lock(&MUTEXLP);
+			pthread_mutex_lock(&MUTEXTM);
+			pthread_mutex_lock(&MUTEXTLB);
+			eliminarProceso(mensajeARecibir.pid); //FINALIZA EL PROCESO EN LA LISTA DE TABLAS DE PAG Y DEMAS
 			pthread_mutex_unlock(&MUTEXLP);
+			pthread_mutex_unlock(&MUTEXTM);
+			pthread_mutex_unlock(&MUTEXTLB);
+			mensajeAMandar.parametro = mensajeDeSWAP.estado;
+			mensajeAMandar.tamanoMensaje = 0;
+			mensajeAMandar.texto = NULL;
+			enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 		}
-		mensajeAMandar.parametro = mensajeDeSWAP.estado;
-		mensajeAMandar.tamanoMensaje = 0;
-		mensajeAMandar.texto = NULL;
-		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-
-	}
-	if(mensajeARecibir.instruccion == LEER)
-	{
-
-		marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
-		if(marcoAUsar!=-4) { //EL MARCO ESTA O PUEDEN DARLE UNO
-		mensajeAMandar.parametro=mensajeARecibir.parametro;
-		printf("EL CONTENIDO DE LA PAGINA ES %s \n",tMarcos[marcoAUsar].contenido);
-		mensajeAMandar.tamanoMensaje = strlen(tMarcos[marcoAUsar].contenido) +1;
-		mensajeAMandar.texto=malloc(mensajeAMandar.tamanoMensaje);
-		strcpy(mensajeAMandar.texto,tMarcos[marcoAUsar].contenido); /// NO SIRVE CON LAS A PORUQE NO LLEVAN /0
-		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-		} else {
-			//SOPORTAR ERROR AL LEER POR MAXIMO DE MARCOS DEVUELVE -1
-		}
-
-	}
-	if(mensajeARecibir.instruccion == ESCRIBIR)
-	{
-
-		marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
-		if(marcoAUsar!=-4){
-		pthread_mutex_lock(&MUTEXTM);
-		strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
-		tMarcos[marcoAUsar].modif=1;
-		pthread_mutex_unlock(&MUTEXTM);
-
-		mensajeAMandar.parametro =0;
-		mensajeAMandar.tamanoMensaje =0;
-		mensajeAMandar.texto =NULL;
-		enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-		} else {
-			//MANEJAR ERROR DE CANT MARCOS
-		}
-	}
-	if(mensajeARecibir.instruccion ==FINALIZAR)
-	{
-	mensajeParaSWAP.pid=mensajeARecibir.pid;
-	mensajeParaSWAP.instruccion=FINALIZAR;
-	mensajeParaSWAP.parametro=mensajeARecibir.parametro;
-	mensajeParaSWAP.contenidoPagina=NULL;
-	enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
-	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-	pthread_mutex_lock(&MUTEXLP);
-	pthread_mutex_lock(&MUTEXTM);
-	pthread_mutex_lock(&MUTEXTLB);
-	eliminarProceso(mensajeARecibir.pid); //FINALIZA EL PROCESO EN LA LISTA DE TABLAS DE PAG Y DEMAS
-	pthread_mutex_unlock(&MUTEXLP);
-	pthread_mutex_unlock(&MUTEXTM);
-	pthread_mutex_unlock(&MUTEXTLB);
-	mensajeAMandar.parametro = mensajeDeSWAP.estado;
-	mensajeAMandar.tamanoMensaje = 0;
-	mensajeAMandar.texto = NULL;
-	enviarInstruccionACPU(socketCPU, &mensajeAMandar);
-	}
-
-
-	if(mensajeAMandar.texto!=NULL) free(mensajeAMandar.texto);
-	if(mensajeARecibir.texto!=NULL) free(mensajeARecibir.texto); ///////
-	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
-	if(mensajeParaSWAP.contenidoPagina!=NULL) free(mensajeParaSWAP.contenidoPagina);
-	mensajeARecibir.texto=NULL;
-	mensajeDeSWAP.contenidoPagina=NULL;
-	mensajeParaSWAP.contenidoPagina=NULL;
+		if(mensajeAMandar.texto!=NULL) free(mensajeAMandar.texto);
+		if(mensajeARecibir.texto!=NULL) free(mensajeARecibir.texto); ///////
+		if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
+		if(mensajeParaSWAP.contenidoPagina!=NULL) free(mensajeParaSWAP.contenidoPagina);
+		mensajeARecibir.texto=NULL;
+		mensajeDeSWAP.contenidoPagina=NULL;
+		mensajeParaSWAP.contenidoPagina=NULL;
 	}
 	printf("La cantidad de aciertos de TLB fue: %d, y la de errores: %d\n",aciertosTLB,fallosTLB);
 	finalizarTablas();
