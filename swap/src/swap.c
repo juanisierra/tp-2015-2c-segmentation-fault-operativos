@@ -736,7 +736,7 @@ int main()
 		interpretarMensaje(mensaje,socketADM);
 	}
 
-	log_info(log, "Proceso SWAP finalizado.");
+	log_info(log, "Proceso SWAP finalizado.\n");
 	close(socketADM);
 	close(socketEscucha);
 	fclose(archivo);

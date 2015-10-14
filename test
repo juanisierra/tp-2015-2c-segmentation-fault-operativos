@@ -1,8 +1,0 @@
-iniciar 1;
-escribir 0 "abc";
-leer 0;
-escribir 0 "def";
-leer 0;
-escribir 0 "ghi";
-leer 0;
-finalizar;
