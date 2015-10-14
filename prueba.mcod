@@ -1,9 +1,7 @@
 iniciar 2;
 leer 0;
 escribir 0 "ju";
+escribir 1 "a";
 leer 0;
-escribir 0 "a";
-leer 0;
-escribir 0 "ni";
-leer 0;
+leer 1;
 finalizar;
