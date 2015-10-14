@@ -25,7 +25,7 @@ pthread_mutex_t mutexComADM; //mutex para comunicacion con el ADM
 pthread_mutex_t mutexLog;
 pthread_mutex_t instruccionesEjec;
 t_log* log;
-int* instruccionesEjecutadas; // va a contar las instrucciones ejecutadas por cada CPU
+uint32_t* instruccionesEjecutadas; // va a contar las instrucciones ejecutadas por cada CPU
 pthread_t hCalculo;
 
 int iniciarConfiguracion(config_CPU* configuracion)
@@ -255,7 +255,7 @@ int main(void)
 	int i;
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	proceso_CPU CPUs[configuracion.CANTIDAD_HILOS];  //Declaramos el array donde cada componente es un hilo
-	instruccionesEjecutadas = malloc(sizeof(int)* configuracion.CANTIDAD_HILOS);
+	instruccionesEjecutadas = malloc(sizeof(uint32_t)* configuracion.CANTIDAD_HILOS);
 	if((socketADM = crearSocketCliente(configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA))<0) // Se inicializa el socketADM GLOBAL
 		{
 			printf("No se pudo crear socket en %s:%s \n",configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
