@@ -12,7 +12,7 @@
 #define TAMANOCONSOLA 1024
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
-
+#define ARCHIVOLOG "Swap.log"
 //****** VARIABLES GLOBALES ******
 FILE* archivo=NULL;
 config_SWAP configuracion;
@@ -45,7 +45,7 @@ int iniciarConfiguracion(void)
 void inicializarArchivo(void)
 {//lo llenamos con el caracter correspondiente
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
-    char* s = string_repeat('\0', tamanioArchivo);
+    char* s = string_repeat('\0', tamanioArchivo); //NO DEBERIA IR tamanioArchivo-1 por el \0 que pone el string dsps en fprintf?? juani
     fprintf(archivo,"%s", s);
     return;
 }
@@ -230,20 +230,20 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 	{
 		if(alcanzanPaginas (cantPag)) //si las paginas libres totales alcanzan, que desfragmente
 		{
-			log_trace(log, "Se inicia la compactacion del archivo \n");
+			log_info(log, "Se inicia la compactacion del archivo");
 			desfragmentar();
-			log_trace(log, "Se finaliza la compactacion del archivo \n");
+			log_info(log, "Finaliza la compactacion del archivo");
 			inicio = hayEspacio(cantPag);
 		}
 		else
 		{
-			log_trace(log, "Se rechaza el proceso de pid %u por no haber espacio suficiente \n", pid);
-			printf("no hay espacio suficiente para el proceso de pid: %u \n", pid);
+			log_info(log, "Se rechaza el proceso de pid %u por no haber espacio suficiente", pid);
+			printf("No hay espacio suficiente para el proceso de pid: %u\n", pid);
 			return 0;
 		}
 	}
 	int exito= agregarOcupado(pid, cantPag, inicio);
-	log_trace(log, "se asignan %u bytes de memoria al proceso de pid %u desde el byte %u \n", cantPag, pid, inicio);
+	log_info(log, "Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u", cantPag*configuracion.TAMANIO_PAGINA, pid, inicio); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
 	return exito;
 }
 
@@ -322,7 +322,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 {//se va un proceso y borramos su nodo ocupado y agregamos un libre
 	int atrasVar= atras(aBorrar);
 	int adelanteVar= adelante(aBorrar);
-	log_trace(log, "se liberan %u bytes de memoria del proceso de pid %u desde el byte %u.\n El proceso leyo %u paginas y escribio %u. \n", (aBorrar->cantPag)*configuracion.TAMANIO_PAGINA, aBorrar->pid, (aBorrar->comienzo -1)*configuracion.TAMANIO_PAGINA, aBorrar->leyo, aBorrar->escribio);
+	log_info(log, "Se liberan %u bytes de memoria del proceso de pid %u desde el byte %u.\n El proceso leyo %u paginas y escribio %u.", (aBorrar->cantPag)*configuracion.TAMANIO_PAGINA, aBorrar->pid, (aBorrar->comienzo -1)*configuracion.TAMANIO_PAGINA, aBorrar->leyo, aBorrar->escribio);
 	if(atrasVar==0 && adelanteVar==0)//el proceso ocupa el archivo entero
 	{
 		inicializarArchivo();
@@ -559,7 +559,7 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 		printf("Se lee: %s \n", buffer);
 	}
 	aLeer->leyo= aLeer->leyo +1;
-	log_trace(log, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s \n", aLeer->pid, strlen(buffer)*sizeof(char), (pagALeer -1)*configuracion.TAMANIO_PAGINA, buffer);
+	log_info(log, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s", aLeer->pid, strlen(buffer)*sizeof(char), (aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, buffer); //EN EL BYTE DESDE QUE COMIENZ AGREGO EL NUM PAG
 	return buffer;
 }
 
@@ -568,7 +568,8 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagAEscribir * configuracion.TAMANIO_PAGINA, SEEK_SET);
 	fwrite(texto, sizeof(char), strlen(texto), archivo);
 	aEscribir->escribio= aEscribir->escribio +1;
-	log_trace(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe %s \n", aEscribir->pid, strlen(texto)*sizeof(char), (pagAEscribir -1)*configuracion.TAMANIO_PAGINA, texto);
+	printf("ESCRIBO %s\n",texto);////////////////////////////////////////////////////////****
+	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe %s", aEscribir->pid, strlen(texto)*sizeof(char), (pagAEscribir -1)*configuracion.TAMANIO_PAGINA, texto);
 
 	return;
 }
@@ -706,14 +707,8 @@ void eliminarListas(void)
 int main()
 {
 	mensaje_ADM_SWAP mensaje;
-	FILE* archivoLog= fopen("logArchivo","w+");//archivo donde logueamos lo que va pasando
-	if(archivoLog==0)
-	{
-		printf("fallo al crear el archivo de logueo \n");
-		return 0;
-	}
-	log= log_create("logArchivo", "swap", 0, LOG_LEVEL_INFO);
-	log_trace(log, "Se inicia el proceso de Swap");
+	log= log_create(ARCHIVOLOG, "Swap", 0, LOG_LEVEL_INFO);
+	log_info(log, "Proceso SWAP iniciado.");
 
 	if(iniciarConfiguracion()==-1) return -1;
 	printf("Iniciando Administrador de SWAP.. \n");
@@ -745,6 +740,7 @@ int main()
 		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
 		interpretarMensaje(mensaje,socketADM);
 	}
+	log_info(log, "Finalizando proceso SWAP.");
 	close(socketADM);
 	close(socketEscucha);
 	fclose(archivo);
