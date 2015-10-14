@@ -47,6 +47,7 @@ void inicializarArchivo(void)
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
     char* s = string_repeat('\0', tamanioArchivo); //NO DEBERIA IR tamanioArchivo-1 por el \0 que pone el string dsps en fprintf?? juani
     fprintf(archivo,"%s", s);
+    free(s);
     return;
 }
 
@@ -203,7 +204,7 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NODOS OCUP
 	espacioOcupado* nuevo= malloc(sizeof(espacioOcupado));
 	if(!nuevo)
 	{
-		printf("fallo el malloc para la listade ocupados \n");
+		printf("fallo el malloc para la lista de ocupados \n");
 		return 0;
 	}
 	nuevo->pid= pid;
@@ -243,7 +244,7 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 		}
 	}
 	int exito= agregarOcupado(pid, cantPag, inicio);
-	log_info(log, "Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u", cantPag*configuracion.TAMANIO_PAGINA, pid, inicio); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
+	log_info(log, "Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u", cantPag*configuracion.TAMANIO_PAGINA, pid, inicio-1); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
 	return exito;
 }
 
@@ -322,7 +323,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 {//se va un proceso y borramos su nodo ocupado y agregamos un libre
 	int atrasVar= atras(aBorrar);
 	int adelanteVar= adelante(aBorrar);
-	log_info(log, "Se liberan %u bytes de memoria del proceso de pid %u desde el byte %u.\n El proceso leyo %u paginas y escribio %u.", (aBorrar->cantPag)*configuracion.TAMANIO_PAGINA, aBorrar->pid, (aBorrar->comienzo -1)*configuracion.TAMANIO_PAGINA, aBorrar->leyo, aBorrar->escribio);
+	log_info(log, "Se liberan %u bytes de memoria del proceso de pid %u desde el byte %u. El proceso leyo %u paginas y escribio %u.", (aBorrar->cantPag)*configuracion.TAMANIO_PAGINA, aBorrar->pid, (aBorrar->comienzo -1)*configuracion.TAMANIO_PAGINA, aBorrar->leyo, aBorrar->escribio);
 	if(atrasVar==0 && adelanteVar==0)//el proceso ocupa el archivo entero
 	{
 		inicializarArchivo();
@@ -543,41 +544,35 @@ int liberarMemoria(espacioOcupado* aBorrar)
 	return 0;
 }
 
-char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
+char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la pos inicial
 {//leemos una pagina del archivo de swap
-	char * buffer= NULL;
-	buffer= malloc(configuracion.TAMANIO_PAGINA);
+	char* buffer=NULL;
+	buffer= calloc(configuracion.TAMANIO_PAGINA, 1);//es como el malloc pero inicializa en \0
 	if(!buffer)
 	{
 		printf("Fallo la creacion del buffer en el swap funcion leer \n");
 		return buffer;
 	}
-	fseek(archivo,(aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
+	fseek(archivo,((aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagALeer * configuracion.TAMANIO_PAGINA), SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
 	fread(buffer, sizeof(char), (configuracion.TAMANIO_PAGINA)/sizeof(char), archivo);//leemos
-	if(buffer)
-	{
-		printf("Se lee: %s \n", buffer);
-	}
-	aLeer->leyo= aLeer->leyo +1;
+	aLeer->leyo= aLeer->leyo +1;//aumentamos la cantidad de paginas leidas por el proceso
 	log_info(log, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s", aLeer->pid, strlen(buffer)*sizeof(char), (aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, buffer); //EN EL BYTE DESDE QUE COMIENZ AGREGO EL NUM PAG
 	return buffer;
 }
 
 void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien
 {//escribimos en el archivo de swap
-	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagAEscribir * configuracion.TAMANIO_PAGINA, SEEK_SET);
+	fseek(archivo,((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) +  (pagAEscribir * configuracion.TAMANIO_PAGINA), SEEK_SET);
 	fwrite(texto, sizeof(char), strlen(texto), archivo);
-	aEscribir->escribio= aEscribir->escribio +1;
-	printf("ESCRIBO %s\n",texto);////////////////////////////////////////////////////////****
-	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe %s", aEscribir->pid, strlen(texto)*sizeof(char), (pagAEscribir -1)*configuracion.TAMANIO_PAGINA, texto);
-
+	aEscribir->escribio= aEscribir->escribio +1;//el proceso lee una pagina y lo documentamos
+	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe %s", aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagAEscribir * configuracion.TAMANIO_PAGINA), texto);
 	return;
 }
 
 int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 {//depende de la instruccion tomamos acciones
-	mensaje_SWAP_ADM aEnviar;
 	int resultado;
+	mensaje_SWAP_ADM aEnviar;
 	espacioOcupado* aBorrar;
 	espacioOcupado*aEscribir;
 	switch (mensaje.instruccion)
@@ -608,7 +603,6 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			if(!i) printf("No se pudo enviar mensaje al ADM\n"); //INSTRUCCION =i, i es la cantidad de datos que enviaa,
 			return 0;
 		}
-		//aca hay que loguear lo que leyo y escribio
 		printf("Se libero la memoria del proceso de pid %u \n", aBorrar->pid);
 		liberarMemoria(aBorrar);
 		aEnviar.contenidoPagina=NULL;
@@ -740,46 +734,12 @@ int main()
 		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
 		interpretarMensaje(mensaje,socketADM);
 	}
-	log_info(log, "Finalizando proceso SWAP.");
+
+	log_info(log, "Proceso SWAP finalizado.");
 	close(socketADM);
 	close(socketEscucha);
 	fclose(archivo);
 	eliminarListas();
 	log_destroy(log);
-	/*
-	1. Creacion:
-	t_log* 		log_create(char* file, char *program_name, bool is_active_console, t_log_level level);
-	Se iguala a t_log*
-	Argumentos:
-	-Nombre del archivo como string
-	-Nombre del Programa a logear como string
-	-Booleano sobre si logea en consola
-	-Tipo de dato sobre nivel minimo de logeo:
-			LOG_LEVEL_TRACE,
-			LOG_LEVEL_DEBUG,
-			LOG_LEVEL_INFO,
-			LOG_LEVEL_WARNING,
-			LOG_LEVEL_ERROR
-
-	2. Logeo: con log_ (trace/debug/warning/info) y el t_log*
-	3. Borrar log_destroy(t_log*)
-
-	Otras:
-	char * log_level_as_string(t_log_level) :
-	Devuelve el tipo de nivel de log seteado como TRACE o DEBUG
-	t_log_level log_level_from_string(char *) :
-	Setea el nivel segun un string como TRACE o DEBUG
-
-	LOGUEAR
-	--comienzo del swap
-	--proceso asignado pid numero de byte inicial y tam de bytes (asignados)
-	--proceso liberado pid numero de byte inicial y tam de bytes (liberados) cant pag leidas cant pag escritas
-	--proceso rechazado por falta de espacio
-	--compactacion inciada y finalizada
-	--escritura/lectura solicitada pid numero de byte inicial y tam de bytes y contenido
-	otra cosa que se nos ocurra y sea util
-
-
-	*/
 	return 0;
 }
