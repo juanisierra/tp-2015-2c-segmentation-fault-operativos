@@ -50,7 +50,7 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO,ERR
   }mensaje_CPU_ADM;
   typedef struct mensaje_ADM_CPU_T
   {
-	  uint32_t parametro; // 0 ok 1 no ok
+	  uint32_t parametro; // 0 ok 1 no ok, esos son los OK para iniciar, para leer o escribir ante el fallo de marco el error sera: si es OK el parametro valdra el numero de la pagina y si es NO OK el parametro valdra -1.
 	  uint32_t tamanoMensaje;
 	  char*texto;
   }mensaje_ADM_CPU;
