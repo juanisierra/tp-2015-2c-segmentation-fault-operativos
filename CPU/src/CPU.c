@@ -86,10 +86,17 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		pthread_mutex_unlock(&mutexComADM);
+		if(mensajeDeADM.parametro == 1)
+		{
+			(*estado) = ERRORMARCO;
+		}
+		else
+		{
+			(*estado)=LISTO;
+		}
 		printf("Recibi: %s\n ",mensajeDeADM.texto);
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeDeADM.texto);
-		(*estado)=LISTO;
 		break;
 
 	}
@@ -102,11 +109,18 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		pthread_mutex_unlock(&mutexComADM);
 		//////////////////////////////////////////////////////
+		if(mensajeDeADM.parametro == 1)
+		{
+			(*estado) = ERRORMARCO;
+		}
+		else
+		{
+			(*estado)=LISTO;
+		}
 		mensajeDeADM.texto=strdup(parametro2); // AGREGO ESTO PARA QUE EL TEXTO QUE SE ESCRIBE SEA E DE PARAMETRO 2 porque no retorna lo escrito.
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeParaADM.texto);
 		free(mensajeDeADM.texto);
-		(*estado)=LISTO;
 		break;
 	}
 	case ES:
@@ -201,13 +215,13 @@ void hiloCPU(void* datoCPUACastear)
 			pthread_mutex_lock(&instruccionesEjec);
 			instruccionesEjecutadas[datos_CPU.id] ++;
 			pthread_mutex_unlock(&instruccionesEjec);
-			instruccionesEjecutadas++;
+			instruccionesEjecutadasHilo++;
 			pthread_mutex_lock(&mutexLog);
 			log_info(log, "Log de CPU %d:\n -Instruccion ejecutada: %s\n PID: %d\n", datos_CPU.id, lineaAEjecutar, datos_CPU.pid);//validar la funcion interpretarMCod para que si parametro 2 esta vacio lo devuelva con el \0 y si el parametro1 no esta que lo devuelva con -1
 			if(parametro1 != -1) log_info(log, "-Parametro 1: %d", parametro1);
 			log_info(log, "Parametro 2: %s", parametro2);
 			nodo_Retorno_Instruccion* aux = datos_CPU.listaRetornos; //vamos a tener que recorrer la lista ya que de ahi saco la respuesta
-			for(contador = 1; contador < instruccionesEjecutadas; contador++)
+			for(contador = 1; contador < instruccionesEjecutadasHilo; contador++)
 			{
 				aux = aux->sgte;
 			}
@@ -232,7 +246,9 @@ void hiloCPU(void* datoCPUACastear)
 void hiloCalculo()
 {
 	int contador;
-	int porcentajeUso[configuracion.CANTIDAD_HILOS];
+	uint32_t porcentajeUso[configuracion.CANTIDAD_HILOS];
+	mensaje_CPU_PL elMensaje;
+	proceso_CPU CPU; //dato trucho para mandar el mensaje al PL y reutilizar el codigo.
 	while(1)//va dentro de un while 1 para que se ejecute a menos que pase algun suceso
 	{
 		sleep(60);
@@ -241,8 +257,9 @@ void hiloCalculo()
 		{
 			porcentajeUso[contador] = (instruccionesEjecutadas[contador]*100)/60;
 			instruccionesEjecutadas[contador] = 0; // reiniciamos las instrucciones ejecutadas
+			CPU.ip = contador;
+			enviarMensajeAPL(CPU, USOCPU, porcentajeUso[contador], "", 0);
 		}
-		//Aca le mandariamos al PL el porcentaje.
 		pthread_mutex_unlock(&instruccionesEjec);
 	}
 }

@@ -122,16 +122,34 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 			}
 			case LEER:
 			{
+				if(mensaje.parametro == 1)
+				{
+					sprintf(mensajeAGuardar, "mProc %d - Fallo de Marco \n", datos_CPU->pid);
+					datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
+					datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				}
+				else
+				{
 				sprintf(mensajeAGuardar, "mProc %d - Pagina %d leida: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
 				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
 				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				}
 				break;
 			}
 			case ESCRIBIR:
 			{
+				if(mensaje.parametro == 1)
+				{
+					sprintf(mensajeAGuardar, "mProc %d - Fallo de Marco \n", datos_CPU->pid);
+					datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
+					datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				}
+				else
+				{
 				sprintf(mensajeAGuardar, "mProc %d - Pagina %d escrita: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
 				datos_CPU->listaRetornos->info.tamTexto = strlen(mensajeAGuardar) ;
 				datos_CPU->listaRetornos->info.texto = strdup(mensajeAGuardar);
+				}
 				break;
 			}
 			case ES:
@@ -187,16 +205,34 @@ void almacenarEnListaRetornos(mensaje_ADM_CPU mensaje, proceso_CPU* datos_CPU, i
 					}
 					case LEER:
 					{
+						if(mensaje.parametro == 1)
+						{
+							sprintf(mensajeAGuardar, "mProc %d - Error de marco \n", datos_CPU->pid);
+							aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
+							aux->sgte->info.texto = strdup(mensajeAGuardar);
+						}
+						else
+						{
 						sprintf(mensajeAGuardar, "mProc %d - Pagina %d leida: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
 						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
 						aux->sgte->info.texto = strdup(mensajeAGuardar);
+						}
 						break;
 					}
 					case ESCRIBIR:
 					{
+						if(mensaje.parametro == 1)
+						{
+							sprintf(mensajeAGuardar, "mProc %d - Error de marco \n", datos_CPU->pid);
+							aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
+							aux->sgte->info.texto = strdup(mensajeAGuardar);
+						}
+						else
+						{
 						sprintf(mensajeAGuardar, "mProc %d - Pagina %d escrita: %s \n", datos_CPU->pid, mensaje.parametro, mensaje.texto);
 						aux->sgte->info.tamTexto = strlen(mensajeAGuardar) ;
 						aux->sgte->info.texto = strdup(mensajeAGuardar);
+						}
 						break;
 					}
 					case ES:
