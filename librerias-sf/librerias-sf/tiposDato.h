@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 typedef enum{INICIAR, LEER, ESCRIBIR, ES, FINALIZAR,ERROR, CERRAR}instruccion_t; //CERRAR es el mensaje para apagar.
-typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO}estado_t; //INVALIDO es si alguna instruccion no estaba bien.
+typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO,ERRORMARCO,USOCPU}estado_t; //INVALIDO es si alguna instruccion no estaba bien.
   typedef struct pcb_t
     {
         uint32_t pid;
@@ -35,10 +35,10 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO}est
   } mensaje_PL_CPU;
   typedef struct mensaje_CPU_PL_t
   {
-	  uint32_t ip;
+	  uint32_t ip; //EN USOCPU ES El ID DEL CPU
 	  estado_t nuevoEstado;// Si dice FINALIZAR se debe borrar del PCB y ERROR es si una instruccion no era valida, tambien finaliza.
-	  uint32_t tiempoBloqueo;
-	  uint32_t tamPayload; // Depende de la cantidad de instrucciones ejecutadas
+	  uint32_t tiempoBloqueo; //EN USOCPU es el porcentaje
+	  uint32_t tamPayload; // Depende de la cantidad de instrucciones ejecutadas,
 	  char*payload;
   } mensaje_CPU_PL;
   typedef struct mensaje_CPU_ADM_t
@@ -50,7 +50,7 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO}est
   }mensaje_CPU_ADM;
   typedef struct mensaje_ADM_CPU_T
   {
-	  uint32_t parametro; // 0 ok 1 no ok,   si leyo o escribio devolvera el numero de pagina
+	  uint32_t parametro; // 0 ok 1 no ok
 	  uint32_t tamanoMensaje;
 	  char*texto;
   }mensaje_ADM_CPU;

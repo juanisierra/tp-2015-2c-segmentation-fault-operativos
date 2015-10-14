@@ -154,7 +154,7 @@ void hiloCPU(void* datoCPUACastear)
 
 	uint32_t quantum;
 	uint32_t tamPayload;//Aqui se guardara el tamaño de lo que se le manda al PL
-	uint32_t instruccionesEjecutadas; //Instrucciones ejecutadas por rafaga
+	uint32_t instruccionesEjecutadasHilo; //Instrucciones ejecutadas por rafaga
 	int contador; // variable contadora utilizada para recorrer la lista de retornos
 	estado_t estado; // es el estado de ejecucion
 	char* mensajeParaPL; //aca se guardara toda la secuencia de datos a mandar al PL
