@@ -115,7 +115,10 @@ typedef struct espacioOcupado_t
 	uint32_t comienzo;
 	uint32_t cantPag;
 	uint32_t pid;
+	uint32_t leyo;
+	uint32_t escribio;
 }espacioOcupado;
+
 typedef struct tablaPag_t
 {
 	int valido; //0 si no esta en memoria 1 si si

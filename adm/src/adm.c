@@ -31,65 +31,73 @@ pthread_mutex_t MUTEXTM;
 pthread_mutex_t MUTEXLP;
 int socketSWAP;
 int socketEscucha;
+
 int iniciarConfiguracion(config_ADM* configuracion)
 {
 	printf("Cargando Configuracion..\n");
 	(*configuracion) = cargarConfiguracionADM(RUTACONFIG);
-	if(configuracion->estado==-1 || configuracion->estado==0){
+	if(configuracion->estado==-1 || configuracion->estado==0)
+	{
 		printf("Cerrando ADM..\n");
 		return -1;
 	}
-	if (configuracion->estado==1){
-			printf("Configuracion cargada correctamente: \n");
-			printf("Puerto Escucha: %s\n",configuracion->PUERTO_ESCUCHA);
-			printf("IP del SWAP: %s\n",configuracion->IP_SWAP);
-			printf("Puerto del SWAP: %s\n",configuracion->PUERTO_SWAP);
-			printf("Maximo de Marcos por Proceso: %d\n",configuracion->MAXIMO_MARCOS_POR_PROCESO);
-			printf("Cantidad de Marcos: %d\n",configuracion->CANTIDAD_MARCOS);
-			printf("Tamanio Marco: %d\n",configuracion->TAMANIO_MARCO);
-			printf("Entradas TLB: %d\n",configuracion->ENTRADAS_TLB);
-			printf("TLB Habilitada: %d\n",configuracion->TLB_HABILITADA);
-			printf("Retardo Memoria: %d\n",configuracion->RETARDO_MEMORIA);
-			printf("Algoritmo de Reemplazo %d\n\n",configuracion->ALGORITMO_REEMPLAZO);
-			return 0;
-		}
+	if (configuracion->estado==1)
+	{
+		printf("Configuracion cargada correctamente: \n");
+		printf("Puerto Escucha: %s\n",configuracion->PUERTO_ESCUCHA);
+		printf("IP del SWAP: %s\n",configuracion->IP_SWAP);
+		printf("Puerto del SWAP: %s\n",configuracion->PUERTO_SWAP);
+		printf("Maximo de Marcos por Proceso: %d\n",configuracion->MAXIMO_MARCOS_POR_PROCESO);
+		printf("Cantidad de Marcos: %d\n",configuracion->CANTIDAD_MARCOS);
+		printf("Tamanio Marco: %d\n",configuracion->TAMANIO_MARCO);
+		printf("Entradas TLB: %d\n",configuracion->ENTRADAS_TLB);
+		printf("TLB Habilitada: %d\n",configuracion->TLB_HABILITADA);
+		printf("Retardo Memoria: %d\n",configuracion->RETARDO_MEMORIA);
+		printf("Algoritmo de Reemplazo %d\n\n",configuracion->ALGORITMO_REEMPLAZO);
+		return 0;
+	}
 	return -1;
 }
+
 int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
-{	int i=0;
+{
+	int i=0;
 	int fallo=0;
-
-if(configuracion.TLB_HABILITADA==1){
-
-	TLB=malloc(sizeof(tlb)*(configuracion.ENTRADAS_TLB));
-	if(TLB==NULL) fallo=-1;
-	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
+	if(configuracion.TLB_HABILITADA==1)
+	{
+		TLB=malloc(sizeof(tlb)*(configuracion.ENTRADAS_TLB));
+		if(TLB==NULL) fallo=-1;
+		for(i=0;i<configuracion.ENTRADAS_TLB;i++)
 		{
-		TLB[i].pid=-1;
-		TLB[i].indice=-1;
-		TLB[i].nPag=0;
-		TLB[i].numMarco=-1;
+			TLB[i].pid=-1;
+			TLB[i].indice=-1;
+			TLB[i].nPag=0;
+			TLB[i].numMarco=-1;
 		}
-} else {
-	TLB=NULL;
-}
-
-	tMarcos=malloc(sizeof(tMarco)*(configuracion.CANTIDAD_MARCOS));
-	if(tMarcos!=NULL) {
-	for(i=0;i<(configuracion.CANTIDAD_MARCOS);i++) //Inicia los marcos con el tamanio de cada uno.
-	{	tMarcos[i].indice=-1; //Inicializamos todos los marcos como libres
-		tMarcos[i].contenido=malloc(configuracion.TAMANIO_MARCO);
-		if (tMarcos[i].contenido==NULL) fallo=-1;
 	}
-	} else {
+	else
+	{
+		TLB=NULL;
+	}
+	tMarcos=malloc(sizeof(tMarco)*(configuracion.CANTIDAD_MARCOS));
+	if(tMarcos!=NULL)
+	{
+		for(i=0;i<(configuracion.CANTIDAD_MARCOS);i++) //Inicia los marcos con el tamanio de cada uno.
+		{
+			tMarcos[i].indice=-1; //Inicializamos todos los marcos como libres
+			tMarcos[i].contenido=malloc(configuracion.TAMANIO_MARCO);
+			if (tMarcos[i].contenido==NULL) fallo=-1;
+		}
+	}
+	else
+	{
 		fallo=-1;
 	}
-
 	raizTP=NULL;
-
 	if(fallo==0) printf("Tablas iniciadas\n");
 	return fallo;
 }
+
 int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
 {
 	int i;

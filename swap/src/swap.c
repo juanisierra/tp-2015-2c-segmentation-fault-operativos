@@ -8,15 +8,17 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <commons/string.h>
+#include <commons/log.h>
 #define TAMANOCONSOLA 1024
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
 
-//****** OJO QUE SON VARIABLES GLOBALES ******
+//****** VARIABLES GLOBALES ******
 FILE* archivo=NULL;
 config_SWAP configuracion;
 espacioLibre* libreRaiz=NULL;
 espacioOcupado* ocupadoRaiz=NULL;
+//********************************
 
 int iniciarConfiguracion(void)
 {//cargamos la configuracion del swap
@@ -208,6 +210,8 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NODOS OCUP
 	nuevo->comienzo= comienzo;
 	nuevo->sgte= NULL;
 	nuevo->ant= aux;
+	nuevo->escribio= 0;
+	nuevo->leyo= 0;
 	if(!aux)//si no habia nodos
 	{
 		ocupadoRaiz= nuevo;
@@ -548,6 +552,7 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)
 	{
 		printf("Se lee: %s \n", buffer);
 	}
+	aLeer->leyo= aLeer->leyo +1;
 	return buffer;
 }
 
@@ -555,6 +560,7 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 {//escribimos en el archivo de swap
 	fseek(archivo,(aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagAEscribir * configuracion.TAMANIO_PAGINA, SEEK_SET);
 	fwrite(texto, sizeof(char), strlen(texto), archivo);
+	aEscribir->escribio= aEscribir->escribio +1;
 	return;
 }
 
@@ -592,8 +598,9 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			if(!i) printf("No se pudo enviar mensaje al ADM\n"); //INSTRUCCION =i, i es la cantidad de datos que enviaa,
 			return 0;
 		}
+		//aca hay que loguear lo que leyo y escribio
+		printf("Se libero la memoria del proceso de pid %u \n", aBorrar->pid);
 		liberarMemoria(aBorrar);
-		printf("Se libero la memoria del proceso\n");
 		aEnviar.contenidoPagina=NULL;
 		break;
 
