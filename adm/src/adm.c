@@ -12,6 +12,7 @@
 #include <semaphore.h>
 #include <librerias-sf/strings.h>
 #include <librerias-sf/tiposDato.h>
+#include <signal.h>
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
 #define TAMANIOMAXIMOTEXTO 200
@@ -96,6 +97,72 @@ int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
 	raizTP=NULL;
 	if(fallo==0) printf("Tablas iniciadas\n");
 	return fallo;
+}
+void tlbFlush(void)
+{
+	int i=0;
+	if(configuracion.TLB_HABILITADA==1){
+		pthread_mutex_lock(&MUTEXTLB);
+	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
+			{
+				TLB[i].pid=-1;
+				TLB[i].indice=-1;
+				TLB[i].nPag=0;
+				TLB[i].numMarco=-1;
+			}
+	pthread_mutex_unlock(&MUTEXTLB);
+	}
+	printf("BORRE LA TLB\n");
+	return;
+}
+
+void MPFlush(void)
+{	int i;
+	nodoListaTP* aux;
+	pthread_mutex_lock(&MUTEXLP);
+	pthread_mutex_lock(&MUTEXTM);
+	pthread_mutex_lock(&MUTEXTLB);
+	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
+	{
+		tMarcos[i].indice=-1; //libero Marcos
+	}
+	if(configuracion.TLB_HABILITADA==1){ //BORRO LA TLB PUES SE BORRARON TODAS LAS PAGINSA EN MEMORIA
+	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
+			{
+				TLB[i].pid=-1;
+				TLB[i].indice=-1;
+				TLB[i].nPag=0;
+				TLB[i].numMarco=-1;
+			}
+	}
+	aux=raizTP;
+	while(aux!=NULL)
+	{
+		for(i=0;i<aux->cantPaginas;i++)
+		{
+			(aux->tabla)[i].valido=0; //Pone todas las paginas como no disponibles en memoria
+		}
+		aux=aux->sgte;
+	}
+	printf("MEMPRINCIPAL BORRADA\n");
+	pthread_mutex_unlock(&MUTEXLP);
+	pthread_mutex_unlock(&MUTEXTM);
+	pthread_mutex_unlock(&MUTEXTLB);
+	return;
+}
+void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupciones
+{	pthread_t hTLBFlush;
+	pthread_t hMPFlush;
+	switch(n){
+	case SIGUSR1:
+	pthread_create(&hTLBFlush,NULL,tlbFlush,NULL);
+	pthread_join(hTLBFlush,NULL);
+	break;
+	case SIGUSR2:
+	pthread_create(&hMPFlush,NULL,MPFlush,NULL);
+	pthread_join(hMPFlush,NULL);
+	break;
+}
 }
 
 int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
@@ -491,7 +558,8 @@ int main()
 	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	printf("Conectado al CPU en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 //EMPIEZA EJECUCION*********************************************************************
-
+	signal(SIGUSR1,rutinaInterrupciones);
+	signal(SIGUSR2,rutinaInterrupciones);
 	mensaje_CPU_ADM mensajeARecibir;
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;

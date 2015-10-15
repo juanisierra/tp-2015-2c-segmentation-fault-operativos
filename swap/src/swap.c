@@ -28,6 +28,7 @@ int iniciarConfiguracion(void)
 	if (configuracion.estado!=1)
 	{
 		printf("Error en el archivo de configuracion, cerrando Administrador de SWAP.. \n");
+		log_error(log, "Error en el archivo de configuracion");
 		return -1;
 	}
 	if(configuracion.estado==1)
@@ -59,6 +60,7 @@ int crearArchivo(void)//0 mal 1 bien
 	if(archivo==0)
 	{
 		printf("fallo al crear el archivo en swap.c \n");
+		log_error(log, "Fallo al crear el archivo de swap");
 		return 0;
 	}
     inicializarArchivo();
@@ -66,6 +68,7 @@ int crearArchivo(void)//0 mal 1 bien
 	if(!libreRaiz)
 	{
 		printf("fallo el malloc para la lista de libres en swap.c \n");
+		log_error(log, "Fallo el malloc para la lista libres en swap");
 		return 0;
 	}
 	libreRaiz->sgte=NULL;
@@ -205,6 +208,7 @@ int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NODOS OCUP
 	if(!nuevo)
 	{
 		printf("fallo el malloc para la lista de ocupados \n");
+		log_error(log, "Fallo el malloc para la lista de ocupados");
 		return 0;
 	}
 	nuevo->pid= pid;
@@ -332,6 +336,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 		if(!libreRaiz)
 		{
 			printf("fallo el malloc para la lista de libres en swap.c \n");
+			log_error(log, "Fallo el malloc para la lista de libres");
 			return 0;
 		}
 		libreRaiz->sgte=NULL;
@@ -367,6 +372,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			if(!libreRaiz)
 			{
 				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(log, "Fallo el malloc para la lista de libres");
 				return 0;
 			}
 			libreRaiz->sgte=NULL;
@@ -383,6 +389,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			if(!nuevo)
 			{
 				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(log, "Fallo el malloc para la lista de libres");
 				return 0;
 			}
 			if(libreRaiz->sgte)
@@ -416,6 +423,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			if(!nuevo)
 			{
 				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(log, "Fallo el malloc para la lista de libres");
 				return 0;
 			}
 			nuevo->comienzo= aBorrar->comienzo;
@@ -473,6 +481,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			if(!libreRaiz)
 			{
 				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(log, "Fallo el malloc para la lista de libres");
 				return 0;
 			}
 			libreRaiz->sgte=NULL;
@@ -494,6 +503,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			if(!nuevo)
 			{
 				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(log, "Fallo el malloc para la lista de libres");
 				return 0;
 			}
 			nuevo->comienzo= aBorrar->comienzo;
@@ -512,6 +522,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			if(!libreRaiz)
 			{
 				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(log, "Fallo el malloc para la lista de libres");
 				return 0;
 			}
 			libreRaiz->sgte=NULL;
@@ -526,6 +537,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 		if(!nuevo)
 		{
 			printf("fallo el malloc para la lista de libres en swap.c \n");
+			log_error(log, "Fallo el malloc para la lista de libres");
 			return 0;
 		}
 		if(libreRaiz->sgte)//corremos la raiz al inicio y nuevo donde estaba la raiz
@@ -552,6 +564,7 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la
 	if(!buffer)
 	{
 		printf("Fallo la creacion del buffer en el swap funcion leer \n");
+		log_error(log, "Fallo la creacion del buffer en el swap funcion leer");
 		return buffer;
 	}
 	fseek(archivo,((aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagALeer * configuracion.TAMANIO_PAGINA), SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
@@ -576,6 +589,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 	mensaje_SWAP_ADM aEnviar;
 	espacioOcupado* aBorrar;
 	espacioOcupado*aEscribir;
+	espacioOcupado* aLeer;
 	switch (mensaje.instruccion)
 	{
 	case INICIAR:
@@ -586,7 +600,11 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i) printf("No se pudo enviar mensaje al ADM\n"); // Distinto de i no sirve, i es cuanto manda.--------------------
+			if(!i)
+			{
+				printf("No se pudo enviar mensaje al ADM\n"); // Distinto de i no sirve, i es cuanto manda.--------------------
+				log_error(log, "No se pudo enviar mensaje al ADM");
+			}
 			return 0;
 		}
 		break;
@@ -598,10 +616,15 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		if(!aBorrar)
 		{
 			printf ("El proceso no se encuentra en el swap \n");
+			log_error(log, "El proceso no se encuentra en el swap");
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i) printf("No se pudo enviar mensaje al ADM\n"); //INSTRUCCION =i, i es la cantidad de datos que enviaa,
+			if(!i)
+			{
+				printf("No se pudo enviar mensaje al ADM\n"); //INSTRUCCION =i, i es la cantidad de datos que enviaa,
+				log_error(log, "No se pudo enviar mensaje al ADM");
+			}
 			return 0;
 		}
 		printf("Se libero la memoria del proceso de pid %u \n", aBorrar->pid);
@@ -610,8 +633,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		break;
 
 	case LEER:
-		aEnviar.contenidoPagina=malloc(configuracion.TAMANIO_PAGINA);
-		espacioOcupado* aLeer=ocupadoRaiz;
+		aLeer=ocupadoRaiz;
 		while(aLeer && aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
 		if(!aLeer)
 		{
@@ -630,7 +652,6 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		break;
 
 	case ESCRIBIR:
-
 		aEscribir=ocupadoRaiz;
 		while(aEscribir && aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
 		aEnviar.contenidoPagina=NULL;
@@ -712,12 +733,14 @@ int main()
 	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
 	if(socketEscucha < 0)
 	{
-		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);
+		printf("El socket al ADM en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);
+		log_error(log,"El socket al ADM en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP",configuracion.PUERTO_ESCUCHA);
 		return -1;
 	}
 	if(listen(socketEscucha,10)< 0)
 	{
 		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP \n",configuracion.PUERTO_ESCUCHA);
+		log_error(log,"El socket en el puerto %s no pudo ser creado, no se puede iniciar el Administrador de SWAP",configuracion.PUERTO_ESCUCHA);
 		return -1;
 	}
 	struct sockaddr_in addr;
