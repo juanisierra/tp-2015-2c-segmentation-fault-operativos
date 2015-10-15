@@ -211,6 +211,13 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		(*PCB)=NULL;
 		break;
 	}
+	case ERRORMARCO:
+				(*PCB)->info.ip=mensajeRecibido->ip;
+				(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
+				printf("Error de marcos del proceso %d \n",(*PCB)->info.pid);
+				free(*PCB);
+				(*PCB)=NULL;
+			break;
 	}
 	CPU->finalizar=0; //Vuelve a poner en 0 para que pueda ejecutar denuevo.
 	return;

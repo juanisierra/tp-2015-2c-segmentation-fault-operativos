@@ -119,12 +119,32 @@ void tlbFlush(void)
 void MPFlush(void)
 {	int i;
 	nodoListaTP* aux;
+	mensaje_ADM_SWAP mensajeParaSWAP;
+	mensaje_SWAP_ADM mensajeDeSWAP;
 	pthread_mutex_lock(&MUTEXLP);
 	pthread_mutex_lock(&MUTEXTM);
 	pthread_mutex_lock(&MUTEXTLB);
 	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 	{
-		tMarcos[i].indice=-1; //libero Marcos
+
+			if(tMarcos[i].indice!=-1 && tMarcos[i].modif==1) //LA ENTRADA HAY QUE GUARDARLA EN SWAP PRIMERO
+			{
+				mensajeParaSWAP.pid=tMarcos[i].pid;
+				mensajeParaSWAP.instruccion=ESCRIBIR;
+				mensajeParaSWAP.parametro=tMarcos[i].nPag;
+				mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
+				strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[i].contenido);
+				enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO); //MANDA LAPAGINA A ESCRIBIRSE
+				if(mensajeParaSWAP.contenidoPagina!=NULL)
+				{
+					free(mensajeParaSWAP.contenidoPagina);
+					mensajeParaSWAP.contenidoPagina=NULL;
+				}
+				recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+				if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
+				mensajeDeSWAP.contenidoPagina=NULL;
+			}
+	tMarcos[i].indice=-1; //libero Marcos
 	}
 	if(configuracion.TLB_HABILITADA==1){ //BORRO LA TLB PUES SE BORRARON TODAS LAS PAGINSA EN MEMORIA
 	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
@@ -142,6 +162,7 @@ void MPFlush(void)
 		{
 			(aux->tabla)[i].valido=0; //Pone todas las paginas como no disponibles en memoria
 		}
+		aux->marcosAsignados=0;
 		aux=aux->sgte;
 	}
 	printf("MEMPRINCIPAL BORRADA\n");
@@ -149,6 +170,14 @@ void MPFlush(void)
 	pthread_mutex_unlock(&MUTEXTM);
 	pthread_mutex_unlock(&MUTEXTLB);
 	return;
+
+
+
+
+
+
+
+
 }
 void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupciones
 {	pthread_t hTLBFlush;
@@ -458,24 +487,24 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
 {
 	nodoListaTP* nodo;
 	nodo=buscarProceso(pid); //APUNTA AL NODO EN LA LISTA DE LA TABLAD E PAGINAS
+	int aux;
 	int ubicada = -1;
 	if(configuracion.TLB_HABILITADA==1) //BUSCA EN LA TLB Y SE FIJA SI ESTA O NO ALLI
 	{
-		pthread_mutex_lock(&MUTEXTLB);
+
 		ubicada= estaEnTLB(pid,numPag);
-		pthread_mutex_unlock(&MUTEXTLB);
+
 		if(ubicada>=0)
 		{
 			aciertosTLB++;
-			pthread_mutex_lock(&MUTEXLP);
+
 			nodo->cantPaginasAcc++;
-			pthread_mutex_unlock(&MUTEXLP);
+
 			if(configuracion.ALGORITMO_REEMPLAZO==1)//AL LEER MODIFICA
 			{
-				pthread_mutex_lock(&MUTEXTM);
 				tMarcos[ubicada].indice=indiceMarcos;
 				indiceMarcos++;
-				pthread_mutex_unlock(&MUTEXTM);
+
 			}
 			return ubicada;
 		}
@@ -484,33 +513,31 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
 	ubicada=estaEnMemoria(pid,numPag); //VE SI ESTA CARGADA EN MEMORIA
 	if(ubicada>0)
 	{
-		pthread_mutex_lock(&MUTEXLP);
 		nodo->cantPaginasAcc++;
-		pthread_mutex_unlock(&MUTEXLP);
-		pthread_mutex_lock(&MUTEXTLB);
+
+
 		if(configuracion.TLB_HABILITADA==1) agregarATLB(pid,numPag,ubicada);
-		pthread_mutex_unlock(&MUTEXTLB);
+
 		if(configuracion.ALGORITMO_REEMPLAZO==1) //AL LEER MODIFICA
 		{
-			pthread_mutex_lock(&MUTEXTM);
+
 			tMarcos[ubicada].indice=indiceMarcos;
 			indiceMarcos++;
-			pthread_mutex_unlock(&MUTEXTM);
+
 		}
 		return ubicada;
 	}
 	if(ubicada==-1) //HAY QUE TRAERLA DEL SWAP
 	{
-		if(nodo->marcosAsignados>=configuracion.MAXIMO_MARCOS_POR_PROCESO) return -4; //SI EL PROCESO NO PUEDE TENER MAS DEVUELVE ERROR.
-		pthread_mutex_lock(&MUTEXLP);
-		pthread_mutex_lock(&MUTEXTM);
-		pthread_mutex_lock(&MUTEXTLB);
+		if(nodo->marcosAsignados>=configuracion.MAXIMO_MARCOS_POR_PROCESO)
+		{	aux=entradaTMarcoAReemplazar(); //Vemos cual seria la proxima que se reemplazaria
+			if(tMarcos[aux].pid!=pid) return -4; //SI EL PROCESO NO PUEDE TENER MAS DEVUELVE ERROR, chequeo que la proxima a sacar no sea de este proceso.
+		}
+
 		nodo->cantFallosPag++;
 		ubicada=reemplazarMarco(pid,numPag); //CAMBIA EL MARCO Y DEVUELVE EL NUMERO
-		pthread_mutex_unlock(&MUTEXLP);
-		pthread_mutex_unlock(&MUTEXTM);
+
 		if(configuracion.TLB_HABILITADA==1) agregarATLB(pid,numPag,ubicada); //AGREGAMOS A ENTRADA EN LA TLB
-		pthread_mutex_unlock(&MUTEXTLB);
 	}
 	return ubicada;
 }
@@ -572,6 +599,9 @@ int main()
 		printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
 		if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
 		if(mensajeARecibir.tamTexto==0) printf("\n");
+		pthread_mutex_lock(&MUTEXLP);
+		pthread_mutex_lock(&MUTEXTM);
+		pthread_mutex_lock(&MUTEXTLB);
 		if(mensajeARecibir.instruccion == INICIAR)
 		{
 			mensajeParaSWAP.pid=mensajeARecibir.pid;
@@ -582,9 +612,7 @@ int main()
 			recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 			if(mensajeDeSWAP.estado==0)
 			{
-				pthread_mutex_lock(&MUTEXLP);
 				agregarProceso(mensajeARecibir.pid,mensajeARecibir.parametro);
-				pthread_mutex_unlock(&MUTEXLP);
 			}
 			mensajeAMandar.parametro = mensajeDeSWAP.estado;
 			mensajeAMandar.tamanoMensaje = 0;
@@ -606,6 +634,10 @@ int main()
 			else
 			{
 				//SOPORTAR ERROR AL LEER POR MAXIMO DE MARCOS DEVUELVE -1
+				mensajeAMandar.parametro =-1;
+				mensajeAMandar.tamanoMensaje =0;
+				mensajeAMandar.texto =NULL;
+				enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 			}
 
 		}
@@ -614,7 +646,7 @@ int main()
 			marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
 			if(marcoAUsar!=-4)
 			{
-				pthread_mutex_lock(&MUTEXTM);
+
 				if(tMarcos[marcoAUsar].modif==1)
 				{
 					mensajeParaSWAP.pid=tMarcos[marcoAUsar].pid;
@@ -639,8 +671,8 @@ int main()
 				tMarcos[marcoAUsar].modif=1;
 				}
 
-				pthread_mutex_unlock(&MUTEXTM);
-				mensajeAMandar.parametro =0;
+
+				mensajeAMandar.parametro=mensajeARecibir.parametro;
 				mensajeAMandar.tamanoMensaje =0;
 				mensajeAMandar.texto =NULL;
 				enviarInstruccionACPU(socketCPU, &mensajeAMandar);
@@ -648,6 +680,11 @@ int main()
 			else
 			{
 				//MANEJAR ERROR DE CANT MARCOS
+				mensajeAMandar.parametro =-1;
+				mensajeAMandar.tamanoMensaje =0;
+				mensajeAMandar.texto =NULL;
+				enviarInstruccionACPU(socketCPU, &mensajeAMandar);
+
 			}
 		}
 		if(mensajeARecibir.instruccion ==FINALIZAR)
@@ -658,13 +695,8 @@ int main()
 			mensajeParaSWAP.contenidoPagina=NULL;
 			enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
 			recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-			pthread_mutex_lock(&MUTEXLP);
-			pthread_mutex_lock(&MUTEXTM);
-			pthread_mutex_lock(&MUTEXTLB);
+
 			eliminarProceso(mensajeARecibir.pid); //FINALIZA EL PROCESO EN LA LISTA DE TABLAS DE PAG Y DEMAS
-			pthread_mutex_unlock(&MUTEXLP);
-			pthread_mutex_unlock(&MUTEXTM);
-			pthread_mutex_unlock(&MUTEXTLB);
 			mensajeAMandar.parametro = mensajeDeSWAP.estado;
 			mensajeAMandar.tamanoMensaje = 0;
 			mensajeAMandar.texto = NULL;
@@ -677,6 +709,9 @@ int main()
 		mensajeARecibir.texto=NULL;
 		mensajeDeSWAP.contenidoPagina=NULL;
 		mensajeParaSWAP.contenidoPagina=NULL;
+		pthread_mutex_unlock(&MUTEXLP);
+		pthread_mutex_unlock(&MUTEXTM);
+		pthread_mutex_unlock(&MUTEXTLB);
 	}
 	printf("La cantidad de aciertos de TLB fue: %d, y la de errores: %d\n",aciertosTLB,fallosTLB);
 	finalizarTablas();
