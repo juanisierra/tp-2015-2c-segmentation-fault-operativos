@@ -189,7 +189,7 @@ void hiloCPU(void* datoCPUACastear)
 	{	status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
 		instruccionesEjecutadasHilo = 0; //Lo ponemos en 0 cada vez que vuelve a ejecutar un nuevo pcb
 		pthread_mutex_lock(&mutexLog);
-		log_info(log, "Log de CPU: %d:\n -Recibido PCB:%d\n -Direccion archivo: %s\n -Ip apuntando a la linea:%d\n -Quantum recibido:%d", datos_CPU.id, datos_CPU.pid, datos_CPU.path, datos_CPU.ip, quantum);
+		log_info(log, "CPU:%d Recibido PCB:%d || Direccion archivo: %s  ||  Ip apuntando a la linea:%d   ||  Quantum recibido:%d", datos_CPU.id, datos_CPU.pid, datos_CPU.path, datos_CPU.ip, quantum);
 		pthread_mutex_unlock(&mutexLog);
 		if(status==0) break; //CIERRA EL RPOCESO
 		entrada_salida = 0;//REINICIAMOS ESTOS VALORES PARA CADA VEZ QUE LEA UNA NUEVA PCB
@@ -217,15 +217,15 @@ void hiloCPU(void* datoCPUACastear)
 			pthread_mutex_unlock(&instruccionesEjec);
 			instruccionesEjecutadasHilo++;
 			pthread_mutex_lock(&mutexLog);
-			log_info(log, "Log de CPU %d:\n -Instruccion ejecutada: %s\n PID: %d\n", datos_CPU.id, lineaAEjecutar, datos_CPU.pid);//validar la funcion interpretarMCod para que si parametro 2 esta vacio lo devuelva con el \0 y si el parametro1 no esta que lo devuelva con -1
-			if(parametro1 != -1) log_info(log, "-Parametro 1: %d", parametro1);
+			log_info(log, "CPU:%d || Instruccion ejecutada: %s || PID: %d", datos_CPU.id, lineaAEjecutar, datos_CPU.pid);//validar la funcion interpretarMCod para que si parametro 2 esta vacio lo devuelva con el \0 y si el parametro1 no esta que lo devuelva con -1
+			if(parametro1 != -1) log_info(log, " Parametro 1: %d", parametro1);
 			log_info(log, "Parametro 2: %s", parametro2);
 			nodo_Retorno_Instruccion* aux = datos_CPU.listaRetornos; //vamos a tener que recorrer la lista ya que de ahi saco la respuesta
 			for(contador = 1; contador < instruccionesEjecutadasHilo; contador++)
 			{
 				aux = aux->sgte;
 			}
-			log_info(log, "Resultado: %s", aux->info.texto);
+			log_info(log, " Resultado: %s", aux->info.texto);
 			pthread_mutex_unlock(&mutexLog);
 			//printf("%s \n",datos_CPU.listaRetornos->info.texto);
 		}
@@ -234,10 +234,13 @@ void hiloCPU(void* datoCPUACastear)
 		enviarMensajeAPL(datos_CPU,estado, entrada_salida, mensajeParaPL,tamPayload);
 		free(mensajeParaPL);
 		pthread_mutex_lock(&mutexLog);
-		log_info("Log de CPU %d: Rafaga del mProc cuyo PID es %d concluida.", datos_CPU.id, datos_CPU.pid);
+		log_info("CPU: %d Rafaga del mProc cuyo PID es %d concluida.", datos_CPU.id, datos_CPU.pid);
 		pthread_mutex_unlock(&mutexLog);
 	}
 	printf("Terminando Hilo de CPU\n");
+	pthread_mutex_lock(&mutexLog);
+	log_info("Terminando hilo de CPU %d", datos_CPU.id);
+	pthread_mutex_unlock(&mutexLog);
 	close(datos_CPU.socket);
 	printf("Cerrando socket\n");
 	return;
@@ -270,13 +273,15 @@ int main(void)
 	pthread_mutex_init(&mutexLog, NULL);
 	pthread_mutex_init(&instruccionesEjec, NULL);
 	int i;
+	log_info(log,"Iniciando CPU");
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
+	log_info(log,"Configuracion cargada correctamente");
 	proceso_CPU CPUs[configuracion.CANTIDAD_HILOS];  //Declaramos el array donde cada componente es un hilo
 	instruccionesEjecutadas = malloc(sizeof(uint32_t)* configuracion.CANTIDAD_HILOS);
 	if((socketADM = crearSocketCliente(configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA))<0) // Se inicializa el socketADM GLOBAL
 		{
 			printf("No se pudo crear socket en %s:%s \n",configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
-				log_info(log, "Proceso no se pudo conectar con el ADM", i);
+			log_error(log, "Proceso no se pudo conectar con el ADM", i);
 			return 0;
 		}
 		log_info(log, "Proceso conectado con el ADM", i);
@@ -288,7 +293,7 @@ int main(void)
 		{
 			printf("No se pudo crear socket planificador en %s:%s \n",configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
 			pthread_mutex_lock(&mutexLog);
-			log_info(log, "CPU %d no se pudo conectar con el Planificador", i);
+			log_error(log, "CPU %d no se pudo conectar con el Planificador", i);
 			pthread_mutex_unlock(&mutexLog);
 		}
 		pthread_mutex_lock(&mutexLog);
@@ -301,6 +306,7 @@ int main(void)
 	{
 		pthread_join(CPUs[i].thread, NULL);
 	}
+	log_info(log,"Proceso CPU finalizado\n");
 	close(socketADM);
 	log_destroy(log);
 	return 0;
