@@ -1,0 +1,7 @@
+iniciar 3;
+escribir 0 "san"
+escribir 1 "ti"
+leer 0;
+leer 1;
+leer 2;
+finalizar;

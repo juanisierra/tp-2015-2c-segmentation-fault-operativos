@@ -576,6 +576,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 	mensaje_SWAP_ADM aEnviar;
 	espacioOcupado* aBorrar;
 	espacioOcupado*aEscribir;
+	espacioOcupado* aLeer;
 	switch (mensaje.instruccion)
 	{
 	case INICIAR:
@@ -610,8 +611,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		break;
 
 	case LEER:
-		aEnviar.contenidoPagina=malloc(configuracion.TAMANIO_PAGINA);
-		espacioOcupado* aLeer=ocupadoRaiz;
+		aLeer=ocupadoRaiz;
 		while(aLeer && aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
 		if(!aLeer)
 		{
@@ -630,7 +630,6 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		break;
 
 	case ESCRIBIR:
-
 		aEscribir=ocupadoRaiz;
 		while(aEscribir && aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
 		aEnviar.contenidoPagina=NULL;

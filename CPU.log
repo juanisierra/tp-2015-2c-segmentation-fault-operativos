@@ -118,3 +118,170 @@
 [INFO] 21:14:02:831 CPU/(4138:4139): CPU:0 Recibido PCB:-1237319616 || Direccion archivo: L@¶  ||  Ip apuntando a la linea:-1237319616   ||  Quantum recibido:1768693857
 [INFO] 21:14:02:831 CPU/(4138:4138): Proceso CPU finalizado
 
+[INFO] 22:25:06:331 CPU/(2389:2389): Proceso no se pudo conectar con el ADM
+[INFO] 22:25:19:522 CPU/(2391:2391): Proceso conectado con el ADM
+[INFO] 22:25:19:532 CPU/(2391:2391): CPU 0 conectada con el Planificador
+[INFO] 22:25:36:144 CPU/(2391:2392): Log de CPU: 0:
+ -Recibido PCB:0
+ -Direccion archivo: prueba.mcod
+ -Ip apuntando a la linea:0
+ -Quantum recibido:2
+[INFO] 22:29:16:718 CPU/(2526:2526): Iniciando CPU
+[INFO] 22:29:16:742 CPU/(2526:2526): Configuracion cargada correctamente
+[ERROR] 22:29:16:744 CPU/(2526:2526): Proceso no se pudo conectar con el ADM
+[INFO] 22:29:27:72 CPU/(2528:2528): Iniciando CPU
+[INFO] 22:29:27:86 CPU/(2528:2528): Configuracion cargada correctamente
+[INFO] 22:29:27:88 CPU/(2528:2528): Proceso conectado con el ADM
+[INFO] 22:29:27:88 CPU/(2528:2528): CPU 0 conectada con el Planificador
+[INFO] 22:29:55:225 CPU/(2528:2529): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:0   ||  Quantum recibido:2
+[INFO] 22:29:58:384 CPU/(2528:2529): CPU:0 || Instruccion ejecutada: iniciar 2;
+ || PID: 0
+[INFO] 22:29:58:385 CPU/(2528:2529):  Parametro 1: 2
+[INFO] 22:29:58:385 CPU/(2528:2529): Parametro 2: 
+[INFO] 22:29:58:385 CPU/(2528:2529):  Resultado: mProc 0 - Iniciado 
+
+[INFO] 22:30:01:526 CPU/(2528:2529): CPU:0 || Instruccion ejecutada: leer 0;
+ || PID: 0
+[INFO] 22:30:01:526 CPU/(2528:2529):  Parametro 1: 0
+[INFO] 22:30:01:526 CPU/(2528:2529): Parametro 2: 
+[INFO] 22:30:01:526 CPU/(2528:2529):  Resultado: mProc 0 - Pagina 0 leida:  
+
+[INFO] 22:30:01:533 CPU/(2528:2529): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:2   ||  Quantum recibido:2
+[INFO] 22:30:04:535 CPU/(2528:2529): CPU:0 || Instruccion ejecutada: escribir 0 "ju";
+ || PID: 0
+[INFO] 22:30:04:535 CPU/(2528:2529):  Parametro 1: 0
+[INFO] 22:30:04:535 CPU/(2528:2529): Parametro 2: ju
+[INFO] 22:30:04:535 CPU/(2528:2529):  Resultado: mProc 0 - Pagina 0 escrita: ju 
+
+[INFO] 22:30:07:597 CPU/(2528:2529): CPU:0 || Instruccion ejecutada: escribir 1 "a";
+ || PID: 0
+[INFO] 22:30:07:597 CPU/(2528:2529):  Parametro 1: 1
+[INFO] 22:30:07:598 CPU/(2528:2529): Parametro 2: a
+[INFO] 22:30:07:598 CPU/(2528:2529):  Resultado: mProc 0 - Pagina 0 escrita: a 
+
+[INFO] 22:30:07:611 CPU/(2528:2529): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:4   ||  Quantum recibido:2
+[INFO] 22:30:10:615 CPU/(2528:2529): CPU:0 || Instruccion ejecutada: leer 0;
+ || PID: 0
+[INFO] 22:30:10:616 CPU/(2528:2529):  Parametro 1: 0
+[INFO] 22:30:10:616 CPU/(2528:2529): Parametro 2: 
+[INFO] 22:30:10:616 CPU/(2528:2529):  Resultado: mProc 0 - Pagina 0 leida: ju 
+
+[INFO] 22:30:13:618 CPU/(2528:2529): CPU:0 || Instruccion ejecutada: leer 1;
+ || PID: 0
+[INFO] 22:30:13:618 CPU/(2528:2529):  Parametro 1: 1
+[INFO] 22:30:13:618 CPU/(2528:2529): Parametro 2: 
+[INFO] 22:30:13:618 CPU/(2528:2529):  Resultado: mProc 0 - Pagina 1 leida: a 
+
+[INFO] 22:30:13:624 CPU/(2528:2529): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:6   ||  Quantum recibido:2
+[INFO] 22:30:16:726 CPU/(2528:2529): CPU:0 || Instruccion ejecutada: finalizar; || PID: 0
+[INFO] 22:30:16:726 CPU/(2528:2529):  Parametro 1: 0
+[INFO] 22:30:16:726 CPU/(2528:2529): Parametro 2: 
+[INFO] 22:30:16:726 CPU/(2528:2529):  Resultado: mProc 0 finalizado 
+
+[INFO] 22:31:01:73 CPU/(2528:2529): CPU:0 Recibido PCB:-1237319616 || Direccion archivo: L@¶  ||  Ip apuntando a la linea:-1237319616   ||  Quantum recibido:1768693857
+[INFO] 22:31:01:74 CPU/(2528:2528): Proceso CPU finalizado
+
+[INFO] 22:43:50:554 CPU/(2634:2634): Iniciando CPU
+[INFO] 22:43:50:562 CPU/(2634:2634): Configuracion cargada correctamente
+[INFO] 22:43:50:562 CPU/(2634:2634): Proceso conectado con el ADM
+[INFO] 22:43:50:563 CPU/(2634:2634): CPU 0 conectada con el Planificador
+[INFO] 22:43:57:0 CPU/(2634:2635): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:0   ||  Quantum recibido:2
+[INFO] 22:44:01:198 CPU/(2634:2635): CPU:0 || Instruccion ejecutada: iniciar 2;
+ || PID: 0
+[INFO] 22:44:01:198 CPU/(2634:2635):  Parametro 1: 2
+[INFO] 22:44:01:198 CPU/(2634:2635): Parametro 2: 
+[INFO] 22:44:01:198 CPU/(2634:2635):  Resultado: mProc 0 - Iniciado 
+
+[INFO] 22:44:04:361 CPU/(2634:2635): CPU:0 || Instruccion ejecutada: leer 0;
+ || PID: 0
+[INFO] 22:44:04:361 CPU/(2634:2635):  Parametro 1: 0
+[INFO] 22:44:04:361 CPU/(2634:2635): Parametro 2: 
+[INFO] 22:44:04:361 CPU/(2634:2635):  Resultado: mProc 0 - Pagina 0 leida:  
+
+[INFO] 22:44:04:376 CPU/(2634:2635): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:2   ||  Quantum recibido:2
+[INFO] 22:44:07:379 CPU/(2634:2635): CPU:0 || Instruccion ejecutada: escribir 0 "ju";
+ || PID: 0
+[INFO] 22:44:07:379 CPU/(2634:2635):  Parametro 1: 0
+[INFO] 22:44:07:379 CPU/(2634:2635): Parametro 2: ju
+[INFO] 22:44:07:379 CPU/(2634:2635):  Resultado: mProc 0 - Pagina 0 escrita: ju 
+
+[INFO] 22:44:10:427 CPU/(2634:2635): CPU:0 || Instruccion ejecutada: escribir 1 "a";
+ || PID: 0
+[INFO] 22:44:10:427 CPU/(2634:2635):  Parametro 1: 1
+[INFO] 22:44:10:427 CPU/(2634:2635): Parametro 2: a
+[INFO] 22:44:10:427 CPU/(2634:2635):  Resultado: mProc 0 - Pagina 0 escrita: a 
+
+[INFO] 22:44:10:434 CPU/(2634:2635): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:4   ||  Quantum recibido:2
+[INFO] 22:44:13:436 CPU/(2634:2635): CPU:0 || Instruccion ejecutada: leer 0;
+ || PID: 0
+[INFO] 22:44:13:436 CPU/(2634:2635):  Parametro 1: 0
+[INFO] 22:44:13:436 CPU/(2634:2635): Parametro 2: 
+[INFO] 22:44:13:436 CPU/(2634:2635):  Resultado: mProc 0 - Pagina 0 leida: ju 
+
+[INFO] 22:44:16:440 CPU/(2634:2635): CPU:0 || Instruccion ejecutada: leer 1;
+ || PID: 0
+[INFO] 22:44:16:440 CPU/(2634:2635):  Parametro 1: 1
+[INFO] 22:44:16:440 CPU/(2634:2635): Parametro 2: 
+[INFO] 22:44:16:440 CPU/(2634:2635):  Resultado: mProc 0 - Pagina 1 leida: a 
+
+[INFO] 22:44:16:442 CPU/(2634:2635): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:6   ||  Quantum recibido:2
+[INFO] 22:44:19:548 CPU/(2634:2635): CPU:0 || Instruccion ejecutada: finalizar; || PID: 0
+[INFO] 22:44:19:548 CPU/(2634:2635):  Parametro 1: 0
+[INFO] 22:44:19:548 CPU/(2634:2635): Parametro 2: 
+[INFO] 22:44:19:549 CPU/(2634:2635):  Resultado: mProc 0 finalizado 
+
+[INFO] 22:44:32:617 CPU/(2634:2635): CPU:0 Recibido PCB:-1237319616 || Direccion archivo: L@¶  ||  Ip apuntando a la linea:-1237319616   ||  Quantum recibido:1768693857
+[INFO] 22:44:32:617 CPU/(2634:2634): Proceso CPU finalizado
+
+[INFO] 22:56:27:947 CPU/(3011:3011): Iniciando CPU
+[INFO] 22:56:27:958 CPU/(3011:3011): Configuracion cargada correctamente
+[INFO] 22:56:27:959 CPU/(3011:3011): Proceso conectado con el ADM
+[INFO] 22:56:27:959 CPU/(3011:3011): CPU 0 conectada con el Planificador
+[INFO] 22:56:36:248 CPU/(3011:3012): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:0   ||  Quantum recibido:2
+[INFO] 22:56:39:372 CPU/(3011:3012): CPU:0 || Instruccion ejecutada: iniciar 2;
+ || PID: 0
+[INFO] 22:56:39:372 CPU/(3011:3012):  Parametro 1: 2
+[INFO] 22:56:39:373 CPU/(3011:3012): Parametro 2: 
+[INFO] 22:56:39:373 CPU/(3011:3012):  Resultado: mProc 0 - Iniciado 
+
+[INFO] 22:56:42:496 CPU/(3011:3012): CPU:0 || Instruccion ejecutada: leer 0;
+ || PID: 0
+[INFO] 22:56:42:496 CPU/(3011:3012):  Parametro 1: 0
+[INFO] 22:56:42:496 CPU/(3011:3012): Parametro 2: 
+[INFO] 22:56:42:496 CPU/(3011:3012):  Resultado: mProc 0 - Pagina 0 leida:  
+
+[INFO] 22:56:42:509 CPU/(3011:3012): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:2   ||  Quantum recibido:2
+[INFO] 22:56:45:511 CPU/(3011:3012): CPU:0 || Instruccion ejecutada: escribir 0 "ju";
+ || PID: 0
+[INFO] 22:56:45:512 CPU/(3011:3012):  Parametro 1: 0
+[INFO] 22:56:45:513 CPU/(3011:3012): Parametro 2: ju
+[INFO] 22:56:45:514 CPU/(3011:3012):  Resultado: mProc 0 - Pagina 0 escrita: ju 
+
+[INFO] 22:56:48:556 CPU/(3011:3012): CPU:0 || Instruccion ejecutada: escribir 1 "a";
+ || PID: 0
+[INFO] 22:56:48:556 CPU/(3011:3012):  Parametro 1: 1
+[INFO] 22:56:48:556 CPU/(3011:3012): Parametro 2: a
+[INFO] 22:56:48:556 CPU/(3011:3012):  Resultado: mProc 0 - Pagina 0 escrita: a 
+
+[INFO] 22:56:48:567 CPU/(3011:3012): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:4   ||  Quantum recibido:2
+[INFO] 22:56:51:571 CPU/(3011:3012): CPU:0 || Instruccion ejecutada: leer 0;
+ || PID: 0
+[INFO] 22:56:51:571 CPU/(3011:3012):  Parametro 1: 0
+[INFO] 22:56:51:571 CPU/(3011:3012): Parametro 2: 
+[INFO] 22:56:51:571 CPU/(3011:3012):  Resultado: mProc 0 - Pagina 0 leida: ju 
+
+[INFO] 22:56:54:574 CPU/(3011:3012): CPU:0 || Instruccion ejecutada: leer 1;
+ || PID: 0
+[INFO] 22:56:54:574 CPU/(3011:3012):  Parametro 1: 1
+[INFO] 22:56:54:575 CPU/(3011:3012): Parametro 2: 
+[INFO] 22:56:54:575 CPU/(3011:3012):  Resultado: mProc 0 - Pagina 1 leida: a 
+
+[INFO] 22:56:54:577 CPU/(3011:3012): CPU:0 Recibido PCB:0 || Direccion archivo: prueba.mcod  ||  Ip apuntando a la linea:6   ||  Quantum recibido:2
+[INFO] 22:56:57:638 CPU/(3011:3012): CPU:0 || Instruccion ejecutada: finalizar; || PID: 0
+[INFO] 22:56:57:638 CPU/(3011:3012):  Parametro 1: 0
+[INFO] 22:56:57:638 CPU/(3011:3012): Parametro 2: 
+[INFO] 22:56:57:638 CPU/(3011:3012):  Resultado: mProc 0 finalizado 
+
+[INFO] 22:57:01:477 CPU/(3011:3012): CPU:0 Recibido PCB:-1228931008 || Direccion archivo: LÀ¶  ||  Ip apuntando a la linea:-1228931008   ||  Quantum recibido:1768693857
+[INFO] 22:57:01:480 CPU/(3011:3011): Proceso CPU finalizado
+
