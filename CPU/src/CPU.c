@@ -86,7 +86,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		pthread_mutex_unlock(&mutexComADM);
-		if(mensajeDeADM.parametro == 1)
+		if(mensajeDeADM.parametro == -1)
 		{
 			(*estado) = ERRORMARCO;
 		}
@@ -109,7 +109,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		recibirInstruccionDeADM(socketADM, &mensajeDeADM);
 		pthread_mutex_unlock(&mutexComADM);
 		//////////////////////////////////////////////////////
-		if(mensajeDeADM.parametro == 1)
+		if(mensajeDeADM.parametro == -1)
 		{
 			(*estado) = ERRORMARCO;
 		}
@@ -187,7 +187,7 @@ void hiloCPU(void* datoCPUACastear)
 	status=1;
 	while(status != 0)
 	{	status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
-		instruccionesEjecutadas = 0; //Lo ponemos en 0 cada vez que vuelve a ejecutar un nuevo pcb
+		instruccionesEjecutadasHilo = 0; //Lo ponemos en 0 cada vez que vuelve a ejecutar un nuevo pcb
 		pthread_mutex_lock(&mutexLog);
 		log_info(log, "Log de CPU: %d:\n -Recibido PCB:%d\n -Direccion archivo: %s\n -Ip apuntando a la linea:%d\n -Quantum recibido:%d", datos_CPU.id, datos_CPU.pid, datos_CPU.path, datos_CPU.ip, quantum);
 		pthread_mutex_unlock(&mutexLog);
