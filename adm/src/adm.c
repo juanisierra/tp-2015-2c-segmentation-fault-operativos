@@ -172,6 +172,25 @@ void MPFlush(void)
 	return;
 
 }
+void atenderDump(void)
+{	printf("POR ATENDER DUMP\n");
+	int pid;
+	pid=fork();
+	if(pid==-1){
+		printf("Fallo la creacion del hijo\n");
+		return;
+	}
+	if(pid==0)
+	{
+		//PROCESO HIJO
+		printf("PROCESO HIJO\n");
+		exit(0);
+	} else {
+		wait(NULL); //ESPERA A LA FINALIZACION DEL HIJO
+		printf("EL PROCESO HIJO TERMINO\n");
+		return;
+	}
+}
 void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupciones
 {	pthread_t hTLBFlush;
 	pthread_t hMPFlush;
@@ -183,6 +202,9 @@ void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupcione
 	case SIGUSR2:
 	pthread_create(&hMPFlush,NULL,MPFlush,NULL);
 	pthread_join(hMPFlush,NULL);
+	break;
+	case SIGPOLL:
+		atenderDump();
 	break;
 }
 }
@@ -595,6 +617,7 @@ int main()
 	}
 	signal(SIGUSR1,rutinaInterrupciones);
 	signal(SIGUSR2,rutinaInterrupciones);
+	signal(SIGPOLL,rutinaInterrupciones);
 	mensaje_CPU_ADM mensajeARecibir;
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;

@@ -4,6 +4,6 @@ escribir 0 "ju";
 escribir 1 "a";
 leer 0;
 leer 1;
-escribir 0 "la";
+escribir 0 "as";
 leer 0;
 finalizar;
