@@ -32,7 +32,7 @@ pthread_mutex_t MUTEXTM;
 pthread_mutex_t MUTEXLP;
 int socketSWAP;
 int socketEscucha;
-
+pthread_t hTasaAciertos;
 int iniciarConfiguracion(config_ADM* configuracion)
 {
 	printf("Cargando Configuracion..\n");
@@ -171,13 +171,6 @@ void MPFlush(void)
 	pthread_mutex_unlock(&MUTEXTLB);
 	return;
 
-
-
-
-
-
-
-
 }
 void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupciones
 {	pthread_t hTLBFlush;
@@ -252,7 +245,7 @@ nodoListaTP* ultimoNodoTP(void)
 }
 
 void agregarProceso(int pid, int cantPaginas)
-{
+{ sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
 	int i;
 	nodoListaTP* ultimoNodo=ultimoNodoTP();
 
@@ -299,7 +292,7 @@ nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
 }
 
 void eliminarProceso(int pid)
-{
+{ sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
 	int i;
 	nodoListaTP* aEliminar;
 	aEliminar=buscarProceso(pid);
@@ -365,7 +358,8 @@ void finalizarListaTP(void)
 }
 
 int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memoria, sino -1 y -2 si hubo error, NO USA MUTEX!!!
-{	nodoListaTP* nodo;
+{	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
+	nodoListaTP* nodo;
 	tablaPag* tabla;
 	nodo=buscarProceso(pid);
 	if(nodo!=NULL) //ENCONTRO EL NODO
@@ -381,7 +375,7 @@ int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memo
 	return -2;
 }
 
-void finalizarTablas(void) //FALTA AGREGAR LIBERAR LISTA TP
+void finalizarTablas(void)
 {
 	int i=0;
 	if(TLB!=NULL) free(TLB);
@@ -415,7 +409,8 @@ void agregarATLB(int pid,int pagina,int marco)
 }
 
 int reemplazarMarco(int pid,int pagina)
-{	mensaje_ADM_SWAP mensajeParaSWAP;
+{	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
+	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
 	nodoListaTP* nodoProcesoViejo;
 	nodoListaTP*nodoProceso;
@@ -541,7 +536,16 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
 	}
 	return ubicada;
 }
+void TasaAciertos(void)
+{	int tasaAciertos;
+while(1)
+	{
+	sleep(60);
+	tasaAciertos=(aciertosTLB)*100/(aciertosTLB+fallosTLB);
+	printf("La tasa de aciertos de la TLB es del %d %%\n",tasaAciertos);
+	}
 
+}
 int main()
 {
 	aciertosTLB=0;
@@ -585,6 +589,10 @@ int main()
 	int socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	printf("Conectado al CPU en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 //EMPIEZA EJECUCION*********************************************************************
+	if(configuracion.TLB_HABILITADA==1)
+	{
+	pthread_create(&hTasaAciertos,NULL,TasaAciertos,NULL);
+	}
 	signal(SIGUSR1,rutinaInterrupciones);
 	signal(SIGUSR2,rutinaInterrupciones);
 	mensaje_CPU_ADM mensajeARecibir;
@@ -623,7 +631,7 @@ int main()
 		{
 			marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
 			if(marcoAUsar!=-4) //EL MARCO ESTA O PUEDEN DARLE UNO
-			{
+			{	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A LEER
 				mensajeAMandar.parametro=mensajeARecibir.parametro;
 				printf("EL CONTENIDO DE LA PAGINA ES %s \n",tMarcos[marcoAUsar].contenido);
 				mensajeAMandar.tamanoMensaje = strlen(tMarcos[marcoAUsar].contenido) +1;
@@ -664,11 +672,13 @@ int main()
 					if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
 					strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
 					tMarcos[marcoAUsar].modif=1;
+					sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A ESCRIBIR
 				}
 				if(tMarcos[marcoAUsar].modif==0)
 				{
 				strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
 				tMarcos[marcoAUsar].modif=1;
+				sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A ESCRIBIR
 				}
 
 
@@ -713,7 +723,12 @@ int main()
 		pthread_mutex_unlock(&MUTEXTM);
 		pthread_mutex_unlock(&MUTEXTLB);
 	}
-	printf("La cantidad de aciertos de TLB fue: %d, y la de errores: %d\n",aciertosTLB,fallosTLB);
+
+	if(configuracion.TLB_HABILITADA==1)
+		{printf("La cantidad de aciertos de TLB fue: %d, y la de errores: %d\n",aciertosTLB,fallosTLB);
+	pthread_kill(hTasaAciertos,9);
+	pthread_join(hTasaAciertos,NULL);
+		}
 	finalizarTablas();
 	close(socketCPU);
 	close(socketEscucha);

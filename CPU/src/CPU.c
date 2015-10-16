@@ -18,6 +18,10 @@
 #define TAMANIOMAXIMOLINEA 200
 #define ARCHIVOLOG "CPU.log"
 
+typedef struct contadorInstrucciones{//Creamos el tipo de dato encargado de almacenar la cantidad de instrucciones y el socket para mandarselo al PL
+	uint32_t contador;
+	int socket;
+}contadorInstrucciones;
 //Variables globales
 int socketADM;
 config_CPU configuracion;
@@ -25,7 +29,7 @@ pthread_mutex_t mutexComADM; //mutex para comunicacion con el ADM
 pthread_mutex_t mutexLog;
 pthread_mutex_t instruccionesEjec;
 t_log* log;
-uint32_t* instruccionesEjecutadas; // va a contar las instrucciones ejecutadas por cada CPU
+contadorInstrucciones* instruccionesEjecutadas; // va a contar las instrucciones ejecutadas por cada CPU
 pthread_t hCalculo;
 
 int iniciarConfiguracion(config_CPU* configuracion)
@@ -182,16 +186,16 @@ void hiloCPU(void* datoCPUACastear)
 	FILE* mCod;
 	proceso_CPU datos_CPU = *((proceso_CPU*) datoCPUACastear);
 	pthread_mutex_lock(&instruccionesEjec);
-	instruccionesEjecutadas[datos_CPU.id] = 0; //Instrucciones ejecutadas por calculo de tiempo. iniciamos las instrucciones ejecutadas a 0 cuando recien empieza, otro hilo sera el encargado de resetearla
+	instruccionesEjecutadas[datos_CPU.id].contador = 0; //Instrucciones ejecutadas por calculo de tiempo. iniciamos las instrucciones ejecutadas a 0 cuando recien empieza, otro hilo sera el encargado de resetearla
 	pthread_mutex_unlock(&instruccionesEjec);
 	status=1;
 	while(status != 0)
 	{	status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
 		instruccionesEjecutadasHilo = 0; //Lo ponemos en 0 cada vez que vuelve a ejecutar un nuevo pcb
+		if(status==0) break; //CIERRA EL RPOCESO
 		pthread_mutex_lock(&mutexLog);
 		log_info(log, "CPU:%d Recibido PCB:%d || Direccion archivo: %s  ||  Ip apuntando a la linea:%d   ||  Quantum recibido:%d", datos_CPU.id, datos_CPU.pid, datos_CPU.path, datos_CPU.ip, quantum);
 		pthread_mutex_unlock(&mutexLog);
-		if(status==0) break; //CIERRA EL RPOCESO
 		entrada_salida = 0;//REINICIAMOS ESTOS VALORES PARA CADA VEZ QUE LEA UNA NUEVA PCB
 		finArchivo = 0; //Indica el final del mcod
 		datos_CPU.listaRetornos = NULL; // ACA HAGO QUE LA LISTA REINICIE AL LEER UN MCOD COMPLETO,la lista es liberada en la funcion desempaquetar
@@ -213,7 +217,7 @@ void hiloCPU(void* datoCPUACastear)
 			instruccion = interpretarMcod(lineaAEjecutar,&parametro1,parametro2);
 			ejecutarInstruccion(&datos_CPU, instruccion, parametro1, parametro2, &entrada_salida, &finArchivo, &estado);
 			pthread_mutex_lock(&instruccionesEjec);
-			instruccionesEjecutadas[datos_CPU.id] ++;
+			instruccionesEjecutadas[datos_CPU.id].contador ++;
 			pthread_mutex_unlock(&instruccionesEjec);
 			instruccionesEjecutadasHilo++;
 			pthread_mutex_lock(&mutexLog);
@@ -249,7 +253,7 @@ void hiloCPU(void* datoCPUACastear)
 void hiloCalculo()
 {
 	int contador;
-	uint32_t porcentajeUso[configuracion.CANTIDAD_HILOS];
+	uint32_t porcentajeUso;
 	mensaje_CPU_PL elMensaje;
 	proceso_CPU CPU; //dato trucho para mandar el mensaje al PL y reutilizar el codigo.
 	while(1)//va dentro de un while 1 para que se ejecute a menos que pase algun suceso
@@ -258,10 +262,11 @@ void hiloCalculo()
 		pthread_mutex_lock(&instruccionesEjec);
 		for(contador = 0; contador < configuracion.CANTIDAD_HILOS; contador++)
 		{
-			porcentajeUso[contador] = (instruccionesEjecutadas[contador]*100)/60;
-			instruccionesEjecutadas[contador] = 0; // reiniciamos las instrucciones ejecutadas
+			porcentajeUso = ((instruccionesEjecutadas[contador].contador)*100)/60;
+			instruccionesEjecutadas[contador].contador = 0; // reiniciamos las instrucciones ejecutadas
 			CPU.ip = contador;
-			enviarMensajeAPL(CPU, USOCPU, porcentajeUso[contador], "", 0);
+			CPU.socket = instruccionesEjecutadas[contador].socket;
+			enviarMensajeAPL(CPU, USOCPU, porcentajeUso, "", 0);
 		}
 		pthread_mutex_unlock(&instruccionesEjec);
 	}
@@ -277,7 +282,7 @@ int main(void)
 	if(iniciarConfiguracion(&configuracion)==-1) return -1;
 	log_info(log,"Configuracion cargada correctamente");
 	proceso_CPU CPUs[configuracion.CANTIDAD_HILOS];  //Declaramos el array donde cada componente es un hilo
-	instruccionesEjecutadas = malloc(sizeof(uint32_t)* configuracion.CANTIDAD_HILOS);
+	instruccionesEjecutadas = malloc(sizeof(contadorInstrucciones)* configuracion.CANTIDAD_HILOS);
 	if((socketADM = crearSocketCliente(configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA))<0) // Se inicializa el socketADM GLOBAL
 		{
 			printf("No se pudo crear socket en %s:%s \n",configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
@@ -299,9 +304,10 @@ int main(void)
 		pthread_mutex_lock(&mutexLog);
 		log_info(log, "CPU %d conectada con el Planificador", i);
 		pthread_mutex_unlock(&mutexLog);
+		instruccionesEjecutadas[i].socket = CPUs[i].socket; //Hacemos una copia del socket en la variable global
 		pthread_create(&CPUs[i].thread, NULL, (void*)hiloCPU, (void*) &(CPUs[i]));
 	}
-	//pthread_create(&hCalculo, NULL, (void*)hiloCalculo, NULL);
+	pthread_create(&hCalculo, NULL, (void*)hiloCalculo, NULL);
 	//todavia no se implemento en el Planificador
 	for(i = 0;i < configuracion.CANTIDAD_HILOS; i++)// hacemos los join de cada cpu para que no corte antes.
 	{
@@ -309,7 +315,7 @@ int main(void)
 	}
 	log_info(log,"Proceso CPU finalizado\n");
 	close(socketADM);
+	free(instruccionesEjecutadas);
 	log_destroy(log);
 	return 0;
 }
-

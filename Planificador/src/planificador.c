@@ -130,6 +130,22 @@ void hiloConsola(void)
 			pthread_mutex_unlock(&MUTEXBLOQUEADOS);
 			}
 		}
+		if(strcmp(instruccion,"cpu")==0)
+		{
+			pthread_mutex_lock(&MUTEXCPUS);
+			for(i=0;i<cantidadCPUS(raizCPUS);i++)
+				{
+					CPUAux=CPUPosicion(raizCPUS,i);
+					if( CPUAux->uso!=-1)
+					{
+						printf("cpu %d: %d%%\n",CPUAux->id,CPUAux->uso);
+					} else {
+						printf("cpu %d: Aun no se recibieron datos de uso\n",CPUAux->id,CPUAux->uso);
+					}
+
+				}
+			pthread_mutex_unlock(&MUTEXCPUS);
+		}
 	}
 
 	return;
@@ -218,6 +234,12 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 				free(*PCB);
 				(*PCB)=NULL;
 			break;
+	case USOCPU:
+		CPU->uso=mensajeRecibido->tiempoBloqueo;
+		printf("RECIBI NUEVOS TIEMPOS DE USO %d\n",CPU->uso);
+		if(mensajeRecibido->payload!=NULL) free(mensajeRecibido->payload);
+		mensajeRecibido->payload=NULL; //ASI NO IMPRIME NULL EN LA RAFAGA
+		break;
 	}
 	CPU->finalizar=0; //Vuelve a poner en 0 para que pueda ejecutar denuevo.
 	return;
@@ -321,7 +343,7 @@ int hiloRecibir (void)
 		printf("La rafaga fue: %s\n",mensajeRecibido.payload);
 		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
 
-		sem_post(&SEMAFOROCPUSLIBRES);
+		if(mensajeRecibido.nuevoEstado!=USOCPU) sem_post(&SEMAFOROCPUSLIBRES);
 		} else {
 									///Si TERMINA MAL EL CPU Y NO CIERRA EL SOCKET LO BORRA IGUAL
 		close(aux->socket);

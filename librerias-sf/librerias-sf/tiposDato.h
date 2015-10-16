@@ -96,6 +96,7 @@ typedef struct nodo_Lista_CPU_t //Cada uno contiene los datos para el manejador 
 	struct nodo_Lista_CPU_t*ant;
 	int id;
 	int socket;
+	int uso; //Porcentaje de uso, en -1 no llega el primer log todavia
 	int finalizar; //Si vale 1 el PID se cambia al ultimo al terminar la rafaga.
 	nodoPCB *ejecutando;
 } nodo_Lista_CPU;

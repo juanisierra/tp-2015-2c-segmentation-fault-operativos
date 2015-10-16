@@ -313,6 +313,7 @@ void agregarCPU(pthread_mutex_t* mutexCPU,int cuentaCPU, int socket,nodo_Lista_C
 	aAgregar=malloc(sizeof(nodo_Lista_CPU));
 	aAgregar->id=cuentaCPU;
 	aAgregar->socket=socket;
+	aAgregar->uso=-1;
 	pthread_mutex_lock(mutexCPU);
 	ultimoNodo=ultimoNodoCPU(*raiz);
 	if(ultimoNodo!=NULL){
