@@ -13,12 +13,13 @@
 #include <librerias-sf/strings.h>
 #include <librerias-sf/tiposDato.h>
 #include <signal.h>
+#include <commons/log.h>
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
 #define TAMANIOMAXIMOTEXTO 200
 #define TAMANIOMAXIMOLINEA 200
 #define RUTACONFIG "configuracion"
-
+#define ARCHIVOLOG "ADM.log"
 config_ADM configuracion;
 int aciertosTLB;
 int fallosTLB;
@@ -30,6 +31,8 @@ tMarco* tMarcos;
 pthread_mutex_t MUTEXTLB;
 pthread_mutex_t MUTEXTM;
 pthread_mutex_t MUTEXLP;
+pthread_mutex_t MUTEXLOG;
+t_log* log;
 int socketSWAP;
 int socketEscucha;
 pthread_t hTasaAciertos;
@@ -115,7 +118,16 @@ void tlbFlush(void)
 	printf("BORRE LA TLB\n");
 	return;
 }
-
+int marcosOcupadosMP()
+{
+	int cuenta=0;
+	int i;
+	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
+	{
+		if(tMarcos[i].indice!=-1) cuenta++;
+	}
+	return cuenta;
+}
 void MPFlush(void)
 {	int i;
 	nodoListaTP* aux;
@@ -175,24 +187,42 @@ void MPFlush(void)
 void atenderDump(void)
 {	printf("POR ATENDER DUMP\n");
 	int pid;
+	pthread_mutex_lock(&MUTEXLOG);
+	pthread_mutex_lock(&MUTEXLP);
+	pthread_mutex_lock(&MUTEXTM);
+	pthread_mutex_lock(&MUTEXTLB);
 	pid=fork();
 	if(pid==-1){
 		printf("Fallo la creacion del hijo\n");
 		return;
 	}
-	if(pid==0)
-	{
-		//PROCESO HIJO
-		printf("PROCESO HIJO\n");
+	if(pid==0)//PROCESO HIJO
+	{	int i;
+	log_info(log,"\t\t\t\t******DUMP DE MEMORIA*******");
+	log_info(log,"\t\t\t\t Marcos Libres: %d   Marcos Ocupados: %d",configuracion.CANTIDAD_MARCOS-marcosOcupadosMP(),marcosOcupadosMP());
+		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
+		{
+			if(tMarcos[i].indice!=-1)
+			{
+			log_info(log,"Marco: %d \t\t PID: %d  \t\t Pagina: %d \t\t  Contenido: %s",i,tMarcos[i].pid,tMarcos[i].nPag,tMarcos[i].contenido);
+			}
+		}
+		log_info(log,"\t\t\t\t\t***********FIN************");
+
 		exit(0);
 	} else {
+
 		wait(NULL); //ESPERA A LA FINALIZACION DEL HIJO
-		printf("EL PROCESO HIJO TERMINO\n");
+		pthread_mutex_unlock(&MUTEXLP);
+		pthread_mutex_unlock(&MUTEXTM);
+		pthread_mutex_unlock(&MUTEXTLB);
+		pthread_mutex_unlock(&MUTEXLOG); //ESPERA A QUE TERMINE EL DUMP PARA SEGUIR
 		return;
 	}
 }
 void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupciones
 {	pthread_t hTLBFlush;
+
 	pthread_t hMPFlush;
 	switch(n){
 	case SIGUSR1:
@@ -203,6 +233,7 @@ void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupcione
 	pthread_create(&hMPFlush,NULL,MPFlush,NULL);
 	pthread_join(hMPFlush,NULL);
 	break;
+
 	case SIGPOLL:
 		atenderDump();
 	break;
@@ -569,7 +600,7 @@ while(1)
 
 }
 int main()
-{
+{	log= log_create(ARCHIVOLOG, "ADM", 0, LOG_LEVEL_INFO);
 	aciertosTLB=0;
 	fallosTLB=0;
 	indiceTLB=0;
@@ -624,7 +655,7 @@ int main()
 	mensaje_ADM_CPU mensajeAMandar;//es el mensaje que le mandaremos al CPU
 	int status = 1;		// Estructura que manjea el status de los recieve.
 	while(status!=0)
-	{
+	{	printf("Marcos ocupados: %d\n",marcosOcupadosMP());
 		status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
 		if(status==0) break;
 		printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
@@ -753,6 +784,7 @@ int main()
 	pthread_join(hTasaAciertos,NULL);
 		}
 	finalizarTablas();
+	log_destroy(log);
 	close(socketCPU);
 	close(socketEscucha);
 	pthread_mutex_destroy(&MUTEXTLB);
