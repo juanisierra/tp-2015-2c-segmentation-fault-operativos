@@ -46,7 +46,7 @@ int iniciarConfiguracion(void)
 void inicializarArchivo(void)
 {//lo llenamos con el caracter correspondiente
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
-    char* s = string_repeat('\0', tamanioArchivo); //NO DEBERIA IR tamanioArchivo-1 por el \0 que pone el string dsps en fprintf?? juani
+    char* s = string_repeat('\0', tamanioArchivo);
     fprintf(archivo,"%s", s);
     free(s);
     return;
@@ -600,9 +600,9 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i)
+			if(i==-1)//cambio esto, porque send devuelve -1 si no se pudo enviar.
 			{
-				printf("No se pudo enviar mensaje al ADM\n"); // Distinto de i no sirve, i es cuanto manda.--------------------
+				printf("No se pudo enviar mensaje al ADM\n");
 				log_error(log, "No se pudo enviar mensaje al ADM");
 			}
 			return 0;
@@ -620,9 +620,9 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i)
+			if(i==-1)
 			{
-				printf("No se pudo enviar mensaje al ADM\n"); //INSTRUCCION =i, i es la cantidad de datos que enviaa,
+				printf("No se pudo enviar mensaje al ADM\n");
 				log_error(log, "No se pudo enviar mensaje al ADM");
 			}
 			return 0;
@@ -642,7 +642,11 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			aEnviar.instruccion=mensaje.instruccion;
 			aEnviar.contenidoPagina=NULL;
 			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			if(i==-1)
+			{
+				printf("No se pudo enviar mensaje al ADM\n");
+				log_error(log, "No se pudo enviar mensaje al ADM");
+			}
 			return 0;
 		}
 		char* leido= leer(aLeer, mensaje.parametro);
@@ -662,7 +666,11 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			aEnviar.instruccion=mensaje.instruccion;
 
 			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-			if(!i) printf("No se pudo enviar mensaje al ADM\n");
+			if(i==-1)
+			{
+				printf("No se pudo enviar mensaje al ADM\n");
+				log_error(log, "No se pudo enviar mensaje al ADM");
+			}
 			return 0;
 		}
 		escribir(aEscribir, mensaje.parametro, mensaje.contenidoPagina);
@@ -673,10 +681,10 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 	aEnviar.estado=0;// si llegó hasta acá es porque esta OK (estado=0)
 	int i=0;
 	i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
-	if(!i)
+	if(i==-1)
 	{
 		printf("No se pudo enviar mensaje al ADM\n");
-		return 0;
+		log_error(log, "No se pudo enviar mensaje al ADM");
 	}
 	if(aEnviar.contenidoPagina)
 		{
