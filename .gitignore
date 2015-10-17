@@ -35,3 +35,7 @@
 *.log
 *.LOG
 *.Log
+
+#,sh~ files
+*.sh~
+*.gitignore~

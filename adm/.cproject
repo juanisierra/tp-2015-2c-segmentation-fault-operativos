@@ -37,7 +37,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/librerias-sf/Debug}&quot;"/>
 								</option>
 								<option id="gnu.c.link.option.libs.1463636410" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="librerias-sf"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="librerias-sf"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="commons"/>
 								</option>
@@ -61,7 +61,7 @@
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
-				<externalSettings containerId="librerias-sf;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
+				<externalSettings containerId="librerias-sf;cdt.managedbuild.config.gnu.so.debug.1488888784" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/librerias-sf"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/librerias-sf/Debug"/>
@@ -96,9 +96,20 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.186945488" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.exe.release.option.optimization.level.1201651661" name="Optimization Level" superClass="gnu.c.compiler.exe.release.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.exe.release.option.debugging.level.1606038847" name="Debug Level" superClass="gnu.c.compiler.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.include.paths.355990181" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/librerias-sf}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.12110503" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1281946958" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release">
+								<option id="gnu.c.link.option.paths.473407390" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/librerias-sf/Release}&quot;"/>
+								</option>
+								<option id="gnu.c.link.option.libs.1481873144" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="librerias-sf"/>
+									<listOptionValue builtIn="false" value="pthread"/>
+									<listOptionValue builtIn="false" value="commons"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.605259842" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -106,6 +117,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.275337281" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.830546870" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
+								<option id="gnu.both.asm.option.include.paths.213945107" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/librerias-sf}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1866412673" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -115,7 +129,15 @@
 					</sourceEntries>
 				</configuration>
 			</storageModule>
-			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
+				<externalSettings containerId="librerias-sf;cdt.managedbuild.config.gnu.so.release.729625311" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
+					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/librerias-sf"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/librerias-sf/Release"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="librerias-sf" srcPrefixMapping="" srcRootPath=""/>
+					</externalSetting>
+				</externalSettings>
+			</storageModule>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -132,4 +154,5 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
