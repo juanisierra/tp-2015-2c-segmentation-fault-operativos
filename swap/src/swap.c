@@ -411,14 +411,10 @@ int liberarMemoria(espacioOcupado* aBorrar)
 		else//la raiz esta atras
 		{
 			espacioLibre* anterior= libreRaiz;
-			while(anterior->sgte && anterior->comienzo + anterior->cantPag < aBorrar->comienzo)//buscamos el libre anterior
+			while(anterior->sgte && anterior->sgte->comienzo + anterior->sgte->cantPag < aBorrar->comienzo)
 			{
 				anterior= anterior->sgte;
-			}//no estamos seguros por cual de las dos condiciones salio del while
-			if(anterior->comienzo + anterior->cantPag > aBorrar->comienzo)//si salio por ser el ultimo barbaro pero sino chequeamos este if
-			{
-				anterior= anterior->ant;
-			}
+			}//mientras no sea el ultimo y el nodo siguiente este por dentras de nuestro nodo avanzamos
 			espacioLibre* nuevo;
 			nuevo=malloc(sizeof(espacioLibre));
 			if(!nuevo)
@@ -430,6 +426,11 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			nuevo->comienzo= aBorrar->comienzo;
 			nuevo->cantPag= aBorrar->cantPag;
 			nuevo->ant= anterior;
+			nuevo->sgte= anterior->sgte;
+			if(anterior->sgte)
+			{
+				anterior->sgte->ant=nuevo;
+			}
 			anterior->sgte= nuevo;
 			borrarNodoOcupado(aBorrar);
 			return 1;
@@ -492,7 +493,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			borrarNodoOcupado(aBorrar);
 			return 1;
 		}
-		else
+		else//hay un anterior a la izquierda
 		{
 			espacioLibre* anterior= libreRaiz;
 			while( anterior->sgte )//vamos al ultimo nodo de los libres
@@ -510,6 +511,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			nuevo->comienzo= aBorrar->comienzo;
 			nuevo->cantPag= aBorrar->cantPag;
 			nuevo->ant= anterior;
+			nuevo->sgte= NULL;
 			anterior->sgte= nuevo;
 			borrarNodoOcupado(aBorrar);
 			return 1;
@@ -534,7 +536,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			return 1;
 		}
 		espacioLibre* nuevo;
-		nuevo=malloc(sizeof(espacioLibre));//ACA FALLARIA SEGUN VALGRIND
+		nuevo=malloc(sizeof(espacioLibre));
 		if(!nuevo)
 		{
 			printf("fallo el malloc para la lista de libres en swap.c \n");
