@@ -25,6 +25,7 @@ int aciertosTLB;
 int fallosTLB;
 int indiceTLB;
 int indiceMarcos;
+int indiceClockM; //es el indice de lectura actual en clock m para reemplazo de paginas
 nodoListaTP* raizTP;
 tlb* TLB;
 tMarco* tMarcos;
@@ -157,6 +158,7 @@ void MPFlush(void)
 				mensajeDeSWAP.contenidoPagina=NULL;
 			}
 	tMarcos[i].indice=-1; //libero Marcos
+	tMarcos[i].modif=0;
 	}
 	if(configuracion.TLB_HABILITADA==1){ //BORRO LA TLB PUES SE BORRARON TODAS LAS PAGINSA EN MEMORIA
 	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
@@ -276,8 +278,9 @@ int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si de
 int entradaTMarcoAReemplazar(void) //FALTA IMPLEMENTACION PARA CLOCK M
 {
 	int i=0;
+	int j=0; //Solo lo uso para correr 2 veces el for, si no encuentra hay un error.
 	int posMenor=0;
-	if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1)
+	if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1)//FIFO Y LRU
 	{
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 		{
@@ -286,6 +289,37 @@ int entradaTMarcoAReemplazar(void) //FALTA IMPLEMENTACION PARA CLOCK M
 		}
 		return posMenor;
 	}
+	if(configuracion.ALGORITMO_REEMPLAZO==2) //CLOCK-M
+	{printf("BUSCO PAGINA A REEMPLAZAR CON CLOCK-M\n");
+		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //PRIMERO CHEQUEO LAS LIBRES
+				{
+					if(tMarcos[i].indice==-1) return i;
+				}
+		//NO HAY LIBRES, CORRO EL PRIMER RECORRIDO, SIN CAMBIAR U BUSCO U=0(INDICE) y M=0 (MODIF)
+		for(j=0;j<2;j++){ //SI NO ENCUENTRA EL ULTIMO LOOP ENTRA DENUEVO PARA HACER EL 1 y 2, si con 2 repeticiones no encuentra, hay un erro de impelemtnacion
+		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
+		{
+			if(indiceClockM>=configuracion.CANTIDAD_MARCOS) indiceClockM=0; //Devuelve el indice a 0
+			if(tMarcos[indiceClockM].indice==0 && tMarcos[indiceClockM].modif==0)
+			{	indiceClockM++; //INCREMENTA PARA EL PROXIMO USO
+				return (indiceClockM-1);
+			}
+			indiceClockM++;
+		}
+		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //NO HAY LIBRES BUSCO U=0 M=1 si no vale eso pongo u en 0
+				{
+					if(indiceClockM>=configuracion.CANTIDAD_MARCOS) indiceClockM=0; //Devuelve el indice a 0
+					if(tMarcos[indiceClockM].indice==0 && tMarcos[indiceClockM].modif==1)
+					{	indiceClockM++; //INCREMENTA PARA EL PROXIMO USO
+						return (indiceClockM-1);
+					}
+					tMarcos[indiceClockM].indice=0;
+					indiceClockM++;
+				}
+		}
+
+	}
+	if(configuracion.ALGORITMO_REEMPLAZO==2) printf("ERROR DE IMPLEMENTACION DE CLOCK M, no se encuentra la pagina\n");
 	return -1;
 }
 
@@ -461,7 +495,7 @@ void agregarATLB(int pid,int pagina,int marco)
 	indiceTLB++;
 }
 
-int reemplazarMarco(int pid,int pagina)
+int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR Y PONE LOS DATOS DEL NUEVO
 {	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
@@ -520,8 +554,15 @@ int reemplazarMarco(int pid,int pagina)
 	strcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina); ///ESCRIOBIMOS LA PAGINA
 	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
 	tMarcos[aReemplazar].modif=0;
-	tMarcos[aReemplazar].indice=indiceMarcos;   //REVISAR PARA CLOCK-M
+	if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1) //FIFO Y LRU
+	{
+	tMarcos[aReemplazar].indice=indiceMarcos;
 	indiceMarcos++;
+	}
+	if(configuracion.ALGORITMO_REEMPLAZO==2)//CLOCK M
+	{
+		tMarcos[aReemplazar].indice=1; //USO INDICE COMO BIT U
+	}
 	tMarcos[aReemplazar].pid=pid;
 	tMarcos[aReemplazar].nPag=pagina;
 	nodoProceso->marcosAsignados++;
@@ -531,7 +572,7 @@ int reemplazarMarco(int pid,int pagina)
 	return aReemplazar;
 }
 
-int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
+int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS, UBICA UNA PAGINA EN MEMORIA O LA PIDE AL SWAP
 {
 	nodoListaTP* nodo;
 	nodo=buscarProceso(pid); //APUNTA AL NODO EN LA LISTA DE LA TABLAD E PAGINAS
@@ -548,12 +589,16 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
 
 			nodo->cantPaginasAcc++;
 
-			if(configuracion.ALGORITMO_REEMPLAZO==1)//AL LEER MODIFICA
+			if(configuracion.ALGORITMO_REEMPLAZO==1)//AL LEER MODIFICA EN KRU
 			{
 				tMarcos[ubicada].indice=indiceMarcos;
 				indiceMarcos++;
 
 			}
+			if(configuracion.ALGORITMO_REEMPLAZO==2) //EN CLOCKM SE PONE EL BIT U EN ESTE CASO INDICE EN 1 SI LEO PAGINA
+				{
+					tMarcos[ubicada].indice=1;
+				}
 			return ubicada;
 		}
 		if(ubicada==-1) fallosTLB++;
@@ -566,12 +611,16 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS
 
 		if(configuracion.TLB_HABILITADA==1) agregarATLB(pid,numPag,ubicada);
 
-		if(configuracion.ALGORITMO_REEMPLAZO==1) //AL LEER MODIFICA
+		if(configuracion.ALGORITMO_REEMPLAZO==1) //AL LEER MODIFICA EN LRU
 		{
 
 			tMarcos[ubicada].indice=indiceMarcos;
 			indiceMarcos++;
 
+		}
+		if(configuracion.ALGORITMO_REEMPLAZO==2) //EN CLOCKM SE PONE EL BIT U EN ESTE CASO INDICE EN 1
+		{
+			tMarcos[ubicada].indice=1;
 		}
 		return ubicada;
 	}
@@ -605,6 +654,7 @@ int main()
 	fallosTLB=0;
 	indiceTLB=0;
 	indiceMarcos=0;
+	indiceClockM=0;
 	int marcoAUsar;
 	pthread_mutex_init(&MUTEXTLB,NULL);
 	pthread_mutex_init(&MUTEXTM,NULL);

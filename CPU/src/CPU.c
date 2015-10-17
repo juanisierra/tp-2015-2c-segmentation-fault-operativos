@@ -266,7 +266,7 @@ void hiloCalculo()
 			instruccionesEjecutadas[contador].contador = 0; // reiniciamos las instrucciones ejecutadas
 			CPU.ip = contador;
 			CPU.socket = instruccionesEjecutadas[contador].socket;
-			enviarMensajeAPL(CPU, USOCPU, porcentajeUso, "", 0);
+			enviarMensajeAPL(CPU, USOCPU, porcentajeUso,NULL, 0); //------------------
 		}
 		pthread_mutex_unlock(&instruccionesEjec);
 	}

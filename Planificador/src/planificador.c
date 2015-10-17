@@ -175,7 +175,7 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 	switch(mensajeRecibido->nuevoEstado)
 	{
 	case LISTO:
-	{
+		printf("RECIBO PCB LISTO\n");
 	if(CPU->finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR
 		{(*PCB)->info.ip=mensajeRecibido->ip;
 		}
@@ -187,16 +187,17 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		printf("EL PCB MANDADO A LA LISTA TIENE PID %d\n",(*PCB)->info.pid);
 		(*PCB)=NULL;
 		break;
-	}
+
 	case AFINALIZAR:
-	{		(*PCB)->info.ip=mensajeRecibido->ip;
+		printf("RECIBO PCB A FINALIZAR\n");
+			(*PCB)->info.ip=mensajeRecibido->ip;
 			(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 			free(*PCB);
 			(*PCB)=NULL;
 		break;
-	}
+
 	case BLOQUEADO:
-	{
+		printf("RECIBO PCB BLOQUEADO\n");
 	if(CPU->finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR  //MUTEX DENTRO DE OTRO Y CAMBIAR PARA MAS DE UN CPU
 			{(*PCB)->info.ip=mensajeRecibido->ip;
 			}
@@ -208,26 +209,27 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 	sem_post(&SEMAFOROBLOQUEADOS);
 	(*PCB)=NULL;
 		break;
-	}
+
 	case INVALIDO:
-	{
+		printf("RECIBO PCB INVALIDO\n");
 		(*PCB)->info.ip=mensajeRecibido->ip;
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		printf("SE LEYO TEXTO INVALIDO EN EL ARCHIVO, CERRANDO PROCESO %d\n",(*PCB)->info.pid); //CAMBIARRRR**********************
 		free(*PCB);
 		(*PCB)=NULL;
 		break;
-	}
+
 	case ERRORINICIO:
-	{
+		printf("RECIBO PCB ERRROINICIO\n");
 		(*PCB)->info.ip=mensajeRecibido->ip;
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		printf("No hay espacio suficiente en el swap para el proceso %d \n",(*PCB)->info.pid); //CAMBIARRRR**********************
 		free(*PCB);
 		(*PCB)=NULL;
 		break;
-	}
+
 	case ERRORMARCO:
+		printf("RECIBO PCB ERRORMARCO\n");
 				(*PCB)->info.ip=mensajeRecibido->ip;
 				(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 				printf("Error de marcos del proceso %d \n",(*PCB)->info.pid);
@@ -235,13 +237,14 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 				(*PCB)=NULL;
 			break;
 	case USOCPU:
+		printf("RECIBO USOCPU\n");
 		CPU->uso=mensajeRecibido->tiempoBloqueo;
 		printf("RECIBI NUEVOS TIEMPOS DE USO %d\n",CPU->uso);
 		if(mensajeRecibido->payload!=NULL) free(mensajeRecibido->payload);
 		mensajeRecibido->payload=NULL; //ASI NO IMPRIME NULL EN LA RAFAGA
 		break;
 	}
-	CPU->finalizar=0; //Vuelve a poner en 0 para que pueda ejecutar denuevo.
+	if(mensajeRecibido->nuevoEstado!=USOCPU) CPU->finalizar=0; //Vuelve a poner en 0 para que pueda ejecutar denuevo.
 	return;
 }
 
@@ -340,7 +343,7 @@ int hiloRecibir (void)
 		status=recibirPCBDeCPU(aux->socket,&mensajeRecibido);
 		if(status!=0){
 		interPretarMensajeCPU(&mensajeRecibido,&(aux->ejecutando),aux);
-		printf("La rafaga fue: %s\n",mensajeRecibido.payload);
+		if(mensajeRecibido.payload!=NULL) printf("La rafaga fue: %s\n",mensajeRecibido.payload);
 		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
 
 		if(mensajeRecibido.nuevoEstado!=USOCPU) sem_post(&SEMAFOROCPUSLIBRES);
@@ -349,7 +352,7 @@ int hiloRecibir (void)
 		close(aux->socket);
 		eliminarCPU(aux->id,&SEMAFOROCPUSLIBRES,&raizCPUS);
 		}
-		aux->ejecutando=NULL;
+		if(mensajeRecibido.nuevoEstado!=USOCPU)aux->ejecutando=NULL;
 		}
 	}
 	pthread_mutex_unlock(&MUTEXCPUS);
