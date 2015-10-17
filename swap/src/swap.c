@@ -466,13 +466,15 @@ int liberarMemoria(espacioOcupado* aBorrar)
 		{
 			anterior= anterior->sgte;
 		}
-		anterior->cantPag = anterior->cantPag + (anterior->sgte)->cantPag + aBorrar->cantPag;
-		if(anterior->sgte->sgte)//si hay un tercer nodo libre
+		espacioLibre* aUnir= anterior->sgte;//a este nodo mas tarde lo tenemos que eliminar
+		anterior->cantPag = anterior->cantPag + aBorrar->cantPag + aUnir->cantPag;//unimos los tres en uno
+		if(aUnir->sgte)//si hay un tercer nodo libre
 		{
-			anterior->sgte->sgte->ant=anterior;
+			aUnir->sgte->ant=anterior;
 		}
+		anterior->sgte= aUnir->sgte;
 		borrarNodoOcupado(aBorrar);
-		free(anterior->sgte);
+		free(aUnir);
 		return 1;
 	}
 	else if(atrasVar==2 && adelanteVar==0)//entre un ocupado y el final del archivo
