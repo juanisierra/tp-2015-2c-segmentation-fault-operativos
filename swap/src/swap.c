@@ -1,3 +1,4 @@
+//SWAP, MADE IN CABALLITO//
 #include <stdlib.h>
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
@@ -533,7 +534,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			return 1;
 		}
 		espacioLibre* nuevo;
-		nuevo=malloc(sizeof(espacioLibre));
+		nuevo=malloc(sizeof(espacioLibre));//ACA FALLARIA SEGUN VALGRIND
 		if(!nuevo)
 		{
 			printf("fallo el malloc para la lista de libres en swap.c \n");
@@ -551,6 +552,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 		libreRaiz->cantPag= aBorrar->cantPag;
 		libreRaiz->comienzo= aBorrar->comienzo;
 		libreRaiz->ant=NULL;
+		libreRaiz->sgte= nuevo;
 		borrarNodoOcupado(aBorrar);
 		return 1;
 	}
@@ -595,7 +597,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 	case INICIAR:
 		resultado=asignarMemoria(mensaje.pid, mensaje.parametro);
 		aEnviar.contenidoPagina=NULL;
-		if (resultado==0)
+		if (!resultado)
 		{
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
@@ -733,7 +735,6 @@ int main()
 	mensaje_ADM_SWAP mensaje;
 	log= log_create(ARCHIVOLOG, "Swap", 0, LOG_LEVEL_INFO);
 	log_info(log, "Proceso SWAP iniciado.");
-
 	if(iniciarConfiguracion()==-1) return -1;
 	printf("Iniciando Administrador de SWAP.. \n");
 	printf("Estableciendo conexion.. \n");
@@ -759,10 +760,10 @@ int main()
 	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	int exito= crearArchivo();
 	if(exito) printf("se creo el archivo correctamente\n");
-	while (status != 0)
+	while (status)
 	{
 		status = recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
-		if(status==0) break; //SACAR PARA VER DOBLE FREEE!!!!
+		if(!status) break;
 		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
 		interpretarMensaje(mensaje,socketADM);
 	}
