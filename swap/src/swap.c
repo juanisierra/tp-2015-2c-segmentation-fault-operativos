@@ -736,7 +736,7 @@ int main()
 	log= log_create(ARCHIVOLOG, "Swap", 0, LOG_LEVEL_INFO);
 	log_info(log, "Proceso SWAP iniciado.");
 	if(iniciarConfiguracion()==-1) return -1;
-	printf("Iniciando Administrador de SWAP.. \n");
+	printf("Iniciando Administrador de SWAP... Made in Caballito\n");
 	printf("Estableciendo conexion.. \n");
 	int socketEscucha;
 	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
