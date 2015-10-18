@@ -14,11 +14,12 @@
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
 #define ARCHIVOLOG "Swap.log"
+
 //****** VARIABLES GLOBALES ******
-FILE* archivo=NULL;
+FILE* archivo;
 config_SWAP configuracion;
-espacioLibre* libreRaiz=NULL;
-espacioOcupado* ocupadoRaiz=NULL;
+espacioLibre* libreRaiz;
+espacioOcupado* ocupadoRaiz;
 t_log* log;
 //********************************
 
@@ -171,16 +172,17 @@ int alcanzanPaginas(int cantPags)//0 no alcanzan, 1 alcanzan
 void desfragmentar(void)
 {//movemos los nodos ocupados y juntamos los espacios libres en uno solo
 	printf("se desfragmenta el archivo... \n");
-	int sizeLibres=0;
-	espacioLibre* auxLibre=libreRaiz;
+	int sizeLibres= 0;
+	espacioLibre* auxLibre= libreRaiz;
+	espacioOcupado* auxO= ocupadoRaiz;
 	while(auxLibre)//contamos cuantos espacios libres hay
     {
         auxLibre=auxLibre->sgte;
         sizeLibres++;
 	}
-    espacioOcupado* auxO=ocupadoRaiz;
     while (sizeLibres>1)
     {
+    	auxO= ocupadoRaiz;//el nodo siguiente puede reprecentar una pagina anterior, no estan en orden, por eso inicializamos en el comienzo en cada iteracion
     	while(auxO && auxO->comienzo != libreRaiz->comienzo + libreRaiz->cantPag)
     	{//vamos al nodo ocupado a la derecha del nodo libre, si existe
     		auxO=auxO->sgte;
@@ -490,7 +492,7 @@ int liberarMemoria(espacioOcupado* aBorrar)
 			}
 			libreRaiz->sgte=NULL;
 			libreRaiz->ant=NULL;
-			libreRaiz->comienzo= aBorrar->comienzo;//posicion 1 en vez de 0, mas comodo
+			libreRaiz->comienzo= aBorrar->comienzo;
 			libreRaiz->cantPag= aBorrar->cantPag;
 			borrarNodoOcupado(aBorrar);
 			return 1;
@@ -573,14 +575,14 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la
 		log_error(log, "Fallo la creacion del buffer en el swap funcion leer");
 		return buffer;
 	}
-	fseek(archivo,((aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagALeer * configuracion.TAMANIO_PAGINA), SEEK_SET);//vamos la pagina a leer (sin los menos uno la pasamos)
+	fseek(archivo,((aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagALeer * configuracion.TAMANIO_PAGINA), SEEK_SET);//vamos la pagina a leer (sin el menos uno la pasamos)
 	fread(buffer, sizeof(char), (configuracion.TAMANIO_PAGINA)/sizeof(char), archivo);//leemos
 	aLeer->leyo= aLeer->leyo +1;//aumentamos la cantidad de paginas leidas por el proceso
 	log_info(log, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s", aLeer->pid, strlen(buffer)*sizeof(char), (aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, buffer); //EN EL BYTE DESDE QUE COMIENZ AGREGO EL NUM PAG
 	return buffer;
 }
 
-void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien
+void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien. pagAEscribir comienza en 0
 {//escribimos en el archivo de swap
 	fseek(archivo,((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) +  (pagAEscribir * configuracion.TAMANIO_PAGINA), SEEK_SET);
 	fwrite(texto, sizeof(char), strlen(texto), archivo);
@@ -736,6 +738,8 @@ void eliminarListas(void)
 
 int main()
 {
+	libreRaiz=NULL;
+	ocupadoRaiz=NULL;
 	mensaje_ADM_SWAP mensaje;
 	log= log_create(ARCHIVOLOG, "Swap", 0, LOG_LEVEL_INFO);
 	log_info(log, "Proceso SWAP iniciado.");
