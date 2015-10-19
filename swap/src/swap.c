@@ -607,7 +607,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		{
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
-			int i= enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
+			int i=-1;
+			i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
 			if(i==-1)//cambio esto, porque send devuelve -1 si no se pudo enviar.
 			{
 				printf("No se pudo enviar mensaje al ADM\n");
@@ -684,10 +685,17 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		escribir(aEscribir, mensaje.parametro, mensaje.contenidoPagina);
 		aEnviar.contenidoPagina=NULL;
 		break;
+
+	default:
+		printf("El ADM me mandó cualquier berretada\n");
+		log_error(log, "El ADM me mandó cualquier berretada");
+		return 0;
+		break;
 	}
+
 	aEnviar.instruccion=mensaje.instruccion;
 	aEnviar.estado=0;// si llegó hasta acá es porque esta OK (estado=0)
-	int i=0;
+	int i=-1;
 	i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
 	if(i==-1)
 	{
@@ -764,14 +772,14 @@ int main()
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones en puerto %s..\n",configuracion.PUERTO_ESCUCHA);
 	int socketADM = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-	int status = 1;		// Estructura que manjea el status de los recieve.
+	int status = 1;		// Estructura que maneja el status de los receive.
 	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 	int exito= crearArchivo();
 	if(exito) printf("se creo el archivo correctamente\n");
 	while (status)
 	{
-		status = recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
-		if(!status) break;
+		status=recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
+		if(status==-1) break;
 		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
 		interpretarMensaje(mensaje,socketADM);
 	}

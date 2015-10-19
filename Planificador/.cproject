@@ -35,7 +35,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.485231267" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">
 								<option id="gnu.c.link.option.paths.636277190" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/librerias-sf/Release}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/librerias-sf/Debug}&quot;"/>
 								</option>
 								<option id="gnu.c.link.option.libs.1157248811" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="librerias-sf"/>
@@ -62,7 +62,7 @@
 				<externalSettings containerId="librerias-sf;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/librerias-sf"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/librerias-sf/Release"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/librerias-sf/Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="librerias-sf" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>

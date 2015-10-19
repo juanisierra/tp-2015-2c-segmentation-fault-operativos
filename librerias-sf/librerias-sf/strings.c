@@ -46,7 +46,10 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 	}
 	buffer1[i]=0;
 	while(linea[i]==' ') i++; //Avanza los espacios
-	if(strcmp(buffer1,"iniciar")==0)
+
+	int l;
+	l=strcmp(buffer1,"iniciar");
+	if(l==0)
 	{
 		instruccion= INICIAR;
 	while(linea[i]!=' ' && linea[i]!='\n' &&linea[i]!=';')
@@ -60,7 +63,9 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 	parametro2=NULL;
 	return instruccion;
 	}
-	if(strcmp(buffer1,"leer")==0)
+	int k;
+	k=strcmp(buffer1,"leer");
+	if(k==0)
 		{
 			instruccion= LEER;
 		while(linea[i]!=' ' && linea[i]!='\n')
@@ -74,7 +79,10 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 		parametro2=NULL;
 		return instruccion;
 		}
-	if(strcmp(buffer1,"escribir")==0)
+
+	int m;
+	m=strcmp(buffer1,"escribir");
+	if(m==0)
 			{
 				instruccion= ESCRIBIR;
 				x=0;
@@ -98,7 +106,10 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 			strcpy(parametro2,buffer2);
 			return instruccion;
 			}
-	if(strcmp(buffer1,"entrada-salida")==0)
+
+	int n;
+	n=strcmp(buffer1,"entrada-salida");
+	if(n==0)
 		{
 			instruccion= ES;
 		while(linea[i]!=' ' && linea[i]!='\n')
@@ -112,7 +123,10 @@ instruccion_t interpretarMcod(char linea[],uint32_t *parametro1,char *parametro2
 		parametro2=NULL;
 		return instruccion;
 		}
-	if(strcmp(buffer1,"finalizar")==0)
+
+	int p;
+	p=strcmp(buffer1,"finalizar");
+	if(p==0)
 		{
 			instruccion= FINALIZAR;
 			*parametro1=0;

@@ -139,8 +139,10 @@ void hiloConsola(void)
 					if( CPUAux->uso!=-1)
 					{
 						printf("cpu %d: %d%%\n",CPUAux->id,CPUAux->uso);
-					} else {
-						printf("cpu %d: Aun no se recibieron datos de uso\n",CPUAux->id,CPUAux->uso);
+					}
+					else
+					{
+						printf("cpu %d: Aun no se recibieron datos de uso\n",CPUAux->id);
 					}
 
 				}
@@ -377,7 +379,7 @@ int main()
 	pthread_create(&hEnvios,NULL,hiloEnvios,NULL); //VER JOINS
 	pthread_create(&hBloqueados,NULL,hiloBloqueados,NULL); //VER JOINS
 	printf("Por crear hilo Recibir\n");
-	 pthread_create(&hRecibir,NULL,hiloRecibir,NULL);
+	pthread_create(&hRecibir,NULL,hiloRecibir,NULL);
 	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
 	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
 	pthread_kill(hServer,9);
