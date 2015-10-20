@@ -1,9 +1,9 @@
-iniciar 5;
+iniciar 3;
 leer 0;
-escribir 0 "ju";
-escribir 1 "a";
+escribir 0 "12";
+escribir 1 "34";
 leer 0;
 leer 1;
-escribir 0 "as";
-leer 0;
+escribir 2 "df";
+leer 2;
 finalizar;
