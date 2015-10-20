@@ -30,6 +30,8 @@ int crearSocketEscucha (int cantidadConexiones, char puerto[]) {
 			{
 			return socketEscucha;
 			}
+		int activado=1;
+		setsockopt(socketEscucha,SOL_SOCKET,SO_REUSEADDR,&activado,sizeof(activado)); //EVITA EL BLOQUEO DE SOCKETS
 		if(bind(socketEscucha,serverInfo->ai_addr, serverInfo->ai_addrlen) <0)
 			{
 			return socketEscucha;

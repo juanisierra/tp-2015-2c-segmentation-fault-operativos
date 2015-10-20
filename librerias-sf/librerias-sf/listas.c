@@ -405,8 +405,7 @@ void eliminarListaCPU(nodo_Lista_CPU**raiz)
 		free(aux->sgte->ejecutando);
 		aux->sgte->ejecutando=NULL;
 		}
-		int j;
-		j=close(aux->sgte->socket);
+		close(aux->sgte->socket);
 		free(aux->sgte);
 		aux->sgte=NULL;
 	}

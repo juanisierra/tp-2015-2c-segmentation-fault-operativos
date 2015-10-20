@@ -300,6 +300,8 @@ int main(void)
 			pthread_mutex_lock(&mutexLog);
 			log_error(log, "CPU %d no se pudo conectar con el Planificador", i);
 			pthread_mutex_unlock(&mutexLog);
+			close(socketADM); //
+			return 0;
 		}
 		pthread_mutex_lock(&mutexLog);
 		log_info(log, "CPU %d conectada con el Planificador", i);
@@ -308,7 +310,7 @@ int main(void)
 		pthread_create(&CPUs[i].thread, NULL, (void*)hiloCPU, (void*) &(CPUs[i]));
 	}
 	pthread_create(&hCalculo, NULL, (void*)hiloCalculo, NULL);
-	//todavia no se implemento en el Planificador
+
 	for(i = 0;i < configuracion.CANTIDAD_HILOS; i++)// hacemos los join de cada cpu para que no corte antes.
 	{
 		pthread_join(CPUs[i].thread, NULL);
