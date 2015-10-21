@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/time.h>
 typedef enum{INICIAR, LEER, ESCRIBIR, ES, FINALIZAR,ERROR,CERRAR}instruccion_t; //CERRAR es el mensaje para apagar.
 typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO,ERRORMARCO,USOCPU}estado_t; //INVALIDO es si alguna instruccion no estaba bien.
   typedef struct pcb_t
@@ -19,6 +20,12 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO,ERR
         uint32_t ip;
         estado_t estado;
         uint32_t bloqueo; // Tiempo de bloqueo
+        struct timeval t_inicio; //HORA A LA QUE EL PROESO SE PONE EN LA COLA DE LISTOS
+        struct timeval t_es; //HORA A LA QE HACE SU PRIMERA E/S, si esta en 0 no hizo ninguna
+        double suma_t_cpu; //SUMA DE TIEMPOS DE CPU
+        double t_espera; //SUMA DE TIEMPO ESPERANDO E/S
+        struct timeval t_entrada_es; //Hora en la que entra a la cola de e/s
+        struct timeval t_entrada_cpu; //Hora en la que entra a CPU
     } pcb;
   typedef struct NodoPCB_t
       {

@@ -6,5 +6,6 @@ leer 1;
 entrada-salida 10;
 escribir 0 "la";
 leer 0;
+entrada-salida 3;
 leer 2;
 finalizar;

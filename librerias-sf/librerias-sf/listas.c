@@ -11,6 +11,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <sys/time.h>
 nodoPCB* ultimoNodoPCB(nodoPCB* raiz)
 {
 	nodoPCB* aux=raiz;
@@ -27,6 +28,10 @@ nodoPCB* crearNodoPCB(int pid,char path[])
 	nodoPCB* nuevoNodo=malloc(sizeof(nodoPCB));
 	nuevoNodo->sgte=NULL;
 	nuevoNodo->ant=NULL;
+	nuevoNodo->info.t_es.tv_sec=0;
+	nuevoNodo->info.t_es.tv_usec=0;
+	nuevoNodo->info.t_espera=0;
+	gettimeofday(&(nuevoNodo->info.t_inicio),NULL);
 	nuevoNodo->info.bloqueo=0;
 	nuevoNodo->info.estado=LISTO;
 	nuevoNodo->info.ip=0;
