@@ -803,6 +803,8 @@ int main()
 		if(status==-1)
 		{
 			printf("Error en recibir pagina de ADM\n");
+			log_error(log,"Error en recibir pagina de ADM");
+			cerrarSwap();
 		}
 		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
 		interpretarMensaje(mensaje,socketADM);
