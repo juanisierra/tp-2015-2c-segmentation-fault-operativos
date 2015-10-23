@@ -1,0 +1,33 @@
+GUIA BASICA DEL SWAP
+
+El swap es como un disco, viene un proceso y reserva memoria, si el proceso necesita escribibr escribe en la pagina que pidio y lee en la pagina que quiera, siempre en las que reservo.
+cada proceso tiene un pid(process identifier), cantidad de paginas que tiene y un comienzo (donde comienza en el archivo)
+el archivo de swap esta inicializado con el caracter '\0' 
+
+el espacio se divide en una cantidad configurable de paginas que ocupan una cantidad configurable de bytes. 
+
+Para saber que paginas estan ocupadas y cuales libres se utilizan dos listas enlazadas. Cada nodo es un espacio contiguo de N paginas ocupadas o libres. cada proceso tiene UN nodo asociado
+
+las instrucciones las recibe del adm que pueden ser iniciar (les da memoria en el archivo) finalizar(asigna su espacio de memoria como vacio) leer (lee una pagina pasada por parametro) 
+escribir(escribe en una pagina un texto pasado por parametro)
+
+la lista de libres esta ordenada, si un nodo esta entre A y B, el espacio que reprecente esta entre los espacios que reprecentan A y B, pero la lista de ocupados no, cada ves que se libera un ocupado simplemente se borra el nodo
+ y si llega un espacio nuevo ocupado (quiza el mismo que se borro) se pone al final de la lista.
+
+*cuando el adm manda a iniciar un proceso, nos dice cuantas paginas necesita. Primero buscamos un espacio con esa cantidad de paginas o mas. si lo encontramos, achicamos al nodo quitandole las pagians que pidio el proceso
+o si lo pidio entero borramos el nodo directamente.
+si no encontramos un nodo, contamos la cantidad de paginas libre en el archivo, si hay suficientes para el proceso, comapactamos y asignamos el espacio correspondiente, si no las hay, tiramos error que no alcanzan 
+los espacios para el proceso.
+Al borrar el nodo libre (o achicarlo) vamos a la lista de ocupados y le agregamos  un nodo al final.
+
+*cuando el adm manda leer nos pasa por parametro la pagina. (nunca lee dos paginas siempre una) vamos al archivo, nos posicionamos en el comienzo del espacio asignado al proceso y avanzamos a la pagina pasada por parametro,
+leemos y lo guardamos en el heap con un puntero a char. Dsp devolvemos la direccion de memoria y se la damos al adm.
+
+*cuando el adm manda escribir nos pasa por parametro la pagina y el texto. hacemos lo mismo que en leer pero en vez de leer escribirmos y no devolvemos nada.
+
+*cuando el adm manda finalizar vamos al nodo que tiene y lo borramos, dsp vamos a la lista de libre y creamos un nodo nuevo (lo posicionamos en el lugar correcto, si es en el medio el medio al principio al principio), lo que escribio el 
+proceso queda como basura en el archivo. si un proceso se le asigna ese espacio de memoria y lee sin escribir, va a leer lo que escribio el proceso anterior
+
+cuando compactamos el archivo para que quede un solo espacio libre grande, no solo arreglamos a los nodos sino que tambien movemos la informacion que esta en el archivo, un proceso siempre pide a leer la pagina N, siendo N
+el numero de pagina del proceso, no del archivo, si leo la pagina tres, quiza leo la pagina 20 del archivo pero la tres que le pertenece al proceso. Por ende, el proceso nunca se entera de que fue movido en el archivo.
+
