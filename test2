@@ -1,9 +1,4 @@
-iniciar 3;
-leer 0;
-escribir 0 "12";
-escribir 1 "34";
-leer 0;
+iniciar 2;
 leer 1;
-escribir 2 "df";
-leer 2;
+entrada-salida 10;
 finalizar;

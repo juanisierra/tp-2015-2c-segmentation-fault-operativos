@@ -86,7 +86,7 @@ int iniciarConfiguracion(void)
 void inicializarArchivo(void)
 {//lo llenamos con el caracter correspondiente
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
-    char* s = string_repeat('\0', tamanioArchivo);
+    char* s = string_repeat('_', tamanioArchivo);
     fprintf(archivo,"%s", s);
     free(s);
     return;
@@ -194,22 +194,25 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 al
 	return;//en el "nuevo" libre ahora hay basura
 }
 
-int alcanzanPaginas(int cantPags)//0 no alcanzan, 1 alcanzan
+int alcanzanPaginas(int pagsNecesarias)//0 no alcanzan, 1 alcanzan
 {//nos dice si vale la pena desfragmentar (si hay paginas libres suficientes)
-	espacioLibre* auxL=libreRaiz;
-	int pagsTotales=0;
+	espacioLibre* auxL= libreRaiz;
+	int pagsTotales= 0;
 	while (auxL)
 	{
 		pagsTotales= pagsTotales + auxL->cantPag;//sumamos todas las paginas libres en pagsTotales
 		auxL= auxL->sgte;
 	}
-	if(cantPags > pagsTotales) return 0;//si es mayor a las paginasTotales, nos vimo en disney
+	if(pagsNecesarias > pagsTotales) //se necesitan mas de las que hay
+	{
+		printf("El proceso pide %d paginas y en el swap hay %d paginas libres  \n", pagsNecesarias, pagsTotales);
+		return 0;
+	}
 	return 1;
 }
 
 void desfragmentar(void)
 {//movemos los nodos ocupados y juntamos los espacios libres en uno solo
-	printf("se desfragmenta el archivo... \n");
 	int sizeLibres= 0;
 	espacioLibre* auxLibre= libreRaiz;
 	espacioOcupado* auxO= ocupadoRaiz;
@@ -277,6 +280,7 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 		if(alcanzanPaginas (cantPag)) //si las paginas libres totales alcanzan, que desfragmente
 		{
 			log_info(log, "Se inicia la compactacion del archivo");
+			printf("se desfragmenta el archivo... \n");
 			sleep(configuracion.RETARDO_COMPACTACION);//antes de compactar hacemos el sleep
 			desfragmentar();
 			log_info(log, "Finaliza la compactacion del archivo");

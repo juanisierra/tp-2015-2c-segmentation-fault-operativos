@@ -1,9 +1,3 @@
-iniciar 2;
-leer 0;
-escribir 0 "com";
-escribir 1 "ova";
-leer 0;
-leer 1;
-escribir 0 "as";
-leer 0;
+iniciar 3;
+leer 2;
 finalizar;
