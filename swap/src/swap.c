@@ -86,7 +86,7 @@ int iniciarConfiguracion(void)
 void inicializarArchivo(void)
 {//lo llenamos con el caracter correspondiente
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
-    char* s = string_repeat('_', tamanioArchivo);
+    char* s = string_repeat('\0', tamanioArchivo);
     fprintf(archivo,"%s", s);
     free(s);
     return;
