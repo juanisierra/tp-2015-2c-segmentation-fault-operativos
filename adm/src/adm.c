@@ -211,6 +211,16 @@ void logearTMarcos()
 			log_info(log,"\t\t\t\t\t***********FIN************");
 			pthread_mutex_unlock(&MUTEXLOG);
 }
+int marcosLibres(void) //CUENTA MRACOS LIBRES PARA ERROR DE MARCO
+{
+	int i=0;
+	int c=0;
+	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
+	{
+		if(tMarcos[i].indice==-1) c++;
+	}
+	return c;
+}
 void atenderDump(void)
 {	printf("POR ATENDER DUMP\n");
 	int pid;
@@ -294,7 +304,21 @@ int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
 	}
 	return -1;
 }
+nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
+{
+	nodoListaTP* aux;
+	aux=raizTP;
+	while(aux!=NULL)
+	{
+		if(aux->pid==pid)
+		{
+			return aux;
+		}
+		aux=aux->sgte;
+	}
 
+	return NULL;
+}
 int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si devuelve -1 es porqeu no hay tlb.
 {
 	int i=0;
@@ -311,8 +335,9 @@ int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si de
 	return -1;
 }
 
-int entradaTMarcoAReemplazar(void) //FALTA IMPLEMENTACION PARA CLOCK M
-{
+int entradaTMarcoAReemplazar(int pid) //FALTA IMPLEMENTACION PARA CLOCK M
+{	nodoListaTP* nodo;
+	nodo = buscarProceso(pid); //Para clock-m ver el indice necesito el dato del nodo en la lista tp
 	int i=0;
 	int j=0; //Solo lo uso para correr 2 veces el for, si no encuentra hay un error.
 	int posMenor=0;
@@ -321,12 +346,18 @@ int entradaTMarcoAReemplazar(void) //FALTA IMPLEMENTACION PARA CLOCK M
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 		{
 			if(tMarcos[i].indice==-1) return i;
-			if(tMarcos[i].indice<=tMarcos[posMenor].indice) posMenor=i;
+			//REEMPLAZO LOCAL
+			if(tMarcos[i].pid==pid && tMarcos[i].indice<=tMarcos[posMenor].indice) posMenor=i;
 		}
 		return posMenor;
 	}
+
+
+
+
 	if(configuracion.ALGORITMO_REEMPLAZO==2) //CLOCK-M
-	{printf("BUSCO PAGINA A REEMPLAZAR CON CLOCK-M\n");
+	{
+		printf("BUSCO PAGINA A REEMPLAZAR CON CLOCK-M\n");
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //PRIMERO CHEQUEO LAS LIBRES
 				{
 					if(tMarcos[i].indice==-1) return i;
@@ -335,22 +366,22 @@ int entradaTMarcoAReemplazar(void) //FALTA IMPLEMENTACION PARA CLOCK M
 		for(j=0;j<2;j++){ //SI NO ENCUENTRA EL ULTIMO LOOP ENTRA DENUEVO PARA HACER EL 1 y 2, si con 2 repeticiones no encuentra, hay un erro de impelemtnacion
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 		{
-			if(indiceClockM>=configuracion.CANTIDAD_MARCOS) indiceClockM=0; //Devuelve el indice a 0
-			if(tMarcos[indiceClockM].indice==0 && tMarcos[indiceClockM].modif==0)
-			{	indiceClockM++; //INCREMENTA PARA EL PROXIMO USO
-				return (indiceClockM-1);
+			if(nodo->indiceClockM>=configuracion.CANTIDAD_MARCOS) nodo->indiceClockM=0; //Devuelve el indice a 0
+			if(tMarcos[nodo->indiceClockM].pid==pid && tMarcos[nodo->indiceClockM].indice==0 && tMarcos[nodo->indiceClockM].modif==0)
+			{	nodo->indiceClockM++; //INCREMENTA PARA EL PROXIMO USO
+				return (nodo->indiceClockM-1);
 			}
-			indiceClockM++;
+			nodo->indiceClockM++;
 		}
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //NO HAY LIBRES BUSCO U=0 M=1 si no vale eso pongo u en 0
 				{
-					if(indiceClockM>=configuracion.CANTIDAD_MARCOS) indiceClockM=0; //Devuelve el indice a 0
-					if(tMarcos[indiceClockM].indice==0 && tMarcos[indiceClockM].modif==1)
-					{	indiceClockM++; //INCREMENTA PARA EL PROXIMO USO
-						return (indiceClockM-1);
+					if(nodo->indiceClockM>=configuracion.CANTIDAD_MARCOS) nodo->indiceClockM=0; //Devuelve el indice a 0
+					if(tMarcos[nodo->indiceClockM].pid==pid && tMarcos[nodo->indiceClockM].indice==0 && tMarcos[nodo->indiceClockM].modif==1)
+					{	nodo->indiceClockM++; //INCREMENTA PARA EL PROXIMO USO
+						return (nodo->indiceClockM-1);
 					}
-					tMarcos[indiceClockM].indice=0;
-					indiceClockM++;
+					tMarcos[nodo->indiceClockM].indice=0;
+					nodo->indiceClockM++;
 				}
 		}
 
@@ -390,6 +421,7 @@ void agregarProceso(int pid, int cantPaginas)
 	ultimoNodo->marcosAsignados=0;
 	ultimoNodo->cantFallosPag=0;
 	ultimoNodo->cantPaginasAcc=0;
+	ultimoNodo->indiceClockM=0;
 	ultimoNodo->tabla=malloc(sizeof(tablaPag)*cantPaginas);
 	for(i=0;i<cantPaginas;i++)
 	{
@@ -398,21 +430,9 @@ void agregarProceso(int pid, int cantPaginas)
 	return;
 }
 
-nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
-{
-	nodoListaTP* aux;
-	aux=raizTP;
-	while(aux!=NULL)
-	{
-		if(aux->pid==pid)
-		{
-			return aux;
-		}
-		aux=aux->sgte;
-	}
 
-	return NULL;
-}
+
+
 
 void eliminarProceso(int pid)
 { sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
@@ -544,7 +564,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 		log_info(log,"El estado de los marcos antes del reemplazo es:");
 		pthread_mutex_unlock(&MUTEXLOG);
 		logearTMarcos();
-	aReemplazar=entradaTMarcoAReemplazar();
+	aReemplazar=entradaTMarcoAReemplazar(pid);
 		pthread_mutex_lock(&MUTEXLOG);
 		log_info(log,"Se va a reemplazar el marco N: %d",aReemplazar);
 		pthread_mutex_unlock(&MUTEXLOG);
@@ -687,11 +707,12 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS,
 	}
 	if(ubicada==-1) //HAY QUE TRAERLA DEL SWAP
 	{
-		if(nodo->marcosAsignados>=configuracion.MAXIMO_MARCOS_POR_PROCESO)
+		/*if(nodo->marcosAsignados>=configuracion.MAXIMO_MARCOS_POR_PROCESO)
 		{	aux=entradaTMarcoAReemplazar(); //Vemos cual seria la proxima que se reemplazaria
 			if(tMarcos[aux].pid!=pid) return -4; //SI EL PROCESO NO PUEDE TENER MAS DEVUELVE ERROR, chequeo que la proxima a sacar no sea de este proceso.
 		}
-
+		*/
+		if(nodo->marcosAsignados==0 && marcosLibres()==0) return -4; //NO TIENE MARCOS Y NO HAY PARA DARLE, ERROR DE MARCO
 		nodo->cantFallosPag++;
 		ubicada=reemplazarMarco(pid,numPag); //CAMBIA EL MARCO Y DEVUELVE EL NUMERO
 

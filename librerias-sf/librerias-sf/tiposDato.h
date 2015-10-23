@@ -141,6 +141,7 @@ typedef struct nodoListaTP_t //Nodos de la lista de tablas de paginas del adm
 	int marcosAsignados; //Chequear si es menor al tamanio de marcos maximo.
 	int cantPaginasAcc;
 	int cantFallosPag;
+	int indiceClockM;
 	tablaPag* tabla; //aca va la tabla en si malloc(sizeof(tablaPag)*cantPaginas)
 } nodoListaTP;
 
