@@ -1,9 +1,19 @@
-iniciar 10;
-leer 0;
-escribir 0 "ju";
-escribir 1 "a";
+iniciar 2;
 leer 0;
 leer 1;
-escribir 0 "as";
+escribir 0 "ho";
 leer 0;
+escribir 1 "j";
+leer 1;
+escribir 1 "";
+leer 1;
+escribir 0 "holaj";
+escribir 1 "12345";
+leer 1;
+leer 0;
+leer 1;
+escribir 1 "abcdefghi";
+leer 1;
+escribir 1 "ju"
+leer 1;
 finalizar;

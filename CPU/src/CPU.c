@@ -67,7 +67,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	switch(instruccion)
 	{
 	case INICIAR:
-	{	printf("Instruccion iniciar param: %d\n",parametro1);//***********************
+	{	printf("Instruccion iniciar\tparametro:%d\n",parametro1);//***********************
 		mensajeParaADM.texto=NULL;
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -84,7 +84,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		break;
 	}
 	case LEER:
-	{	printf("Instruccion leer parametro: %d ",parametro1);//*********************
+	{	printf("Instruccion leer\tparametro:%d ",parametro1);//*********************
 		mensajeParaADM.texto=NULL;
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -98,14 +98,14 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		{
 			(*estado)=LISTO;
 		}
-		printf("Recibi: %s\n ",mensajeDeADM.texto);
+		printf("Recibi: %s\n",mensajeDeADM.texto);
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeDeADM.texto);
 		break;
 
 	}
 	case ESCRIBIR:
-	{	printf("Instruccion escribir pag: %d  escribe: %s\n",parametro1,parametro2);//********************
+	{	printf("Instruccion escribir\tpag: %d\tescribe: %s\n",parametro1,parametro2);//********************
 
 		mensajeParaADM.texto = strdup(parametro2); //duplicamos la cadena en el heap
 		pthread_mutex_lock(&mutexComADM);

@@ -63,7 +63,7 @@ int crearSocketCliente (char IP[], char PUERTO[])
 			freeaddrinfo(serverInfo);	// No lo necesitamos mas
 			return serverSocket;
 }
-
+/*
 int enviarPCB(int socket,nodoPCB* PCB, uint32_t quantum) //-2 si no hay malloc
 {	int resultado;
 	mensaje_PL_CPU* mensaje;
@@ -83,7 +83,41 @@ int enviarPCB(int socket,nodoPCB* PCB, uint32_t quantum) //-2 si no hay malloc
 		resultado=-2;
 	}
 	return resultado;
+} */
+int enviarPCB(int socket,nodoPCB* PCB, uint32_t quantum) //-2 si no hay malloc
+{	int resultado;
+	char * mensaje;
+	mensaje = malloc(3*sizeof(uint32_t)+51*sizeof(char));
+	if(mensaje!=NULL)
+	{
+		memcpy(mensaje,&(PCB->info.pid),sizeof(uint32_t));
+		memcpy(mensaje+sizeof(uint32_t),&(PCB->info.ip),sizeof(uint32_t));
+		memcpy(mensaje+2*sizeof(uint32_t),&(PCB->info.path),51*sizeof(char));
+		memcpy(mensaje+2*sizeof(uint32_t)+51*sizeof(char),&quantum,sizeof(uint32_t));
+		//printf("Antes de enviar mensaje: %s %d\n",mensaje->path,mensaje->pid);
+		resultado = send(socket,(void*) mensaje,3*sizeof(uint32_t)+51*sizeof(char),0);
+		free(mensaje);
+	}
+	else
+	{
+		resultado=-2;
+	}
+	return resultado;
 }
+int recibirPCB(int socket, proceso_CPU* proceso,uint32_t *quantum)
+{
+	int resultado;
+	char* mensajeRecibido;
+	mensajeRecibido=malloc(3*sizeof(uint32_t)+51*sizeof(char));
+	resultado = recv(socket,(void*) mensajeRecibido,3*sizeof(uint32_t)+51*sizeof(char),0);
+	memcpy(&(proceso->pid),mensajeRecibido,sizeof(uint32_t));
+	memcpy(&(proceso->ip),mensajeRecibido+sizeof(uint32_t),sizeof(uint32_t));
+	memcpy(proceso->path,mensajeRecibido+2*sizeof(uint32_t),51*sizeof(char));
+	memcpy(quantum,mensajeRecibido+2*sizeof(uint32_t)+51*sizeof(char),sizeof(uint32_t));
+	free(mensajeRecibido);
+	return resultado;
+}
+/*
 int recibirPCB(int socket, proceso_CPU* proceso,uint32_t *quantum)
 {
 	int resultado;
@@ -96,7 +130,7 @@ int recibirPCB(int socket, proceso_CPU* proceso,uint32_t *quantum)
 	memcpy(quantum,&(mensajeRecibido->quantum),sizeof(uint32_t));
 	free(mensajeRecibido);
 	return resultado;
-}
+}*/
 //FUNCIONAN BIEN CAMBIADAS
 int enviarInstruccionAlADM(int socket, mensaje_CPU_ADM* mensajeAMandar) //el CPU le manda al ADM
 {
@@ -199,7 +233,7 @@ int recibirPCBDeCPU(int socket, mensaje_CPU_PL *mensaje)
 	free(buffer);
 	return resultado;
 }
-
+/* VERSION VIEJA
 int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPagina)//del adm al swap
 {
 	int resultado;
@@ -232,6 +266,33 @@ int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPag
 	resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina, 0 );
 		free(nulo);
 	free(nulos);
+	} else {
+		resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t), 0 );
+	}
+
+	free(buffer);
+	return resultado;
+} */
+
+int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPagina)//del adm al swap
+{
+	int resultado;
+	void* buffer =NULL;
+
+	if(mensajeAEnviar->contenidoPagina!=NULL) {
+	buffer=malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina);
+
+	} else {
+		buffer=malloc(2*sizeof(uint32_t)+ sizeof(instruccion_t));
+	}
+	memcpy(buffer, &(mensajeAEnviar->instruccion), sizeof(instruccion_t));
+	memcpy(buffer+sizeof(instruccion_t), &(mensajeAEnviar->pid), sizeof(uint32_t));
+	memcpy(buffer+sizeof(instruccion_t)+sizeof(uint32_t), &(mensajeAEnviar->parametro), sizeof(uint32_t));
+
+	if(mensajeAEnviar->contenidoPagina!=NULL){
+	memcpy(buffer+sizeof(instruccion_t)+2*sizeof(uint32_t), mensajeAEnviar->contenidoPagina, tamPagina); //SAQUE EL AMPERSANT
+	resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t)+ tamPagina, 0 );
+
 	} else {
 		resultado = send(socket, buffer, 2*sizeof(uint32_t)+ sizeof(instruccion_t), 0 );
 	}
@@ -283,10 +344,7 @@ int enviarDeSwapAlADM(int socket, mensaje_SWAP_ADM* mensajeAEnviar, int tamPagin
 	{
 		resultado = send(socket, buffer, sizeof(uint32_t)+sizeof(instruccion_t), 0 );
 	}
-	if(mensajeAEnviar->contenidoPagina!=NULL)
-	{
-		//
-	}
+
 	free(buffer);
 	return resultado;
 }

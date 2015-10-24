@@ -505,10 +505,10 @@ int main()
 	pthread_create(&hRecibir,NULL,hiloRecibir,NULL);
 	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
 	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
-	/*pthread_kill(hServer,9);  //QUE HAGO CON LOS KILL?
-	pthread_kill(hEnvios,9);
-	pthread_kill(hRecibir,9);
-	pthread_kill(hBloqueados,9);
+	/*pthread_kill(hServer,15);  //QUE HAGO CON LOS KILL?
+	pthread_kill(hEnvios,15);
+	pthread_kill(hRecibir,15);
+	pthread_kill(hBloqueados,15);
 	pthread_join(hServer,NULL);
 	pthread_join(hEnvios,NULL);
 	pthread_join(hRecibir,NULL);

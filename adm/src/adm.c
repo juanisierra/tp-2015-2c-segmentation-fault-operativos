@@ -149,7 +149,8 @@ void MPFlush(void)
 				mensajeParaSWAP.instruccion=ESCRIBIR;
 				mensajeParaSWAP.parametro=tMarcos[i].nPag;
 				mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
-				strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[i].contenido);
+				//strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[i].contenido);
+				memcpy(mensajeParaSWAP.contenidoPagina,tMarcos[i].contenido,configuracion.TAMANIO_MARCO);
 				enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO); //MANDA LAPAGINA A ESCRIBIRSE
 				if(mensajeParaSWAP.contenidoPagina!=NULL)
 				{
@@ -577,7 +578,8 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 				mensajeParaSWAP.instruccion=ESCRIBIR;
 				mensajeParaSWAP.parametro=tMarcos[aReemplazar].nPag;
 				mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
-				strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[aReemplazar].contenido);
+				//strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[aReemplazar].contenido);
+				memcpy(mensajeParaSWAP.contenidoPagina,tMarcos[aReemplazar].contenido,configuracion.TAMANIO_MARCO);
 				enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO); //MANDA LAPAGINA A ESCRIBIRSE
 				if(mensajeParaSWAP.contenidoPagina!=NULL)
 				{
@@ -623,8 +625,12 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 		mensajeParaSWAP.contenidoPagina=NULL;
 	}
 	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-	strcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina); ///ESCRIOBIMOS LA PAGINA
-	if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
+	//strcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina); ///ESCRIOBIMOS LA PAGINA
+	memcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina,configuracion.TAMANIO_MARCO);
+	if(mensajeDeSWAP.contenidoPagina!=NULL)
+		{
+		free(mensajeDeSWAP.contenidoPagina);
+		}
 	tMarcos[aReemplazar].modif=0;
 	if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1) //FIFO Y LRU
 	{
@@ -806,7 +812,7 @@ int main()
 		status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
 		if(status==0) break;
 		printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
-		if(mensajeARecibir.tamTexto!=0) printf("Mensaje: %s\n",mensajeARecibir.texto);
+		if(mensajeARecibir.tamTexto!=0) printf("  Mensaje: %s\n",mensajeARecibir.texto);
 		if(mensajeARecibir.tamTexto==0) printf("\n");
 		pthread_mutex_lock(&MUTEXLP);
 		pthread_mutex_lock(&MUTEXTM);
@@ -839,10 +845,15 @@ int main()
 			if(marcoAUsar!=-4) //EL MARCO ESTA O PUEDEN DARLE UNO
 			{	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A LEER
 				mensajeAMandar.parametro=mensajeARecibir.parametro;
-				printf("EL CONTENIDO DE LA PAGINA ES %s \n",tMarcos[marcoAUsar].contenido);
-				mensajeAMandar.tamanoMensaje = strlen(tMarcos[marcoAUsar].contenido) +1;
-				mensajeAMandar.texto=malloc(mensajeAMandar.tamanoMensaje);
-				strcpy(mensajeAMandar.texto,tMarcos[marcoAUsar].contenido); /// NO SIRVE CON LAS A PORUQE NO LLEVAN /0
+
+				//mensajeAMandar.tamanoMensaje = strlen(tMarcos[marcoAUsar].contenido) +1; VIEJOOO
+				mensajeAMandar.tamanoMensaje=configuracion.TAMANIO_MARCO+1;
+				//mensajeAMandar.texto=malloc(mensajeAMandar.tamanoMensaje);
+				mensajeAMandar.texto=malloc(configuracion.TAMANIO_MARCO+1);
+				//strcpy(mensajeAMandar.texto,tMarcos[marcoAUsar].contenido); /// NO SIRVE CON LAS A PORUQE NO LLEVAN /0
+				memcpy(mensajeAMandar.texto,tMarcos[marcoAUsar].contenido,configuracion.TAMANIO_MARCO);
+				mensajeAMandar.texto[configuracion.TAMANIO_MARCO]='\0'; // PONE UN BARRA CERO POR LAS DUDAS AL FINAL
+				if(mensajeAMandar.texto!=NULL) printf("EL CONTENIDO DE LA PAGINA ES %s \n",mensajeAMandar.texto);
 				enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 			}
 			else
@@ -869,7 +880,8 @@ int main()
 					mensajeParaSWAP.instruccion=ESCRIBIR;
 					mensajeParaSWAP.parametro=tMarcos[marcoAUsar].nPag;
 					mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
-					strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[marcoAUsar].contenido);
+					//strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[marcoAUsar].contenido);
+					memcpy(mensajeParaSWAP.contenidoPagina,tMarcos[marcoAUsar].contenido,configuracion.TAMANIO_MARCO);
 					enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO); //MANDA LAPAGINA A ESCRIBIRSE
 					if(mensajeParaSWAP.contenidoPagina!=NULL)
 						{
@@ -878,13 +890,25 @@ int main()
 						}
 					recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 					if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
-					strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
+					//strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
+					if(mensajeARecibir.tamTexto<=configuracion.TAMANIO_MARCO)
+					{
+					memcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto,mensajeARecibir.tamTexto);
+					} else {
+						memcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto,configuracion.TAMANIO_MARCO);
+					}
 					tMarcos[marcoAUsar].modif=1;
 					sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A ESCRIBIR
 				}
 				if(tMarcos[marcoAUsar].modif==0)
 				{
-				strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
+				//strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
+					if(mensajeARecibir.tamTexto<=configuracion.TAMANIO_MARCO)
+									{
+									memcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto,mensajeARecibir.tamTexto);
+									} else {
+										memcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto,configuracion.TAMANIO_MARCO);
+									}
 				tMarcos[marcoAUsar].modif=1;
 				sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A ESCRIBIR
 				}
