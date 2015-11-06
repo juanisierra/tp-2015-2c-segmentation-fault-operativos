@@ -1,6 +1,7 @@
 //SWAP, MADE IN CABALLITO//
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <librerias-sf/sockets.h>
 #include <librerias-sf/config.h>
 #include <librerias-sf/tiposDato.h>
@@ -63,7 +64,7 @@ void cerrarSwap(void)//no cierra los sockets
 
 int iniciarConfiguracion(void)
 {//cargamos la configuracion del swap
-	printf("Cargando configuracion.. \n \n");
+	//printf("Cargando configuracion.. \n \n");
 	configuracion =  cargarConfiguracionSWAP(RUTACONFIG);
 	if (configuracion.estado!=1)
 	{
@@ -205,7 +206,6 @@ int alcanzanPaginas(int pagsNecesarias)//0 no alcanzan, 1 alcanzan
 	}
 	if(pagsNecesarias > pagsTotales) //se necesitan mas de las que hay
 	{
-		printf("El proceso pide %d paginas y en el swap hay %d paginas libres  \n", pagsNecesarias, pagsTotales);
 		return 0;
 	}
 	return 1;
@@ -289,7 +289,7 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 		else
 		{
 			log_info(log, "Se rechaza el proceso de pid %u por no haber espacio suficiente", pid);
-			printf("No hay espacio suficiente para el proceso de pid: %u\n", pid);
+			//printf("No hay espacio suficiente para el proceso de pid: %u\n", pid);
 			return 0;
 		}
 	}
@@ -618,18 +618,24 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la
 		return buffer;
 	}
 	fseek(archivo,((aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagALeer * configuracion.TAMANIO_PAGINA), SEEK_SET);//vamos la pagina a leer (sin el menos uno la pasamos)
-	fread(buffer, sizeof(char), (configuracion.TAMANIO_PAGINA)/sizeof(char), archivo);//leemos
+	fread(buffer, sizeof(char), configuracion.TAMANIO_PAGINA, archivo);//leemos
 	aLeer->leyo= aLeer->leyo +1;//aumentamos la cantidad de paginas leidas por el proceso
-	log_info(log, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s", aLeer->pid, strlen(buffer)*sizeof(char), (aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, buffer); //EN EL BYTE DESDE QUE COMIENZ AGREGO EL NUM PAG
+	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
+	strcpy(bufferLogueo, buffer);
+	bufferLogueo[configuracion.TAMANIO_PAGINA]='\0';
+	log_info(log, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s", aLeer->pid, strlen(buffer)*sizeof(char), (aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA +  pagALeer * configuracion.TAMANIO_PAGINA, bufferLogueo); //EN EL BYTE DESDE QUE COMIENZ AGREGO EL NUM PAG
 	return buffer;
 }
 
 void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien. pagAEscribir comienza en 0
 {//escribimos en el archivo de swap
 	fseek(archivo,((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) +  (pagAEscribir * configuracion.TAMANIO_PAGINA), SEEK_SET);
-	fwrite(texto, sizeof(char), strlen(texto), archivo);
+	fwrite(texto, sizeof(char), configuracion.TAMANIO_PAGINA, archivo);
 	aEscribir->escribio= aEscribir->escribio +1;//el proceso lee una pagina y lo documentamos
-	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe %s", aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagAEscribir * configuracion.TAMANIO_PAGINA), texto);
+	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
+	strcpy(bufferLogueo, texto);
+	bufferLogueo[configuracion.TAMANIO_PAGINA]='\0';
+	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe %s", aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagAEscribir * configuracion.TAMANIO_PAGINA), bufferLogueo);
 	return;
 }
 
@@ -680,7 +686,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 			}
 			return 0;
 		}
-		printf("Se libero la memoria del proceso de pid %u \n", aBorrar->pid);
+		//printf("Se libero la memoria del proceso de pid %u \n", aBorrar->pid);
 		liberarMemoria(aBorrar);
 		aEnviar.contenidoPagina=NULL;
 		break;
@@ -733,8 +739,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		break;
 
 	default:
-		printf("El ADM me mandó cualquier berretada\n");
-		log_error(log, "El ADM me mandó cualquier berretada");
+		printf("Mensaje del ADM no comprendido\n");
+		log_error(log, "Mensaje del ADM no comprendido");
 		cerrarSwap();
 		break;
 	}
@@ -769,7 +775,7 @@ int main()
 	log= log_create(ARCHIVOLOG, "Swap", 0, LOG_LEVEL_INFO);
 	log_info(log, "Proceso SWAP iniciado.");
 	if(iniciarConfiguracion()==-1) return -1;
-	printf("Iniciando Administrador de SWAP... Made in Caballito\n");
+	printf("Iniciando Administrador de SWAP\n");
 	printf("Estableciendo conexion.. \n");
 	int socketEscucha;
 	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
@@ -787,12 +793,15 @@ int main()
 	}
 	struct sockaddr_in addr;
 	socklen_t addrlen = sizeof(addr);
-	printf("Esperando conexiones en puerto %s..\n",configuracion.PUERTO_ESCUCHA);
+	//printf("Esperando conexiones en puerto %s..\n",configuracion.PUERTO_ESCUCHA);
 	int socketADM = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
 	printf("Conectado al ADM en el puerto %s \n",configuracion.PUERTO_ESCUCHA);
 
 	int exito= crearArchivo();
-	if(exito) printf("se creo el archivo correctamente\n");
+	if(exito)
+		{
+			//printf("se creo el archivo correctamente\n");
+		}
 	else
 	{
 		printf("fallo al crear el archivo \n");
@@ -810,10 +819,11 @@ int main()
 			log_error(log,"Error en recibir pagina de ADM");
 			cerrarSwap();
 		}
-		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
+		//printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
 		interpretarMensaje(mensaje,socketADM);
 		status=recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
 	}
+	printf("Proceso SWAP finalizado.\n\n");
 	log_info(log, "Proceso SWAP finalizado.\n");
 	close(socketADM);
 	close(socketEscucha);

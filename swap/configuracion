@@ -1,7 +1,0 @@
-#[Archivo de Configuracion del Administrador de SWAP]
-PUERTO_ESCUCHA = "6577"
-NOMBRE_SWAP= "swap.data"
-CANTIDAD_PAGINAS = "7"
-TAMANIO_PAGINA="4"
-RETARDO_SWAP="5"
-RETARDO_COMPACTACION="60"

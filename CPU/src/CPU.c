@@ -35,7 +35,7 @@ pthread_t hCalculo;
 int iniciarConfiguracion(config_CPU* configuracion)
 {
 	printf("Iniciando CPU.. \n");
-	printf("Cargando configuracion.. \n");
+	//printf("Cargando configuracion.. \n");
 	(*configuracion) =  cargarConfiguracionCPU(RUTACONFIG);
 	if (configuracion->estado!=1)
 	{
@@ -67,7 +67,8 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	switch(instruccion)
 	{
 	case INICIAR:
-	{	printf("Instruccion iniciar\tparametro:%d\n",parametro1);//***********************
+	{
+		//printf("Instruccion iniciar\tparametro:%d\n",parametro1);//***********************
 		mensajeParaADM.texto=NULL;
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -78,13 +79,15 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		{
 			(*finArchivo) = 1; //no termina el archivo pero se pone para que deja la ejecucion si es que falla la iniciazion de memoria
 			(*estado) = ERRORINICIO;
-		} else{
+		}
+		else
+		{
 			(*estado)=LISTO;
 		}
 		break;
 	}
 	case LEER:
-	{	printf("Instruccion leer\tparametro:%d ",parametro1);//*********************
+	{	//printf("Instruccion leer\tparametro:%d ",parametro1);//*********************
 		mensajeParaADM.texto=NULL;
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -98,15 +101,15 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		{
 			(*estado)=LISTO;
 		}
-		printf("Recibi: %s\n",mensajeDeADM.texto);
+		//printf("Recibi: %s\n",mensajeDeADM.texto);
 		almacenarEnListaRetornos(mensajeDeADM, datos_CPU, instruccion);
 		free(mensajeDeADM.texto);
 		break;
 
 	}
 	case ESCRIBIR:
-	{	printf("Instruccion escribir\tpag: %d\tescribe: %s\n",parametro1,parametro2);//********************
-
+	{
+		//printf("Instruccion escribir\tpag: %d\tescribe: %s\n",parametro1,parametro2);//********************
 		mensajeParaADM.texto = strdup(parametro2); //duplicamos la cadena en el heap
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -128,7 +131,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		break;
 	}
 	case ES:
-	{	printf("instruccion es tiempo: %d\n",parametro1);
+	{	//printf("instruccion es tiempo: %d\n",parametro1);
 		// ASIGNAR MENSAJE
 		(*estado) = BLOQUEADO;
 		mensajeDeADM.parametro = parametro1;
@@ -142,7 +145,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	case FINALIZAR:
 	{
 		(*estado) = AFINALIZAR;
-		printf("Instruccion finalizar\n");
+		//printf("Instruccion finalizar\n");
 		mensajeParaADM.texto=NULL;
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -155,7 +158,6 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	case ERROR:
 	{
 		printf("Error: instruccion mal escrita\n");
-
 		(*estado) = INVALIDO;
 		(*finArchivo) = 1;
 		break;
@@ -190,7 +192,8 @@ void hiloCPU(void* datoCPUACastear)
 	pthread_mutex_unlock(&instruccionesEjec);
 	status=1;
 	while(status != 0)
-	{	status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
+	{
+		status = recibirPCB(datos_CPU.socket, &datos_CPU, &quantum);
 		instruccionesEjecutadasHilo = 0; //Lo ponemos en 0 cada vez que vuelve a ejecutar un nuevo pcb
 		if(status==0) break; //CIERRA EL RPOCESO
 		pthread_mutex_lock(&mutexLog);
@@ -199,14 +202,14 @@ void hiloCPU(void* datoCPUACastear)
 		entrada_salida = 0;//REINICIAMOS ESTOS VALORES PARA CADA VEZ QUE LEA UNA NUEVA PCB
 		finArchivo = 0; //Indica el final del mcod
 		datos_CPU.listaRetornos = NULL; // ACA HAGO QUE LA LISTA REINICIE AL LEER UN MCOD COMPLETO,la lista es liberada en la funcion desempaquetar
-		printf("CPU numero: %d \n", datos_CPU.id);
-		printf("PCB RECIBIDO: PID: %d  PATH: %s\n",datos_CPU.pid,datos_CPU.path);
+		//printf("CPU numero: %d \n", datos_CPU.id);
+		//printf("PCB RECIBIDO: PID: %d  PATH: %s\n",datos_CPU.pid,datos_CPU.path);
 		mCod = fopen(datos_CPU.path, "r");
 		if(mCod==NULL)
-			{
+		{
 			printf("Archivo Erroneo\n");//AGREGAR CONTROL DEARCHIVO ERRONEO
 			return;
-			}
+		}
 		while (quantum != 0 && entrada_salida == 0 && finArchivo == 0) //esta es la condicion para que deje de ejecutar
 		{
 			parametro2[0] = '\0';// ponemos el nulo para cada vez que lea un nuevo parametro, lo reiniciamos
@@ -284,15 +287,15 @@ int main(void)
 	proceso_CPU CPUs[configuracion.CANTIDAD_HILOS];  //Declaramos el array donde cada componente es un hilo
 	instruccionesEjecutadas = malloc(sizeof(contadorInstrucciones)* configuracion.CANTIDAD_HILOS);
 	if((socketADM = crearSocketCliente(configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA))<0) // Se inicializa el socketADM GLOBAL
-		{
-			printf("No se pudo crear socket en %s:%s \n",configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
-			log_error(log, "Proceso no se pudo conectar con el ADM", i);
-			return 0;
-		}
-		log_info(log, "Proceso conectado con el ADM", i);
-
+	{
+		printf("No se pudo crear socket en %s:%s \n",configuracion.IP_MEMORIA,configuracion.PUERTO_MEMORIA); //AGREGAR SOPOTE PARA -2 SI NO SE CONECTA
+		log_error(log, "Proceso no se pudo conectar con el ADM", i);
+		return 0;
+	}
+	log_info(log, "Proceso conectado con el ADM", i);
 	for(i = 0;i < configuracion.CANTIDAD_HILOS; i++) // Vamos creando un hilo por cada CPU.
-	{	printf("creando CPU %d\n",i);
+	{
+		printf("creando CPU %d\n",i);
 		CPUs[i].id = i;
 		if((CPUs[i].socket = crearSocketCliente(configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR))<0) // ponemos el socket de cada CPU
 		{
@@ -310,7 +313,6 @@ int main(void)
 		pthread_create(&CPUs[i].thread, NULL, (void*)hiloCPU, (void*) &(CPUs[i]));
 	}
 	pthread_create(&hCalculo, NULL, (void*)hiloCalculo, NULL);
-
 	for(i = 0;i < configuracion.CANTIDAD_HILOS; i++)// hacemos los join de cada cpu para que no corte antes.
 	{
 		pthread_join(CPUs[i].thread, NULL);

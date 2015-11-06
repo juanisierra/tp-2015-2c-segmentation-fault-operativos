@@ -18,7 +18,6 @@
 #define TAMANOCONSOLA 1024
 #define RUTACONFIG "configuracionPlanificador"
 #define ARCHIVOLOG "Planificador.log"
-//variables globales (usar con cuidado)
 
 config_pl configuracion;
 nodo_Lista_CPU* raizCPUS; //Va a ser lista
@@ -45,18 +44,18 @@ int iniciarConfiguracion(config_pl* configuracion)
 {
 	(*configuracion)= cargarConfiguracionPL(RUTACONFIG);
 	if(configuracion->estado==0 || configuracion->estado==-1)
-		{
-			printf("Error de configuracion, cerrando proceso..");
-			return -1;
-		}
+	{
+		printf("Error de configuracion, cerrando proceso..");
+		return -1;
+	}
 	if (configuracion->estado==1)
-		{
-			printf("Configuracion cargada correctamente: \n");
-			printf("Puerto Escucha: %s\n",configuracion->PUERTO_ESCUCHA);
-			printf("Codigo del Algoritmo de Planificacion: %d\n",configuracion->ALGORITMO_PLANIFICACION);
-			printf("Quantum: %d\n\n",configuracion->QUANTUM);
-			return 0;
-		}
+	{
+		printf("Configuracion cargada correctamente: \n");
+		printf("Puerto Escucha: %s\n",configuracion->PUERTO_ESCUCHA);
+		printf("Codigo del Algoritmo de Planificacion: %d\n",configuracion->ALGORITMO_PLANIFICACION);
+		printf("Quantum: %d\n\n",configuracion->QUANTUM);
+		return 0;
+	}
 	return -1;
 }
 
@@ -68,7 +67,8 @@ void loggearColas(void)
 	int i;
 	int cuenta=0;
 	if(raizListos!=NULL)
-	{	auxPCB=raizListos;
+	{
+		auxPCB=raizListos;
 		while(auxPCB!=NULL && auxPCB->ant!=NULL)
 		{
 			log_info(log,"mProc %d: %s",auxPCB->info.pid,auxPCB->info.path);
@@ -76,32 +76,34 @@ void loggearColas(void)
 			cuenta++;
 		}
 		if(auxPCB!=NULL)
-			{
+		{
 			log_info(log,"mProc %d: %s",auxPCB->info.pid,auxPCB->info.path);
 			cuenta++;
-			}
+		}
 	}
 	log_info(log,"\t\t\t\t\t\t**** Fin ****");
 	log_info(log,"\t\t\t\t**** Cola de Bloqueados ****");
 	if(raizBloqueados!=NULL)
-			{	auxPCB=raizBloqueados;
-				while(auxPCB!=NULL && auxPCB->ant!=NULL)
-				{
-					log_info(log,"mProc %d: %s",auxPCB->info.pid,auxPCB->info.path);
-					auxPCB=auxPCB->ant;
-					cuenta++;
-				}
-				if(auxPCB!=NULL)
-					{
-					log_info(log,"mProc %d: %s",auxPCB->info.pid,auxPCB->info.path);
-					cuenta++;
-					}
-			}
+	{
+		auxPCB=raizBloqueados;
+		while(auxPCB!=NULL && auxPCB->ant!=NULL)
+		{
+			log_info(log,"mProc %d: %s",auxPCB->info.pid,auxPCB->info.path);
+			auxPCB=auxPCB->ant;
+			cuenta++;
+		}
+		if(auxPCB!=NULL)
+		{
+			log_info(log,"mProc %d: %s",auxPCB->info.pid,auxPCB->info.path);
+			cuenta++;
+		}
+	}
 	log_info(log,"\t\t\t\t\t\t**** Fin ****");
 }
 
 void hiloConsola(void)
-{  FILE* pruebaPath;
+{
+	FILE* pruebaPath;
 	int estado_consola = 1;
 	char ingresado[TAMANOCONSOLA];
 	char instruccion[20];
@@ -121,94 +123,100 @@ void hiloConsola(void)
 		if (strcmp(instruccion,"salir")==0) estado_consola = 0;// Chequeo que el usuario no quiera salir
 		if(strcmp(instruccion,"ps")==0)
 		{
-		mostrarPCBS(raizListos, raizBloqueados,PCBBloqueado,raizCPUS);
+			mostrarPCBS(raizListos, raizBloqueados,PCBBloqueado,raizCPUS);
 		}
 		if(strcmp(instruccion,"correr")==0)//el usuario corre un programa
-		{ if((pruebaPath=fopen(parametro,"r"))!=NULL) { //EL PATH ES VALIDO
-			fclose(pruebaPath);
-			pthread_mutex_lock(&MUTEXLISTOS);
-			agregarNodoPCB(&raizListos,crearNodoPCB(pid_cuenta,parametro));//agregamos el PCB a la lista de listos, uno a la vez.
-			pid_cuenta++; //Aumenta PID
-			pthread_mutex_unlock(&MUTEXLISTOS);
-			pthread_mutex_lock(&MUTEXLOG);
-			log_info(log,"Mproc %d Path: \"%s\"  Iniciado",pid_cuenta-1,parametro);
-			pthread_mutex_unlock(&MUTEXLOG);
-
-			sem_post(&SEMAFOROLISTOS);
-		} else
 		{
-			printf("El archivo %s es invalido\n",parametro);
-
-		}
+			if((pruebaPath=fopen(parametro,"r"))!=NULL) //EL PATH ES VALIDO
+			{
+				fclose(pruebaPath);
+				pthread_mutex_lock(&MUTEXLISTOS);
+				agregarNodoPCB(&raizListos,crearNodoPCB(pid_cuenta,parametro));//agregamos el PCB a la lista de listos, uno a la vez.
+				pid_cuenta++; //Aumenta PID
+				pthread_mutex_unlock(&MUTEXLISTOS);
+				pthread_mutex_lock(&MUTEXLOG);
+				log_info(log,"Mproc %d Path: \"%s\"  Iniciado",pid_cuenta-1,parametro);
+				pthread_mutex_unlock(&MUTEXLOG);
+				sem_post(&SEMAFOROLISTOS);
+			}
+			else
+			{
+				printf("El archivo %s es invalido\n",parametro);
+			}
 		}
 		if(strcmp(instruccion,"finalizar")==0)
-		{		pthread_mutex_lock(&MUTEXCPUS); //CAMBIAR PARA MUCHOS CPU***************************************************************************************************************
-		printf("POR FINALIZAR PID: %d\n",atoi(parametro));
-		pthread_mutex_lock(&MUTEXLOG);
-		log_info(log,"El PCB %d se envia a finalizar por comando",atoi(parametro));
-		pthread_mutex_unlock(&MUTEXLOG);
-		aFinalizar=NULL;
-		CPUAux=NULL;
-		for(i=0;i<cantidadCPUS(raizCPUS);i++)
 		{
-			CPUAux=CPUPosicion(raizCPUS,i);
-			if( CPUAux->ejecutando!=NULL && CPUAux->ejecutando->info.pid==atoi(parametro))
+			pthread_mutex_lock(&MUTEXCPUS); //CAMBIAR PARA MUCHOS CPU***************************************************************************************************************
+			//printf("POR FINALIZAR PID: %d\n",atoi(parametro));
+			pthread_mutex_lock(&MUTEXLOG);
+			log_info(log,"El PCB %d se envia a finalizar por comando",atoi(parametro));
+			pthread_mutex_unlock(&MUTEXLOG);
+			aFinalizar=NULL;
+			CPUAux=NULL;
+			for(i=0;i<cantidadCPUS(raizCPUS);i++)
 			{
-				aFinalizar=CPUAux->ejecutando;
-				CPUAux->ejecutando->info.ip=ultimaLinea(CPUAux->ejecutando->info.path);
-				CPUAux->finalizar=1;
-			}
+				CPUAux=CPUPosicion(raizCPUS,i);
+				if( CPUAux->ejecutando!=NULL && CPUAux->ejecutando->info.pid==atoi(parametro))
+				{
+					aFinalizar=CPUAux->ejecutando;
+					CPUAux->ejecutando->info.ip=ultimaLinea(CPUAux->ejecutando->info.path);
+					CPUAux->finalizar=1;
+				}
 
-		}
+			}
 			pthread_mutex_unlock(&MUTEXCPUS);
-			if(aFinalizar==NULL) { //LO BUSCA EN EL HILO DE BLOQUEOS
+			if(aFinalizar==NULL) //LO BUSCA EN EL HILO DE BLOQUEOS
+			{
 				pthread_mutex_lock(&MUTEXPROCESOBLOQUEADO);
 				if(PCBBloqueado->info.pid==atoi(parametro))
-					{
+				{
 					PCBBloqueado->info.ip=ultimaLinea(PCBBloqueado->info.path);
 					aFinalizar=PCBBloqueado;
-					}
+				}
 				pthread_mutex_unlock(&MUTEXPROCESOBLOQUEADO);
 			}
-			if(aFinalizar==NULL){
-			pthread_mutex_lock(&MUTEXLISTOS);
-			aFinalizar=buscarNodoPCB(raizListos,atoi(parametro));
-			if(aFinalizar!=NULL) aFinalizar->info.ip=ultimaLinea(aFinalizar->info.path);
-			pthread_mutex_unlock(&MUTEXLISTOS);
+			if(aFinalizar==NULL)
+			{
+				pthread_mutex_lock(&MUTEXLISTOS);
+				aFinalizar=buscarNodoPCB(raizListos,atoi(parametro));
+				if(aFinalizar!=NULL) aFinalizar->info.ip=ultimaLinea(aFinalizar->info.path);
+				pthread_mutex_unlock(&MUTEXLISTOS);
 			}
-			if(aFinalizar==NULL){ //No esta en listos, lo busca en bloqueados
-			pthread_mutex_lock(&MUTEXBLOQUEADOS);
-			aFinalizar=buscarNodoPCB(raizBloqueados,atoi(parametro));
-			if(aFinalizar!=NULL) aFinalizar->info.ip=ultimaLinea(aFinalizar->info.path);
-			pthread_mutex_unlock(&MUTEXBLOQUEADOS);
+			if(aFinalizar==NULL)//No esta en listos, lo busca en bloqueados
+			{
+				pthread_mutex_lock(&MUTEXBLOQUEADOS);
+				aFinalizar=buscarNodoPCB(raizBloqueados,atoi(parametro));
+				if(aFinalizar!=NULL) aFinalizar->info.ip=ultimaLinea(aFinalizar->info.path);
+				pthread_mutex_unlock(&MUTEXBLOQUEADOS);
 			}
 		}
 		if(strcmp(instruccion,"cpu")==0)
 		{
 			pthread_mutex_lock(&MUTEXCPUS);
 			for(i=0;i<cantidadCPUS(raizCPUS);i++)
+			{
+				CPUAux=CPUPosicion(raizCPUS,i);
+				if( CPUAux->uso!=-1)
 				{
-					CPUAux=CPUPosicion(raizCPUS,i);
-					if( CPUAux->uso!=-1)
-					{
-						printf("cpu %d: %d%%\n",CPUAux->id,CPUAux->uso);
-					}
-					else
-					{
-						printf("cpu %d: Aun no se recibieron datos de uso\n",CPUAux->id);
-					}
-
+					printf("cpu %d: %d%%\n",CPUAux->id,CPUAux->uso);
 				}
+				else
+				{
+					printf("cpu %d: Aun no se recibieron datos de uso\n",CPUAux->id);
+				}
+			}
 			pthread_mutex_unlock(&MUTEXCPUS);
 		}
 	}
-
 	return;
 }
+
 void hiloBloqueados(void)
-{	struct timeval auxHora;
+{
+	struct timeval auxHora;
 	while(1)   //FALTA CONDICION DE CORTEEE
-	{	sem_wait(&SEMAFOROBLOQUEADOS);
+	{
+		sem_wait(&SEMAFOROBLOQUEADOS);
 		pthread_mutex_lock(&MUTEXBLOQUEADOS);
 		PCBBloqueado=sacarNodoPCB(&raizBloqueados);
 		if(PCBBloqueado->info.t_es.tv_sec==0) //SI ES SU PRIMERA ENTRADA SALIDA MARCA LA HORA
@@ -230,24 +238,27 @@ void hiloBloqueados(void)
 		sem_post(&SEMAFOROLISTOS);
 		PCBBloqueado=NULL;
 	}
-
 }
+
 void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Lista_CPU* CPU)
-{	double auxTiempo;
-double auxTResp;
+{
+	double auxTiempo;
+	double auxTResp;
 	struct timeval auxHora;
-	printf("RECIBI DENUEVO PCB\n");
+	//printf("RECIBI DENUEVO PCB\n");
 	if(mensajeRecibido->nuevoEstado!=USOCPU)
-	{	gettimeofday(&auxHora,NULL);
+	{
+		gettimeofday(&auxHora,NULL);
 		(*PCB)->info.suma_t_cpu=(*PCB)->info.suma_t_cpu + difftime(auxHora.tv_sec,(*PCB)->info.t_entrada_cpu.tv_sec);
 		(*PCB)->info.t_entrada_cpu.tv_sec=0;
 	}
 	switch(mensajeRecibido->nuevoEstado)
 	{
 	case LISTO:
-		printf("RECIBO PCB LISTO\n");
-	if(CPU->finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR
-		{(*PCB)->info.ip=mensajeRecibido->ip;
+		//printf("RECIBO PCB LISTO\n");
+		if(CPU->finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR
+		{
+			(*PCB)->info.ip=mensajeRecibido->ip;
 		}
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		pthread_mutex_lock(&MUTEXLISTOS);					//MUTEX ADENTRO DE OTRO< CUIDADOOO, ADEMAS CAMBIAR PARA MUCHOS CPU
@@ -257,39 +268,40 @@ double auxTResp;
 		log_info(log,"El PCB %d se agrega a la cola de listos",(*PCB)->info.pid);
 		pthread_mutex_unlock(&MUTEXLOG);
 		sem_post(&SEMAFOROLISTOS);
-		printf("EL PCB MANDADO A LA LISTA TIENE PID %d\n",(*PCB)->info.pid);
+		//printf("EL PCB MANDADO A LA LISTA TIENE PID %d\n",(*PCB)->info.pid);
 		(*PCB)=NULL;
 		break;
 
 	case AFINALIZAR:
-		printf("RECIBO PCB A FINALIZAR\n");
+		//printf("RECIBO PCB A FINALIZAR\n");
 		gettimeofday(&auxHora,NULL);
 		auxTiempo=difftime(auxHora.tv_sec,(*PCB)->info.t_inicio.tv_sec);
 		if((*PCB)->info.t_es.tv_sec!=0) auxTResp= difftime((*PCB)->info.t_es.tv_sec,(*PCB)->info.t_inicio.tv_sec);
 		if((*PCB)->info.t_es.tv_sec==0) auxTResp=auxTiempo;
-		printf("EL TIEMPO DE EJEC FUE DE %d, el tiempo de respuesta fue de: %d, el tiempo de espera fue de: %d \n",(int) auxTiempo,(int) auxTResp,(int) (*PCB)->info.t_espera);
+		//printf("EL TIEMPO DE EJEC FUE DE %d, el tiempo de respuesta fue de: %d, el tiempo de espera fue de: %d \n",(int) auxTiempo,(int) auxTResp,(int) (*PCB)->info.t_espera);
 		pthread_mutex_lock(&MUTEXLOG);
 		log_info(log,"PCB %d Finalizado || Tiempo de Ejecucion: %d  || Tiempo de Respuesta: %d  ||  Tiempo de Espera: %d",(*PCB)->info.pid,(int) auxTiempo,(int) auxTResp,(int) (*PCB)->info.t_espera);
 		pthread_mutex_unlock(&MUTEXLOG);
 		(*PCB)->info.ip=mensajeRecibido->ip;
-			(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
-			free(*PCB);
-			(*PCB)=NULL;
+		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
+		free(*PCB);
+		(*PCB)=NULL;
 		break;
 
 	case BLOQUEADO:
-		printf("RECIBO PCB BLOQUEADO\n");
-	if(CPU->finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR  //MUTEX DENTRO DE OTRO Y CAMBIAR PARA MAS DE UN CPU
-			{(*PCB)->info.ip=mensajeRecibido->ip;
-			}
-	gettimeofday(&((*PCB)->info.t_entrada_es),NULL); //GUARDAMOS EL TIEMPO DE ENTRADA A LA COLA DE ES
-	(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
-	(*PCB)->info.bloqueo=mensajeRecibido->tiempoBloqueo;
-	pthread_mutex_lock(&MUTEXBLOQUEADOS);
-	agregarNodoPCB(&raizBloqueados,*PCB);
-	pthread_mutex_unlock(&MUTEXBLOQUEADOS);
-	sem_post(&SEMAFOROBLOQUEADOS);
-	(*PCB)=NULL;
+		//printf("RECIBO PCB BLOQUEADO\n");
+		if(CPU->finalizar==0) //CHEQUEA QUE NO SE HAYA QUERIDO FINALIZAR  //MUTEX DENTRO DE OTRO Y CAMBIAR PARA MAS DE UN CPU
+		{
+			(*PCB)->info.ip=mensajeRecibido->ip;
+		}
+		gettimeofday(&((*PCB)->info.t_entrada_es),NULL); //GUARDAMOS EL TIEMPO DE ENTRADA A LA COLA DE ES
+		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
+		(*PCB)->info.bloqueo=mensajeRecibido->tiempoBloqueo;
+		pthread_mutex_lock(&MUTEXBLOQUEADOS);
+		agregarNodoPCB(&raizBloqueados,*PCB);
+		pthread_mutex_unlock(&MUTEXBLOQUEADOS);
+		sem_post(&SEMAFOROBLOQUEADOS);
+		(*PCB)=NULL;
 		break;
 
 	case INVALIDO:
@@ -318,19 +330,19 @@ double auxTResp;
 
 	case ERRORMARCO:
 		printf("RECIBO PCB ERRORMARCO\n");
-				(*PCB)->info.ip=mensajeRecibido->ip;
-				(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
-				printf("Error de marcos del proceso %d \n",(*PCB)->info.pid);
-				pthread_mutex_lock(&MUTEXLOG);
-				log_info(log,"PCB %d  Error de marcos, el proceso se finaliza.",(*PCB)->info.pid);
-				pthread_mutex_unlock(&MUTEXLOG);
-				free(*PCB);
-				(*PCB)=NULL;
-			break;
+		(*PCB)->info.ip=mensajeRecibido->ip;
+		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
+		printf("Error de marcos del proceso %d \n",(*PCB)->info.pid);
+		pthread_mutex_lock(&MUTEXLOG);
+		log_info(log,"PCB %d  Error de marcos, el proceso se finaliza.",(*PCB)->info.pid);
+		pthread_mutex_unlock(&MUTEXLOG);
+		free(*PCB);
+		(*PCB)=NULL;
+		break;
 	case USOCPU:
-		printf("RECIBO USOCPU\n");
+		//printf("RECIBO USOCPU\n");
 		CPU->uso=mensajeRecibido->tiempoBloqueo;
-		printf("RECIBI NUEVOS TIEMPOS DE USO %d\n",CPU->uso);
+		//printf("RECIBI NUEVOS TIEMPOS DE USO %d\n",CPU->uso);
 		if(mensajeRecibido->payload!=NULL) free(mensajeRecibido->payload);
 		mensajeRecibido->payload=NULL; //ASI NO IMPRIME NULL EN LA RAFAGA
 		break;
@@ -340,7 +352,8 @@ double auxTResp;
 }
 
 int hiloServidor(void)
-{	int cuentaCPU=0;
+{
+	int cuentaCPU=0;
 	int socketCPU;
 	socketEscucha= crearSocketEscucha(10,configuracion.PUERTO_ESCUCHA);
 	if(socketEscucha < 0)
@@ -349,7 +362,6 @@ int hiloServidor(void)
 		log_error(log,"El socket en el puerto %s no pudo ser creado, no se puede iniciar el Planificador ",configuracion.PUERTO_ESCUCHA);
 		return -1;
 	}
-
 	if(listen(socketEscucha,10)< 0)
 	{
 		printf("El socket en el puerto %s no pudo ser creado, no se puede iniciar el Planificador \n",configuracion.PUERTO_ESCUCHA);
@@ -359,24 +371,26 @@ int hiloServidor(void)
 	struct sockaddr_in addr;
 	socklen_t addrlen = sizeof(addr);
 	printf("Esperando conexiones en puerto %s \n",configuracion.PUERTO_ESCUCHA);
-
-	while(1){ //FALTA CONDICION DE CORTE
-	////***************************CREACION DEL CPU********************
+	while(1) //FALTA CONDICION DE CORTE
+	{
+		////***************************CREACION DEL CPU********************
 		printf("esperando Otro\n");
-	socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-	printf("Por agrega CPU\n");
-	agregarCPU(&MUTEXCPUS,cuentaCPU,socketCPU,&raizCPUS);
-	cuentaCPU++;
-	pthread_mutex_lock(&MUTEXLOG);
-	log_info(log,"CPU %d Conectado",cuentaCPU-1);
-	pthread_mutex_unlock(&MUTEXLOG);
-	printf("Se conecto el CPU %d\n",cuentaCPU-1);
-	sem_post(&SEMAFOROCPUSLIBRES);
+		socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
+		printf("Por agrega CPU\n");
+		agregarCPU(&MUTEXCPUS,cuentaCPU,socketCPU,&raizCPUS);
+		cuentaCPU++;
+		pthread_mutex_lock(&MUTEXLOG);
+		log_info(log,"CPU %d Conectado",cuentaCPU-1);
+		pthread_mutex_unlock(&MUTEXLOG);
+		printf("Se conecto el CPU %d\n",cuentaCPU-1);
+		sem_post(&SEMAFOROCPUSLIBRES);
 	}
 	return 0;
 }
+
 int hiloEnvios (void)
-{	 nodo_Lista_CPU* cpuAEnviar;
+{
+	nodo_Lista_CPU* cpuAEnviar;
 	struct timeval auxHora;
 	while(1) //FALTA CONDICION
 	{
@@ -400,11 +414,11 @@ int hiloEnvios (void)
 		pthread_mutex_unlock(&MUTEXCPUS);
 	}
 }
+
 int hiloRecibir (void)
 {	struct timeval tiempo;
 	tiempo.tv_sec=1;
 	tiempo.tv_usec=0;
-
 	fd_set fdLeer;
 	fd_set fdACerrar;
 	nodo_Lista_CPU* aux;
@@ -413,70 +427,76 @@ int hiloRecibir (void)
 	int maximoSocket=0;
 	char buffer[100]; //Para guardarLoRecibido
 	mensaje_CPU_PL mensajeRecibido;
-	printf("Estoy por entrar en el bucle de receive\n");
+	//printf("Estoy por entrar en el bucle de receive\n");
 	while(1) //Condicion de corte-----------------------------
 	{
-	pthread_mutex_lock(&MUTEXCPUS);
-	for(i=0;i<cantidadCPUS(raizCPUS);i++)
-	{
-		FD_SET(socketCPUPosicion(raizCPUS,i),&fdLeer);
-		FD_SET(socketCPUPosicion(raizCPUS,i),&fdACerrar);
-		if(socketCPUPosicion(raizCPUS,i) > maximoSocket) maximoSocket=socketCPUPosicion(raizCPUS,i); //Setea el maximo numero de descriptor.
-	}
-	pthread_mutex_unlock(&MUTEXCPUS);
-	select(maximoSocket+1,&fdLeer,NULL,&fdACerrar,&tiempo);
-	pthread_mutex_lock(&MUTEXCPUS);
-	for(i=0;i<cantidadCPUS(raizCPUS);i++) //CHEQUEA CUALES SE CERRARON
-	{
-		aux=CPUPosicion(raizCPUS,i);
-		if(FD_ISSET(aux->socket,&fdACerrar))
+		pthread_mutex_lock(&MUTEXCPUS);
+		for(i=0;i<cantidadCPUS(raizCPUS);i++)
 		{
-		status=	recv(aux->socket,&buffer,sizeof(mensaje_CPU_PL),MSG_PEEK | MSG_DONTWAIT);
-		if(status==0){
-			close(aux->socket);
-			pthread_mutex_lock(&MUTEXLOG);
-			log_info(log,"CPU %d Desconectado",aux->id);
-			pthread_mutex_unlock(&MUTEXLOG);
-			eliminarCPU(aux->id,&SEMAFOROCPUSLIBRES,&raizCPUS);
+			FD_SET(socketCPUPosicion(raizCPUS,i),&fdLeer);
+			FD_SET(socketCPUPosicion(raizCPUS,i),&fdACerrar);
+			if(socketCPUPosicion(raizCPUS,i) > maximoSocket) maximoSocket=socketCPUPosicion(raizCPUS,i); //Setea el maximo numero de descriptor.
 		}
-		}
-	}
-	for(i=0;i<cantidadCPUS(raizCPUS);i++)  //CHEQUEA CUALES MANDARON COSAS
-	{	aux=CPUPosicion(raizCPUS,i);
-		if(FD_ISSET(aux->socket,&fdLeer))
+		pthread_mutex_unlock(&MUTEXCPUS);
+		select(maximoSocket+1,&fdLeer,NULL,&fdACerrar,&tiempo);
+		pthread_mutex_lock(&MUTEXCPUS);
+		for(i=0;i<cantidadCPUS(raizCPUS);i++) //CHEQUEA CUALES SE CERRARON
 		{
-		status=recibirPCBDeCPU(aux->socket,&mensajeRecibido);
-		if(status!=0){
-			if(mensajeRecibido.nuevoEstado!=USOCPU){
-			pthread_mutex_lock(&MUTEXLOG);
-			log_info(log,"PCB %d Retorna de CPU",aux->ejecutando->info.pid);
-			pthread_mutex_unlock(&MUTEXLOG);
-			}
-		interPretarMensajeCPU(&mensajeRecibido,&(aux->ejecutando),aux);
-		if(mensajeRecibido.payload!=NULL)
+			aux=CPUPosicion(raizCPUS,i);
+			if(FD_ISSET(aux->socket,&fdACerrar))
 			{
-			if(mensajeRecibido.nuevoEstado!=USOCPU){
-			printf("La rafaga fue: %s\n",mensajeRecibido.payload);
-			pthread_mutex_lock(&MUTEXLOG);
-			log_info(log,"La rafaga fue: \n %s",mensajeRecibido.payload);
-			pthread_mutex_unlock(&MUTEXLOG);
+				status=	recv(aux->socket,&buffer,sizeof(mensaje_CPU_PL),MSG_PEEK | MSG_DONTWAIT);
+				if(status==0)
+				{
+					close(aux->socket);
+					pthread_mutex_lock(&MUTEXLOG);
+					log_info(log,"CPU %d Desconectado",aux->id);
+					pthread_mutex_unlock(&MUTEXLOG);
+					eliminarCPU(aux->id,&SEMAFOROCPUSLIBRES,&raizCPUS);
+				}
 			}
+		}
+		for(i=0;i<cantidadCPUS(raizCPUS);i++)  //CHEQUEA CUALES MANDARON COSAS
+		{
+			aux=CPUPosicion(raizCPUS,i);
+			if(FD_ISSET(aux->socket,&fdLeer))
+			{
+				status=recibirPCBDeCPU(aux->socket,&mensajeRecibido);
+				if(status!=0)
+				{
+					if(mensajeRecibido.nuevoEstado!=USOCPU)
+					{
+						pthread_mutex_lock(&MUTEXLOG);
+						log_info(log,"PCB %d Retorna de CPU",aux->ejecutando->info.pid);
+						pthread_mutex_unlock(&MUTEXLOG);
+					}
+					interPretarMensajeCPU(&mensajeRecibido,&(aux->ejecutando),aux);
+					if(mensajeRecibido.payload!=NULL)
+					{
+						if(mensajeRecibido.nuevoEstado!=USOCPU)
+						{
+							//printf("La rafaga fue: %s\n",mensajeRecibido.payload);
+							pthread_mutex_lock(&MUTEXLOG);
+							log_info(log,"La rafaga fue: \n %s",mensajeRecibido.payload);
+							pthread_mutex_unlock(&MUTEXLOG);
+						}
+					}
+					if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
+					if(mensajeRecibido.nuevoEstado!=USOCPU) sem_post(&SEMAFOROCPUSLIBRES);
+				}
+				else
+				{
+					///Si TERMINA MAL EL CPU Y NO CIERRA EL SOCKET LO BORRA IGUAL
+					close(aux->socket);
+					pthread_mutex_lock(&MUTEXLOG);
+					log_info(log,"CPU %d Desconectado",aux->id);
+					pthread_mutex_unlock(&MUTEXLOG);
+					eliminarCPU(aux->id,&SEMAFOROCPUSLIBRES,&raizCPUS);
+				}
+				if(mensajeRecibido.nuevoEstado!=USOCPU)aux->ejecutando=NULL;
 			}
-		if(mensajeRecibido.payload!=NULL) free(mensajeRecibido.payload);
-
-		if(mensajeRecibido.nuevoEstado!=USOCPU) sem_post(&SEMAFOROCPUSLIBRES);
-		} else {
-									///Si TERMINA MAL EL CPU Y NO CIERRA EL SOCKET LO BORRA IGUAL
-		close(aux->socket);
-		pthread_mutex_lock(&MUTEXLOG);
-		log_info(log,"CPU %d Desconectado",aux->id);
-		pthread_mutex_unlock(&MUTEXLOG);
-		eliminarCPU(aux->id,&SEMAFOROCPUSLIBRES,&raizCPUS);
 		}
-		if(mensajeRecibido.nuevoEstado!=USOCPU)aux->ejecutando=NULL;
-		}
-	}
-	pthread_mutex_unlock(&MUTEXCPUS);
+		pthread_mutex_unlock(&MUTEXCPUS);
 	}
 	return 0;
 }
