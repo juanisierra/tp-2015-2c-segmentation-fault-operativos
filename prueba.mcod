@@ -8,12 +8,12 @@ leer 1;
 escribir 1 "";
 leer 1;
 escribir 0 "holaj";
-escribir 1 "12345";
+escribir 1 "1234";
 leer 1;
 entrada-salida 10;
 leer 0;
 leer 1;
-escribir 1 "abcdefghi";
+escribir 1 "abcd";
 leer 1;
 escribir 1 "ju"
 leer 1;

@@ -1,13 +1,13 @@
-iniciar 3;
+iniciar 5;
 escribir 2 "k";
 leer 2;
 escribir 1 "m";
 leer 1;
-entrada-salida 1;
+entrada-salida 5;
 escribir 0 "la";
 leer 0;
 entrada-salida 3;
 leer 2;
-escribir 2 "abcde";
+escribir 2 "abcd";
 leer 2;
 finalizar;

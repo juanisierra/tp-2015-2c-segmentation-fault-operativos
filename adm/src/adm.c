@@ -115,7 +115,7 @@ void tlbFlush(void)
 			}
 	pthread_mutex_unlock(&MUTEXTLB);
 	}
-	//printf("BORRE LA TLB\n");
+	printf("TLB BORRADA\n");
 	return;
 }
 int marcosOcupadosMP()
@@ -182,7 +182,7 @@ void MPFlush(void)
 		aux->marcosAsignados=0;
 		aux=aux->sgte;
 	}
-	//printf("MEMPRINCIPAL BORRADA\n");
+	printf("MEMORIA PRINCIPAL BORRADA\n");
 	pthread_mutex_unlock(&MUTEXLOG);
 	pthread_mutex_unlock(&MUTEXLP);
 	pthread_mutex_unlock(&MUTEXTM);
@@ -256,7 +256,7 @@ void atenderDump(void)
 		pthread_mutex_unlock(&MUTEXLP);
 		pthread_mutex_unlock(&MUTEXTM);
 		pthread_mutex_unlock(&MUTEXTLB);
-
+		printf("DUMP REALIZADO CON EXITO\n");
 		return;
 	}
 }
