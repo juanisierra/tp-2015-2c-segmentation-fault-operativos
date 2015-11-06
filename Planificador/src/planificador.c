@@ -305,7 +305,7 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		break;
 
 	case INVALIDO:
-		printf("RECIBO PCB INVALIDO\n");
+		//printf("RECIBO PCB INVALIDO\n");
 		(*PCB)->info.ip=mensajeRecibido->ip;
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		printf("SE LEYO TEXTO INVALIDO EN EL ARCHIVO, CERRANDO PROCESO %d\n",(*PCB)->info.pid); //CAMBIARRRR**********************
@@ -317,7 +317,7 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		break;
 
 	case ERRORINICIO:
-		printf("RECIBO PCB ERRROINICIO\n");
+		//printf("RECIBO PCB ERRROINICIO\n");
 		(*PCB)->info.ip=mensajeRecibido->ip;
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		printf("No hay espacio suficiente en el swap para el proceso %d \n",(*PCB)->info.pid); //CAMBIARRRR**********************
@@ -329,7 +329,7 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		break;
 
 	case ERRORMARCO:
-		printf("RECIBO PCB ERRORMARCO\n");
+		//printf("RECIBO PCB ERRORMARCO\n");
 		(*PCB)->info.ip=mensajeRecibido->ip;
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		printf("Error de marcos del proceso %d \n",(*PCB)->info.pid);
@@ -374,9 +374,9 @@ int hiloServidor(void)
 	while(1) //FALTA CONDICION DE CORTE
 	{
 		////***************************CREACION DEL CPU********************
-		printf("esperando Otro\n");
+		//printf("esperando Otro\n");
 		socketCPU = accept(socketEscucha, (struct sockaddr *) &addr, &addrlen);
-		printf("Por agrega CPU\n");
+		//printf("Se conecto un nuevo CPU\n");
 		agregarCPU(&MUTEXCPUS,cuentaCPU,socketCPU,&raizCPUS);
 		cuentaCPU++;
 		pthread_mutex_lock(&MUTEXLOG);
@@ -395,16 +395,16 @@ int hiloEnvios (void)
 	while(1) //FALTA CONDICION
 	{
 		sem_wait(&SEMAFOROLISTOS);
-		printf("Hay Proceso libreS\n"); ////-------------------
+		//printf("Hay Proceso libreS\n"); ////-------------------
 		sem_wait(&SEMAFOROCPUSLIBRES);
-		printf("Hay CPUS LIBRES\n"); ////-------------------
+		//printf("Hay CPUS LIBRES\n"); ////-------------------
 		pthread_mutex_lock(&MUTEXLISTOS);
 		pthread_mutex_lock(&MUTEXCPUS);
 		cpuAEnviar=primerCPULibre(raizCPUS);
 		cpuAEnviar->ejecutando=sacarNodoPCB(&raizListos);
 		cpuAEnviar->ejecutando->info.estado=EJECUTANDO;
 		gettimeofday(&(cpuAEnviar->ejecutando->info.t_entrada_cpu),NULL); //SETEA EL TIEMPO EN QUE SE ENVIA A EJECUTAR
-		printf("\nPor enviar a ejecutar a CPU %d: Path: %s Pid: %d\n",cpuAEnviar->id,cpuAEnviar->ejecutando->info.path,cpuAEnviar->ejecutando->info.pid);
+		//printf("\nPor enviar a ejecutar a CPU %d: Path: %s Pid: %d\n",cpuAEnviar->id,cpuAEnviar->ejecutando->info.path,cpuAEnviar->ejecutando->info.pid);
 		pthread_mutex_unlock(&MUTEXLISTOS);
 		pthread_mutex_lock(&MUTEXLOG);
 		loggearColas();

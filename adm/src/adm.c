@@ -18,7 +18,6 @@
 #define RUTACONFIG "configuracion"
 #define TAMANIOMAXIMOTEXTO 200
 #define TAMANIOMAXIMOLINEA 200
-#define RUTACONFIG "configuracion"
 #define ARCHIVOLOG "ADM.log"
 config_ADM configuracion;
 int aciertosTLB;
