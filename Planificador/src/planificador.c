@@ -224,10 +224,9 @@ void hiloBloqueados(void)
 			gettimeofday(&(PCBBloqueado->info.t_es),NULL);
 		}
 		gettimeofday(&auxHora,NULL);
-		PCBBloqueado->info.t_espera=PCBBloqueado->info.t_espera + difftime(auxHora.tv_sec,PCBBloqueado->info.t_entrada_es.tv_sec);
-		PCBBloqueado->info.t_entrada_es.tv_sec=0;
 		pthread_mutex_unlock(&MUTEXBLOQUEADOS);  //MUTEX DENTRO DE MUTEX!!!!!!!!!!!!!!!!!
 		sleep(PCBBloqueado->info.bloqueo);
+		gettimeofday(&(PCBBloqueado->info.t_entrada_listo),NULL); //GUARDAMOS EL TIEMPO DE ENTRADA A LA COLA DE LISTOS
 		pthread_mutex_lock(&MUTEXPROCESOBLOQUEADO);
 		PCBBloqueado->info.bloqueo=0;
 		PCBBloqueado->info.estado=LISTO;
@@ -261,6 +260,7 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 			(*PCB)->info.ip=mensajeRecibido->ip;
 		}
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
+		gettimeofday(&((*PCB)->info.t_entrada_listo),NULL); //GUARDAMOS EL TIEMPO DE ENTRADA A LA COLA DE LISTOS
 		pthread_mutex_lock(&MUTEXLISTOS);					//MUTEX ADENTRO DE OTRO< CUIDADOOO, ADEMAS CAMBIAR PARA MUCHOS CPU
 		agregarNodoPCB(&raizListos,*PCB);
 		pthread_mutex_unlock(&MUTEXLISTOS);
@@ -294,7 +294,7 @@ void interPretarMensajeCPU(mensaje_CPU_PL* mensajeRecibido,nodoPCB** PCB,nodo_Li
 		{
 			(*PCB)->info.ip=mensajeRecibido->ip;
 		}
-		gettimeofday(&((*PCB)->info.t_entrada_es),NULL); //GUARDAMOS EL TIEMPO DE ENTRADA A LA COLA DE ES
+
 		(*PCB)->info.estado=mensajeRecibido->nuevoEstado;
 		(*PCB)->info.bloqueo=mensajeRecibido->tiempoBloqueo;
 		pthread_mutex_lock(&MUTEXBLOQUEADOS);
@@ -403,6 +403,10 @@ int hiloEnvios (void)
 		cpuAEnviar=primerCPULibre(raizCPUS);
 		cpuAEnviar->ejecutando=sacarNodoPCB(&raizListos);
 		cpuAEnviar->ejecutando->info.estado=EJECUTANDO;
+		gettimeofday(&(auxHora),NULL);
+		cpuAEnviar->ejecutando->info.t_espera=cpuAEnviar->ejecutando->info.t_espera + difftime(auxHora.tv_sec,cpuAEnviar->ejecutando->info.t_entrada_listo.tv_sec);
+		//printf("Tiempo de espera: %d\n",cpuAEnviar->ejecutando->info.t_espera);
+		cpuAEnviar->ejecutando->info.t_entrada_listo.tv_sec=0;
 		gettimeofday(&(cpuAEnviar->ejecutando->info.t_entrada_cpu),NULL); //SETEA EL TIEMPO EN QUE SE ENVIA A EJECUTAR
 		//printf("\nPor enviar a ejecutar a CPU %d: Path: %s Pid: %d\n",cpuAEnviar->id,cpuAEnviar->ejecutando->info.path,cpuAEnviar->ejecutando->info.pid);
 		pthread_mutex_unlock(&MUTEXLISTOS);
@@ -521,7 +525,7 @@ int main()
 	pthread_create(&hServer,NULL,hiloServidor,NULL);
 	pthread_create(&hEnvios,NULL,hiloEnvios,NULL); //VER JOINS
 	pthread_create(&hBloqueados,NULL,hiloBloqueados,NULL); //VER JOINS
-	printf("Por crear hilo Recibir\n");
+	//printf("Por crear hilo Recibir\n");
 	pthread_create(&hRecibir,NULL,hiloRecibir,NULL);
 	pthread_create(&hConsola,NULL,hiloConsola,NULL); //****************CREO LA CONSOLA
 	pthread_join(hConsola,NULL); //EL CPU 1 no tiene join, no funciona el devolver porqe no esta esperando.
@@ -537,19 +541,19 @@ int main()
 	//pthread_mutex_lock(&MUTEXLISTOS);
 	eliminarListaPCB(&raizListos);
 	//pthread_mutex_unlock(&MUTEXLISTOS);
-	printf("Borre la lista de listos\n");
+	//printf("Borre la lista de listos\n");
 	//pthread_mutex_lock(&MUTEXBLOQUEADOS);
 	eliminarListaPCB(&raizBloqueados);
 	//pthread_mutex_unlock(&MUTEXBLOQUEADOS); //FINALIZAR SIN UNLOCK???
-	printf("Borre la lista de bloqueados\n");
+	//printf("Borre la lista de bloqueados\n");
 	//pthread_mutex_lock(&MUTEXCPUS);
 	eliminarListaCPU(&raizCPUS);
 	//pthread_mutex_unlock(&MUTEXCPUS);
-	printf("Borre la lista de CPUS\n");
+	//printf("Borre la lista de CPUS\n");
 	//pthread_mutex_lock(&MUTEXPROCESOBLOQUEADO);
 	if(PCBBloqueado!=NULL) free(PCBBloqueado);
 	//pthread_mutex_unlock(&MUTEXPROCESOBLOQUEADO);
-	printf("Borre el bloqueado\n");
+	//printf("Borre el bloqueado\n");
 	pthread_mutex_destroy(&MUTEXLISTOS);
 	pthread_mutex_destroy(&MUTEXBLOQUEADOS);
 	pthread_mutex_destroy(&MUTEXPROCESOBLOQUEADO);
@@ -559,7 +563,7 @@ int main()
 	sem_destroy(&SEMAFOROLISTOS);
 	sem_destroy(&SEMAFOROBLOQUEADOS);
 	close(socketEscucha); //DEJO DE ESCUCHAR AL FINALIZAR LA CONSOLA
-	printf("cierro socket escucha\n");
+	//printf("cierro socket escucha\n");
 	log_info(log,"******************************************************************Proceso Planificador finalizado ******************************************************************\n");
 	log_destroy(log);
 	return 0;

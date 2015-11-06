@@ -32,6 +32,7 @@ nodoPCB* crearNodoPCB(int pid,char path[])
 	nuevoNodo->info.t_es.tv_usec=0;
 	nuevoNodo->info.t_espera=0;
 	gettimeofday(&(nuevoNodo->info.t_inicio),NULL);
+	gettimeofday(&(nuevoNodo->info.t_entrada_listo),NULL);
 	nuevoNodo->info.bloqueo=0;
 	nuevoNodo->info.estado=LISTO;
 	nuevoNodo->info.ip=0;
@@ -331,7 +332,7 @@ void agregarCPU(pthread_mutex_t* mutexCPU,int cuentaCPU, int socket,nodo_Lista_C
 	aAgregar->ejecutando=NULL;
 	aAgregar->finalizar=0;
 	pthread_mutex_unlock(mutexCPU);
-	printf("Posteo de semaforoCPULIBRES\n");
+	//printf("Posteo de semaforoCPULIBRES\n");
 	return;
 }
 nodo_Lista_CPU* buscarCPU(int id,nodo_Lista_CPU* raiz)
@@ -400,10 +401,10 @@ nodo_Lista_CPU*CPUPosicion(nodo_Lista_CPU* raiz,int posicion)
 void eliminarListaCPU(nodo_Lista_CPU**raiz)
 {
 	nodo_Lista_CPU* aux;
-	printf("Entrando a ultimonodoCPU\n");
+	//printf("Entrando a ultimonodoCPU\n");
 	aux=ultimoNodoCPU(*raiz);
 	while(aux!=NULL && aux->ant!=NULL)
-	{	printf("POR ELIMINAR CPU\n");
+	{	//printf("POR ELIMINAR CPU\n");
 		aux=aux->ant;
 		if(aux->sgte->ejecutando!=NULL)
 		{

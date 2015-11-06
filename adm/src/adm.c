@@ -567,7 +567,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 	pthread_mutex_lock(&MUTEXLOG);
 	log_info(log,"Se va a reemplazar el marco N: %d",aReemplazar);
 	pthread_mutex_unlock(&MUTEXLOG);
-	if(tMarcos[aReemplazar].indice!=-1 && tMarcos[aReemplazar].modif==1) //LA ENTRADA HAY QUE GUARDARLA EN SWAP PRIMERO
+	if(tMarcos[aReemplazar].indice!=-1 && tMarcos[aReemplazar].pid!=-1 && tMarcos[aReemplazar].modif==1) //LA ENTRADA HAY QUE GUARDARLA EN SWAP PRIMERO
 	{
 		//printf("VOY A REEMPLAXAR MARCO MODIFICADO\n");
 		pthread_mutex_lock(&MUTEXLOG);
@@ -852,6 +852,15 @@ int main()
 			else
 			{
 				//SOPORTAR ERROR AL LEER POR MAXIMO DE MARCOS DEVUELVE -1
+				printf("Error de marcos pid %d\n",mensajeARecibir.pid);
+				log_error(log,"Error de marcos pid %d",mensajeARecibir.pid);
+				mensajeParaSWAP.pid=mensajeARecibir.pid;
+				mensajeParaSWAP.instruccion=FINALIZAR;
+				mensajeParaSWAP.parametro=0;
+				mensajeParaSWAP.contenidoPagina=NULL;
+				enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+				recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+				eliminarProceso(mensajeARecibir.pid);
 				mensajeAMandar.parametro =-1;
 				mensajeAMandar.tamanoMensaje =0;
 				mensajeAMandar.texto =NULL;
@@ -866,7 +875,7 @@ int main()
 			marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
 			if(marcoAUsar!=-4)
 			{
-				if(tMarcos[marcoAUsar].modif==1)
+				if(tMarcos[marcoAUsar].modif==1 && tMarcos[marcoAUsar].indice!=-1 && tMarcos[marcoAUsar].pid!=-1)
 				{
 					mensajeParaSWAP.pid=tMarcos[marcoAUsar].pid;
 					mensajeParaSWAP.instruccion=ESCRIBIR;
@@ -915,11 +924,19 @@ int main()
 			}
 			else
 			{
-				//MANEJAR ERROR DE CANT MARCOS
-				mensajeAMandar.parametro =-1;
-				mensajeAMandar.tamanoMensaje =0;
-				mensajeAMandar.texto =NULL;
-				enviarInstruccionACPU(socketCPU, &mensajeAMandar);
+				printf("Error de marcos pid %d\n",mensajeARecibir.pid);
+							log_error(log,"Error de marcos pid %d",mensajeARecibir.pid);
+							mensajeParaSWAP.pid=mensajeARecibir.pid;
+							mensajeParaSWAP.instruccion=FINALIZAR;
+							mensajeParaSWAP.parametro=0;
+							mensajeParaSWAP.contenidoPagina=NULL;
+							enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO);
+							recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
+							eliminarProceso(mensajeARecibir.pid);
+							mensajeAMandar.parametro =-1;
+							mensajeAMandar.tamanoMensaje =0;
+							mensajeAMandar.texto =NULL;
+							enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 			}
 		}
 		if(mensajeARecibir.instruccion ==FINALIZAR)

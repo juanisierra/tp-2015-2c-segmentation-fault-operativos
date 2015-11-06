@@ -275,7 +275,7 @@ int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPag
 } */
 
 int enviarDeADMParaSwap(int socket, mensaje_ADM_SWAP* mensajeAEnviar, int tamPagina)//del adm al swap
-{
+{	//printf("ENVIO PID %d\n INS: %d pagina: %d",mensajeAEnviar->pid,mensajeAEnviar->instruccion,mensajeAEnviar->parametro);
 	int resultado;
 	void* buffer =NULL;
 

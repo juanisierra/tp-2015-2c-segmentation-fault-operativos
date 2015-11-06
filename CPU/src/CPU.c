@@ -96,6 +96,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		if(mensajeDeADM.parametro == -1)
 		{
 			(*estado) = ERRORMARCO;
+			(*finArchivo) = 1;
 		}
 		else
 		{
@@ -119,6 +120,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		if(mensajeDeADM.parametro == -1)
 		{
 			(*estado) = ERRORMARCO;
+			(*finArchivo) = 1;
 		}
 		else
 		{
@@ -244,12 +246,12 @@ void hiloCPU(void* datoCPUACastear)
 		log_info("CPU: %d Rafaga del mProc cuyo PID es %d concluida.", datos_CPU.id, datos_CPU.pid);
 		pthread_mutex_unlock(&mutexLog);
 	}
-	printf("Terminando Hilo de CPU\n");
+	//printf("Terminando Hilo de CPU\n");
 	pthread_mutex_lock(&mutexLog);
-	log_info("Terminando hilo de CPU %d", datos_CPU.id);
+	//log_info("Terminando hilo de CPU %d", datos_CPU.id);
 	pthread_mutex_unlock(&mutexLog);
 	close(datos_CPU.socket);
-	printf("Cerrando socket\n");
+	//printf("Cerrando socket\n");
 	return;
 }
 
@@ -295,7 +297,7 @@ int main(void)
 	log_info(log, "Proceso conectado con el ADM", i);
 	for(i = 0;i < configuracion.CANTIDAD_HILOS; i++) // Vamos creando un hilo por cada CPU.
 	{
-		printf("creando CPU %d\n",i);
+		//printf("creando CPU %d\n",i);
 		CPUs[i].id = i;
 		if((CPUs[i].socket = crearSocketCliente(configuracion.IP_PLANIFICADOR,configuracion.PUERTO_PLANIFICADOR))<0) // ponemos el socket de cada CPU
 		{

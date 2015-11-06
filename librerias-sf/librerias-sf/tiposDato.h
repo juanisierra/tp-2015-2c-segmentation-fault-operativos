@@ -24,7 +24,7 @@ typedef enum{LISTO, EJECUTANDO, BLOQUEADO , AFINALIZAR,INVALIDO, ERRORINICIO,ERR
         struct timeval t_es; //HORA A LA QE HACE SU PRIMERA E/S, si esta en 0 no hizo ninguna
         double suma_t_cpu; //SUMA DE TIEMPOS DE CPU
         double t_espera; //SUMA DE TIEMPO ESPERANDO E/S
-        struct timeval t_entrada_es; //Hora en la que entra a la cola de e/s
+        struct timeval t_entrada_listo; //Hora en la que entra a la cola de listos
         struct timeval t_entrada_cpu; //Hora en la que entra a CPU
     } pcb;
   typedef struct NodoPCB_t

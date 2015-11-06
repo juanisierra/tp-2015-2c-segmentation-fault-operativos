@@ -294,7 +294,7 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 		}
 	}
 	int exito= agregarOcupado(pid, cantPag, inicio);
-	log_info(log, "Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u", cantPag*configuracion.TAMANIO_PAGINA, pid, inicio-1); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
+	log_info(log, "Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u", cantPag*configuracion.TAMANIO_PAGINA, pid, (inicio-1)*configuracion.TAMANIO_PAGINA); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
 	return exito;
 }
 
@@ -669,12 +669,13 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 
 	case FINALIZAR:
 		aBorrar=ocupadoRaiz;
+
 		while (aBorrar && aBorrar->pid != mensaje.pid) aBorrar= aBorrar->sgte;
 		aEnviar.contenidoPagina=NULL;
 		if(!aBorrar)
 		{
-			printf ("El proceso no se encuentra en el swap \n");
-			log_error(log, "El proceso no se encuentra en el swap");
+			printf ("El proceso %d no se encuentra en el swap \n",mensaje.pid);
+			log_error(log, "El proceso %d no se encuentra en el swap",mensaje.pid);
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			int i=enviarDeSwapAlADM(socketcito,&aEnviar,configuracion.TAMANIO_PAGINA);
@@ -696,7 +697,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		while(aLeer && aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
 		if(!aLeer)
 		{
-			printf ("El proceso no se encuentra en el swap \n");
+			printf ("El proceso %d no se encuentra en el swap \n",mensaje.pid);
+
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 			aEnviar.contenidoPagina=NULL;
@@ -721,7 +723,8 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		aEnviar.contenidoPagina=NULL;
 		if(!aEscribir)
 		{
-			printf ("El proceso no se encuentra en el swap \n");
+			printf ("El proceso %d no se encuentra en el swap \n",mensaje.pid);
+			log_error(log, "El proceso %d no se encuentra en el swap \n",mensaje.pid);
 			aEnviar.estado=1;
 			aEnviar.instruccion=mensaje.instruccion;
 
