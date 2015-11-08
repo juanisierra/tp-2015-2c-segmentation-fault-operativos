@@ -156,6 +156,5 @@ typedef struct tMarco_t { //Registro de la tabla de marcos
 	int nPag;
 	int indice; //-1 si esta libre
 	int modif; // 0 no, 1 si
-	char* contenido;  //Debemos hacer un malloc del tamanio elegido de marcos al principio.
 } tMarco;
 #endif /* LIBRERIAS_SF_TIPOSDATO_H_ */

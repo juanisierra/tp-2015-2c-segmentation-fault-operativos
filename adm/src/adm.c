@@ -25,6 +25,7 @@ int fallosTLB;
 int indiceTLB;
 int indiceMarcos;
 int indiceClockM; //es el indice de lectura actual en clock m para reemplazo de paginas
+char* memoria;
 nodoListaTP* raizTP;
 tlb* TLB;
 tMarco* tMarcos;
@@ -89,14 +90,15 @@ int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
 		for(i=0;i<(configuracion.CANTIDAD_MARCOS);i++) //Inicia los marcos con el tamanio de cada uno.
 		{
 			tMarcos[i].indice=-1; //Inicializamos todos los marcos como libres
-			tMarcos[i].contenido=malloc(configuracion.TAMANIO_MARCO);
-			if (tMarcos[i].contenido==NULL) fallo=-1;
 		}
 	}
 	else
 	{
 		fallo=-1;
 	}
+	memoria=malloc((sizeof(char)*(configuracion.TAMANIO_MARCO))*configuracion.CANTIDAD_MARCOS);
+	printf("TAMANIO MEM: %d\n",((configuracion.TAMANIO_MARCO))*configuracion.CANTIDAD_MARCOS);
+	if(memoria==NULL) fallo =-1;
 	raizTP=NULL;
 	if(fallo==0) //printf("Tablas iniciadas\n");
 	return fallo;
@@ -149,7 +151,7 @@ void MPFlush(void)
 				mensajeParaSWAP.parametro=tMarcos[i].nPag;
 				mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
 				//strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[i].contenido);
-				memcpy(mensajeParaSWAP.contenidoPagina,tMarcos[i].contenido,configuracion.TAMANIO_MARCO);
+				memcpy(mensajeParaSWAP.contenidoPagina,&memoria[i*configuracion.TAMANIO_MARCO],configuracion.TAMANIO_MARCO);
 				enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO); //MANDA LAPAGINA A ESCRIBIRSE
 				if(mensajeParaSWAP.contenidoPagina!=NULL)
 				{
@@ -223,7 +225,6 @@ int marcosLibres(void) //CUENTA MRACOS LIBRES PARA ERROR DE MARCO
 }
 void atenderDump(void)
 {
-	//printf("POR ATENDER DUMP\n");
 	int pid;
 	pthread_mutex_lock(&MUTEXLP);
 	pthread_mutex_lock(&MUTEXTM);
@@ -237,17 +238,21 @@ void atenderDump(void)
 	}
 	if(pid==0)//PROCESO HIJO
 	{	int i;
+	char * contenido;
+	contenido = malloc((configuracion.TAMANIO_MARCO*sizeof(char))+1);
 	log_info(log,"\t\t\t\t******DUMP DE MEMORIA*******");
 	log_info(log,"\t\t\t\t Marcos Libres: %d   Marcos Ocupados: %d",configuracion.CANTIDAD_MARCOS-marcosOcupadosMP(),marcosOcupadosMP());
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 		{
 			if(tMarcos[i].indice!=-1)
 			{
-			log_info(log,"Marco: %d \t\t PID: %d  \t\t Pagina: %d \t\t  Contenido: %s",i,tMarcos[i].pid,tMarcos[i].nPag,tMarcos[i].contenido);
+				memcpy(contenido,&memoria[i*configuracion.TAMANIO_MARCO],configuracion.TAMANIO_MARCO);
+				contenido[configuracion.TAMANIO_MARCO]='\0';
+			log_info(log,"Marco: %d \t\t PID: %d  \t\t Pagina: %d \t\t  Contenido: %s",i,tMarcos[i].pid,tMarcos[i].nPag,contenido);
 			}
 		}
 		log_info(log,"\t\t\t\t\t***********FIN************");
-
+		free(contenido);
 		exit(0);
 	} else {
 
@@ -358,7 +363,6 @@ int entradaTMarcoAReemplazar(int pid) //FALTA IMPLEMENTACION PARA CLOCK M
 
 	if(configuracion.ALGORITMO_REEMPLAZO==2) //CLOCK-M
 	{
-		//printf("BUSCO PAGINA A REEMPLAZAR CON CLOCK-M\n");
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //PRIMERO CHEQUEO LAS LIBRES
 				{
 					if(tMarcos[i].indice==-1) return i;
@@ -446,7 +450,6 @@ void eliminarProceso(int pid)
 		if(aEliminar->ant!=NULL) aEliminar->ant->sgte=aEliminar->sgte;
 		if(aEliminar->tabla!=NULL) free(aEliminar->tabla);
 		aEliminar->tabla=NULL;
-		//printf("TERMINO Y ELMINO EL PROCEO %d\n",aEliminar->pid);
 		free(aEliminar);
 		aEliminar=NULL;
 	}
@@ -523,16 +526,12 @@ void finalizarTablas(void)
 	TLB=NULL;
 	if(tMarcos!=NULL)
 	{
-		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
-		{
-			if(tMarcos[i].contenido!=NULL)
-				{
-					free(tMarcos[i].contenido);
-					tMarcos[i].contenido=NULL;
-				}
-		}
 		free(tMarcos);
 		tMarcos=NULL;
+	}
+	if(memoria!=NULL) {
+		free(memoria);
+		memoria=NULL;
 	}
 	if(raizTP!=NULL) finalizarListaTP();
 	//printf("Tablas finalizadas\n");
@@ -578,7 +577,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 		mensajeParaSWAP.parametro=tMarcos[aReemplazar].nPag;
 		mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
 		//strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[aReemplazar].contenido);
-		memcpy(mensajeParaSWAP.contenidoPagina,tMarcos[aReemplazar].contenido,configuracion.TAMANIO_MARCO);
+		memcpy(mensajeParaSWAP.contenidoPagina,&memoria[aReemplazar*configuracion.TAMANIO_MARCO],configuracion.TAMANIO_MARCO);
 		enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO); //MANDA LAPAGINA A ESCRIBIRSE
 		if(mensajeParaSWAP.contenidoPagina!=NULL)
 		{
@@ -597,7 +596,6 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 	}
 	if(tMarcos[aReemplazar].indice!=-1 && tMarcos[aReemplazar].modif==0) //SI NO HAY QUE GUARDAR LA PAG PERO SI BORRAR OS DATOS
 	{
-		//printf("VOY A REEMPLAXAR MARCO NO MODIFICADO\n");
 		pthread_mutex_lock(&MUTEXLOG);
 		log_info(log,"El marco reemplazado no habia sido modificado");
 		pthread_mutex_unlock(&MUTEXLOG);
@@ -609,7 +607,6 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 			TLB[entradaTLBVieja].indice=-1; //BORRA SU ENTRADA EN LA TLB
 		}
 	}
-	//printf("USO MARCO LIBRE\n");
 	//PEDIMOS PAGINA BUSCADA AL SWAP
 	pthread_mutex_lock(&MUTEXLOG);
 	log_info(log,"Se solicita al SWAP la pagina %d del proceso de PID: %d",pagina,pid);
@@ -625,8 +622,9 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 		mensajeParaSWAP.contenidoPagina=NULL;
 	}
 	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
-	//strcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina); ///ESCRIOBIMOS LA PAGINA
-	memcpy(tMarcos[aReemplazar].contenido,mensajeDeSWAP.contenidoPagina,configuracion.TAMANIO_MARCO);
+
+	printf("MARCO %d BYTE: %d\n",aReemplazar,(aReemplazar*configuracion.TAMANIO_MARCO));
+	memcpy(&memoria[aReemplazar*configuracion.TAMANIO_MARCO],mensajeDeSWAP.contenidoPagina,configuracion.TAMANIO_MARCO);
 	if(mensajeDeSWAP.contenidoPagina!=NULL)
 	{
 		free(mensajeDeSWAP.contenidoPagina);
@@ -705,11 +703,6 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS,
 	}
 	if(ubicada==-1) //HAY QUE TRAERLA DEL SWAP
 	{
-		/*if(nodo->marcosAsignados>=configuracion.MAXIMO_MARCOS_POR_PROCESO)
-		{	aux=entradaTMarcoAReemplazar(); //Vemos cual seria la proxima que se reemplazaria
-			if(tMarcos[aux].pid!=pid) return -4; //SI EL PROCESO NO PUEDE TENER MAS DEVUELVE ERROR, chequeo que la proxima a sacar no sea de este proceso.
-		}
-		*/
 		if(nodo->marcosAsignados==0 && marcosLibres()==0) return -4; //NO TIENE MARCOS Y NO HAY PARA DARLE, ERROR DE MARCO
 		nodo->cantFallosPag++;
 		ubicada=reemplazarMarco(pid,numPag); //CAMBIA EL MARCO Y DEVUELVE EL NUMERO
@@ -730,7 +723,11 @@ void TasaAciertos(void)
 	while(1)
 	{
 		sleep(60);
+		if((aciertosTLB+fallosTLB)>0) {
 		tasaAciertos=(aciertosTLB)*100/(aciertosTLB+fallosTLB);
+		} else {
+			tasaAciertos=0;
+		}
 		printf("La tasa de aciertos de la TLB es del %d %%\n",tasaAciertos);
 	}
 }
@@ -839,14 +836,10 @@ int main()
 			{
 				sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A LEER
 				mensajeAMandar.parametro=mensajeARecibir.parametro;
-				//mensajeAMandar.tamanoMensaje = strlen(tMarcos[marcoAUsar].contenido) +1; VIEJOOO
 				mensajeAMandar.tamanoMensaje=configuracion.TAMANIO_MARCO+1;
-				//mensajeAMandar.texto=malloc(mensajeAMandar.tamanoMensaje);
 				mensajeAMandar.texto=malloc(configuracion.TAMANIO_MARCO+1);
-				//strcpy(mensajeAMandar.texto,tMarcos[marcoAUsar].contenido); /// NO SIRVE CON LAS A PORUQE NO LLEVAN /0
-				memcpy(mensajeAMandar.texto,tMarcos[marcoAUsar].contenido,configuracion.TAMANIO_MARCO);
+				memcpy(mensajeAMandar.texto,&memoria[marcoAUsar*configuracion.TAMANIO_MARCO],configuracion.TAMANIO_MARCO);
 				mensajeAMandar.texto[configuracion.TAMANIO_MARCO]='\0'; // PONE UN BARRA CERO POR LAS DUDAS AL FINAL
-				//if(mensajeAMandar.texto!=NULL) printf("EL CONTENIDO DE LA PAGINA ES %s \n",mensajeAMandar.texto);
 				enviarInstruccionACPU(socketCPU, &mensajeAMandar);
 			}
 			else
@@ -881,8 +874,7 @@ int main()
 					mensajeParaSWAP.instruccion=ESCRIBIR;
 					mensajeParaSWAP.parametro=tMarcos[marcoAUsar].nPag;
 					mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
-					//strcpy(mensajeParaSWAP.contenidoPagina,tMarcos[marcoAUsar].contenido);
-					memcpy(mensajeParaSWAP.contenidoPagina,tMarcos[marcoAUsar].contenido,configuracion.TAMANIO_MARCO);
+					memcpy(mensajeParaSWAP.contenidoPagina,&memoria[marcoAUsar*configuracion.TAMANIO_MARCO],configuracion.TAMANIO_MARCO);
 					enviarDeADMParaSwap(socketSWAP,&mensajeParaSWAP,configuracion.TAMANIO_MARCO); //MANDA LAPAGINA A ESCRIBIRSE
 					if(mensajeParaSWAP.contenidoPagina!=NULL)
 					{
@@ -891,28 +883,26 @@ int main()
 					}
 					recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 					if(mensajeDeSWAP.contenidoPagina!=NULL) free(mensajeDeSWAP.contenidoPagina);
-					//strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
 					if(mensajeARecibir.tamTexto<=configuracion.TAMANIO_MARCO)
 					{
-						memcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto,mensajeARecibir.tamTexto);
+						memcpy(&memoria[marcoAUsar*configuracion.TAMANIO_MARCO],mensajeARecibir.texto,mensajeARecibir.tamTexto);
 					}
 					else
 					{
-						memcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto,configuracion.TAMANIO_MARCO);
+						memcpy(&memoria[marcoAUsar*configuracion.TAMANIO_MARCO],mensajeARecibir.texto,configuracion.TAMANIO_MARCO);
 					}
 					tMarcos[marcoAUsar].modif=1;
 					sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A ESCRIBIR
 				}
 				if(tMarcos[marcoAUsar].modif==0)
 				{
-					//strcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto);
 					if(mensajeARecibir.tamTexto<=configuracion.TAMANIO_MARCO)
 					{
-						memcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto,mensajeARecibir.tamTexto);
+						memcpy(&memoria[marcoAUsar*configuracion.TAMANIO_MARCO],mensajeARecibir.texto,mensajeARecibir.tamTexto);
 					}
 					else
 					{
-						memcpy(tMarcos[marcoAUsar].contenido,mensajeARecibir.texto,configuracion.TAMANIO_MARCO);
+						memcpy(&memoria[marcoAUsar*configuracion.TAMANIO_MARCO],mensajeARecibir.texto,configuracion.TAMANIO_MARCO);
 					}
 					tMarcos[marcoAUsar].modif=1;
 					sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A ESCRIBIR
