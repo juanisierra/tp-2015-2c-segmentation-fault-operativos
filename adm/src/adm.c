@@ -90,6 +90,7 @@ int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
 		for(i=0;i<(configuracion.CANTIDAD_MARCOS);i++) //Inicia los marcos con el tamanio de cada uno.
 		{
 			tMarcos[i].indice=-1; //Inicializamos todos los marcos como libres
+			tMarcos[i].pid=-1;
 		}
 	}
 	else
@@ -351,7 +352,7 @@ int entradaTMarcoAReemplazar(int pid) //FALTA IMPLEMENTACION PARA CLOCK M
 	{
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 		{
-			if(tMarcos[i].indice==-1) return i;
+			if(nodo->marcosAsignados<configuracion.MAXIMO_MARCOS_POR_PROCESO && tMarcos[i].indice==-1) return i; //SI SE LE PUEDEN DAR LIBRES Y HAY LE DA
 			//REEMPLAZO LOCAL
 			if(tMarcos[i].pid==pid && tMarcos[i].indice<=tMarcos[posMenor].indice) posMenor=i;
 		}
@@ -362,11 +363,12 @@ int entradaTMarcoAReemplazar(int pid) //FALTA IMPLEMENTACION PARA CLOCK M
 
 
 	if(configuracion.ALGORITMO_REEMPLAZO==2) //CLOCK-M
-	{
+	{	if(nodo->marcosAsignados<configuracion.MAXIMO_MARCOS_POR_PROCESO) { //BUSCA QUE PUEDAN DARLE UN MARCO LIBRE
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++) //PRIMERO CHEQUEO LAS LIBRES
 				{
 					if(tMarcos[i].indice==-1) return i;
 				}
+	}
 		//NO HAY LIBRES, CORRO EL PRIMER RECORRIDO, SIN CAMBIAR U BUSCO U=0(INDICE) y M=0 (MODIF)
 		for(j=0;j<2;j++){ //SI NO ENCUENTRA EL ULTIMO LOOP ENTRA DENUEVO PARA HACER EL 1 y 2, si con 2 repeticiones no encuentra, hay un erro de impelemtnacion
 		for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
@@ -623,7 +625,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 	}
 	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 
-	printf("MARCO %d BYTE: %d\n",aReemplazar,(aReemplazar*configuracion.TAMANIO_MARCO));
+	printf("ASGINADOS: %d MARCO %d BYTE: %d\n",nodoProceso->marcosAsignados,aReemplazar,(aReemplazar*configuracion.TAMANIO_MARCO));
 	memcpy(&memoria[aReemplazar*configuracion.TAMANIO_MARCO],mensajeDeSWAP.contenidoPagina,configuracion.TAMANIO_MARCO);
 	if(mensajeDeSWAP.contenidoPagina!=NULL)
 	{
