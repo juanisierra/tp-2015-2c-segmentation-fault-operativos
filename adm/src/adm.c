@@ -98,7 +98,6 @@ int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
 		fallo=-1;
 	}
 	memoria=malloc((sizeof(char)*(configuracion.TAMANIO_MARCO))*configuracion.CANTIDAD_MARCOS);
-	printf("TAMANIO MEM: %d\n",((configuracion.TAMANIO_MARCO))*configuracion.CANTIDAD_MARCOS);
 	if(memoria==NULL) fallo =-1;
 	raizTP=NULL;
 	if(fallo==0) //printf("Tablas iniciadas\n");
