@@ -15,6 +15,7 @@
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
 #define ARCHIVOLOG "Swap.log"
+#define RELLENO '\0'//con este caracter rellenamos el archivo de swap
 
 //****** VARIABLES GLOBALES ******
 FILE* archivo;
@@ -78,6 +79,15 @@ int iniciarConfiguracion(void)
 		printf("Nombre del Archivo de SWAP: %s \n", configuracion.NOMBRE_SWAP);
 		printf("Cantidad de Paginas: %d \n",configuracion.CANTIDAD_PAGINAS);
 		printf("Tamanio de Pagina: %d \n",configuracion.TAMANIO_PAGINA);
+		if(configuracion.COMPACTACION_INTELIGENTE)
+		{
+			printf("Compactacion inteligente activada \n");
+		}
+		else
+		{
+			printf("Compactacion inteligente desactivada \n");
+		}
+		printf("Caracter de relleno: %c \n",configuracion.CARACTER_RELLENO);
 		printf("Retardo de Compactacion: %d \n \n",configuracion.RETARDO_COMPACTACION);
 		return 0;
 	}
@@ -87,7 +97,7 @@ int iniciarConfiguracion(void)
 void inicializarArchivo(void)
 {//lo llenamos con el caracter correspondiente
     int tamanioArchivo=(configuracion.CANTIDAD_PAGINAS)*(configuracion.TAMANIO_PAGINA);
-    char* s = string_repeat('\0', tamanioArchivo);
+    char* s = string_repeat(configuracion.CARACTER_RELLENO, tamanioArchivo);
     fprintf(archivo,"%s", s);
     free(s);
     return;
@@ -211,7 +221,7 @@ int alcanzanPaginas(int pagsNecesarias)//0 no alcanzan, 1 alcanzan
 	return 1;
 }
 
-void desfragmentar(void)
+void desfragmentar(int tamanio)
 {//movemos los nodos ocupados y juntamos los espacios libres en uno solo
 	int sizeLibres= 0;
 	espacioLibre* auxLibre= libreRaiz;
@@ -236,6 +246,13 @@ void desfragmentar(void)
     	{//si la pagina siguiente tmb esta libre los unimos en un solo nodo
     		unirBloquesLibres();
     		sizeLibres--;
+    		if(configuracion.COMPACTACION_INTELIGENTE)
+    		{
+    			if(alcanzanPaginas(tamanio))
+    			{
+    				break;
+    			}
+    		}
     	}
     }
 	return;
@@ -282,7 +299,7 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 			log_info(log, "Se inicia la compactacion del archivo");
 			printf("se desfragmenta el archivo... \n");
 			sleep(configuracion.RETARDO_COMPACTACION);//antes de compactar hacemos el sleep
-			desfragmentar();
+			desfragmentar(cantPag);
 			log_info(log, "Finaliza la compactacion del archivo");
 			inicio = hayEspacio(cantPag);
 		}
@@ -620,6 +637,16 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la
 	fseek(archivo,((aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagALeer * configuracion.TAMANIO_PAGINA), SEEK_SET);//vamos la pagina a leer (sin el menos uno la pasamos)
 	fread(buffer, sizeof(char), configuracion.TAMANIO_PAGINA, archivo);//leemos
 	aLeer->leyo= aLeer->leyo +1;//aumentamos la cantidad de paginas leidas por el proceso
+	int i=0;
+	while(i < configuracion.TAMANIO_PAGINA)
+	{//sacamos los caracteres de relleno del buffer, logueamos y se lo mandamos al ADM
+		if(buffer[i]== configuracion.CARACTER_RELLENO)
+		{
+			buffer[i]='\0';
+			break;
+		}
+		i++;
+	}
 	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
 	strcpy(bufferLogueo, buffer);
 	bufferLogueo[configuracion.TAMANIO_PAGINA]='\0';
@@ -629,9 +656,29 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la
 
 void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien. pagAEscribir comienza en 0
 {//escribimos en el archivo de swap
+	int i=0;
 	fseek(archivo,((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) +  (pagAEscribir * configuracion.TAMANIO_PAGINA), SEEK_SET);
+	while(texto[i] && i < configuracion.TAMANIO_PAGINA)
+	{//voy al primer /0
+		i++;
+	}
+	while(i < configuracion.TAMANIO_PAGINA)
+	{// de ahi en adelante, escribo el caracter de relleno (tambien piso el /0)
+		texto[i]=configuracion.CARACTER_RELLENO;//rellamos es el caracter correspondiente
+		i++;
+	}
 	fwrite(texto, sizeof(char), configuracion.TAMANIO_PAGINA, archivo);
 	aEscribir->escribio= aEscribir->escribio +1;//el proceso lee una pagina y lo documentamos
+	i=0;
+	while(i < configuracion.TAMANIO_PAGINA)
+	{//para loguear, sacamos el relleno del texto
+		if(texto[i]== configuracion.CARACTER_RELLENO)
+		{
+			texto[i]='\0';
+			break;
+		}
+		i++;
+	}
 	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
 	strcpy(bufferLogueo, texto);
 	bufferLogueo[configuracion.TAMANIO_PAGINA]='\0';

@@ -372,86 +372,108 @@ config_ADM cargarConfiguracionADM(char * ruta) {
  * NOTA: El archivo de configuracion contiene los comentarios con #
  * EJEMPLO: cargarConfiguracionPL("configuracion"); lo busca en la carpeta que contiene luego a DEBUG y src
  */
-config_SWAP cargarConfiguracionSWAP(char * ruta) {
+config_SWAP cargarConfiguracionSWAP(char * ruta)
+{
 	config_SWAP config;
 	FILE * archivoConfiguracion;
 	char linea[200];
-		char campo[50];
-		char valor[50];
-		char cargados[6]; //Vector que avisa si se cargo el dato, 0 PE , 1 AP, 2 QUANTUM
-		int verifica; // Cuando vale 1 se cargaron todos los datos
-		int m=0;
-		for(m=0;m<6;m++) cargados[m]=0; //Lo inicializo en 0 sin datos cargados
+	char campo[50];
+	char valor[50];
+	char cargados[8]; //Vector que avisa si se cargo el dato, 0 PE , 1 AP, 2 QUANTUM
+	int verifica; // Cuando vale 1 se cargaron todos los datos
+	int m=0;
+	for(m=0;m<8;m++) cargados[m]=0; //Lo inicializo en 0 sin datos cargados
 	archivoConfiguracion= fopen(ruta,"r");
 	if(archivoConfiguracion==NULL)
 	{
 		printf("No se encuentra el archivo de configuracion en la ruta %s\n",ruta);
 		config.estado=0;
-	return config;
+		return config;
 	}
 //COMIENZA CARGA DE LINEAS**********************************************
 //Saltea las lineas que empiezan con #
-	while(fgets(linea,200,archivoConfiguracion)!=NULL){
-		if(linea[0]!='#' && linea[0]!='\n') {
-
-	valor[0]=0;
-	campo[0]=0;
-	separarCampoYValor(linea,campo,valor);
-
+	while(fgets(linea,200,archivoConfiguracion)!=NULL)
+	{
+		if(linea[0]!='#' && linea[0]!='\n')
+		{
+			valor[0]=0;
+			campo[0]=0;
+			separarCampoYValor(linea,campo,valor);
 //Cargar PUERTO ESCUCHA************************************************
-	if(strcmp(campo,"PUERTO_ESCUCHA")==0)
-	{
-		strcpy(config.PUERTO_ESCUCHA,valor);
-		cargados[0]=1;
-	}
-
+			if(strcmp(campo,"PUERTO_ESCUCHA")==0)
+			{
+				strcpy(config.PUERTO_ESCUCHA,valor);
+				cargados[0]=1;
+			}
 //Cargar NOMBRE SWAP************************************************
-	if(strcmp(campo,"NOMBRE_SWAP")==0)
-	{
-			strcpy(config.NOMBRE_SWAP,valor);
-			cargados[1]=1;
-		}
-
+			if(strcmp(campo,"NOMBRE_SWAP")==0)
+			{
+				strcpy(config.NOMBRE_SWAP,valor);
+				cargados[1]=1;
+			}
 //CARGAR CANTIDAD DE PAGINAS********************************************************
-	if(strcmp(campo,"CANTIDAD_PAGINAS")==0)
-	{
-	config.CANTIDAD_PAGINAS = atoi(valor);
-	cargados[2]=1;
-	}
+			if(strcmp(campo,"CANTIDAD_PAGINAS")==0)
+			{
+				config.CANTIDAD_PAGINAS = atoi(valor);
+				cargados[2]=1;
+			}
 //CARGAR TAMANIO PAGINA********************************************************
-	if(strcmp(campo,"TAMANIO_PAGINA")==0)
-	{
-		config.TAMANIO_PAGINA = atoi(valor);
-		cargados[3]=1;
-	}
-	//CARGAR RETARDO SWAP********************************************************
-		if(strcmp(campo,"RETARDO_SWAP")==0)
-		{
-			config.RETARDO_SWAP = atoi(valor);
-			cargados[4]=1;
-		}
+			if(strcmp(campo,"TAMANIO_PAGINA")==0)
+			{
+				config.TAMANIO_PAGINA = atoi(valor);
+				cargados[3]=1;
+			}
+//CARGAR RETARDO SWAP********************************************************
+			if(strcmp(campo,"RETARDO_SWAP")==0)
+			{
+				config.RETARDO_SWAP = atoi(valor);
+				cargados[4]=1;
+			}
 //CARGAR RETARDO COMPACTACION********************************************************
-		if(strcmp(campo,"RETARDO_COMPACTACION")==0)
-		{
+			if(strcmp(campo,"RETARDO_COMPACTACION")==0)
+			{
 				config.RETARDO_COMPACTACION = atoi(valor);
-			cargados[5]=1;
+				cargados[5]=1;
+			}
+//CARGAR TIPO DE COMPACTACION********************************************************
+			if(strcmp(campo,"COMPACTACION_INTELIGENTE")==0)
+			{
+				if(strcmp(valor,"SI")==0)
+				{
+					config.COMPACTACION_INTELIGENTE =1;
+				}
+				else
+				{
+					config.COMPACTACION_INTELIGENTE =0;
+				}
+				cargados[6]=1;
+			}
+//CARGAR CARACTER DE COMPACTACION********************************************************
+			if(strcmp(campo,"CARACTER_RELLENO")==0)
+			{
+				config.CARACTER_RELLENO = valor[0];
+				cargados[7]=1;
+			}
 		}
-	}
 	}
  //VERIFICACION DEL INGRESO DE TODOS LOS PARAMETROS***************************
-			verifica=1;
-			for(m=0;m<6;m++) {
-				if(cargados[m]==0)
-					{verifica=0;
-					}
-			}
-			if(verifica==1)
-			{
-			config.estado=1;
-			} else
-			{config.estado=-1;
-			printf("Faltan especificar parametros en el archivo de configuracion\n");
-			}
-			fclose(archivoConfiguracion);
-			return config;
+	verifica=1;
+	for(m=0;m<8;m++)
+	{
+		if(cargados[m]==0)
+		{
+			verifica=0;
+		}
+	}
+	if(verifica==1)
+	{
+		config.estado=1;
+	}
+	else
+	{
+		config.estado=-1;
+		printf("Faltan especificar parametros en el archivo de configuracion\n");
+	}
+	fclose(archivoConfiguracion);
+	return config;
 }
