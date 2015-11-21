@@ -15,7 +15,6 @@
 #define TAMANOPAQUETE 4
 #define RUTACONFIG "configuracion"
 #define ARCHIVOLOG "Swap.log"
-#define RELLENO '\0'//con este caracter rellenamos el archivo de swap
 
 //****** VARIABLES GLOBALES ******
 FILE* archivo;
@@ -87,8 +86,20 @@ int iniciarConfiguracion(void)
 		{
 			printf("Compactacion inteligente desactivada \n");
 		}
-		printf("Caracter de relleno: %c \n",configuracion.CARACTER_RELLENO);
-		printf("Retardo de Compactacion: %d \n \n",configuracion.RETARDO_COMPACTACION);
+		printf("Caracter de relleno: '%c' \n",configuracion.CARACTER_RELLENO);
+		printf("Retardo de Compactacion: %d \n",configuracion.RETARDO_COMPACTACION);
+		if(configuracion.TIPO_ASIGNACION==1)
+		{
+			printf("Asignacion fist fit\n \n");
+		}
+		if(configuracion.TIPO_ASIGNACION==2)
+		{
+			printf("Asignacion best fit\n \n");
+		}
+		if(configuracion.TIPO_ASIGNACION==3)
+		{
+			printf("Asignacion worst fit\n \n");
+		}
 		return 0;
 	}
 	return -1;
@@ -163,18 +174,64 @@ void ocupar(int posicion, int espacio)
 }
 
 int hayEspacio(int espacio)//espacio esta en paginas
-{//te dice si hay un nodo libre con es el espacio requerido
+{//te dice si hay un nodo libre con es el espacio requerido y donde comienza
 	int hay;
 	espacioLibre* raiz=libreRaiz;//para no cambiar al puntero
-	while(raiz)
-	{
-		if(raiz->cantPag >= espacio)
+	//depende la configiracion denpende que hacemos
+	if(configuracion.TIPO_ASIGNACION ==0)
+	{//fist fit
+		while(raiz)
 		{
-			hay= raiz->comienzo;//el comienzo minimo es 1
+			if(raiz->cantPag >= espacio)
+			{
+				hay= raiz->comienzo;//el comienzo minimo es 1
+				ocupar(hay, espacio);//ocupamos el espacio requerido por el proceso
+				return hay;//devolvemos la posicion inicial del espacio
+			}
+			raiz= raiz->sgte;
+		}
+	}
+	else
+	{// best o worst fit
+		int desperdicio;
+		espacioLibre* mejor=NULL;//mejor posicion
+		while(raiz)
+		{
+			if(raiz->cantPag >= espacio)
+			{
+				if(raiz == libreRaiz)
+				{
+					desperdicio= (raiz->cantPag - espacio);
+					mejor= raiz;
+				}
+				else
+				{
+					if(configuracion.TIPO_ASIGNACION == 2)
+					{//best fit
+						if((raiz->cantPag - espacio) < desperdicio)
+						{
+							desperdicio=raiz->cantPag - espacio;
+							mejor= raiz;
+						}
+					}
+					if(configuracion.TIPO_ASIGNACION == 3)
+					{//worst fit
+						if((raiz->cantPag - espacio) > desperdicio)
+						{
+							desperdicio=raiz->cantPag - espacio;
+							mejor= raiz;
+						}
+					}
+				}
+			}
+			raiz= raiz->sgte;
+		}
+		if(mejor)
+		{
+			hay= mejor->comienzo;//el comienzo minimo es 1
 			ocupar(hay, espacio);//ocupamos el espacio requerido por el proceso
 			return hay;//devolvemos la posicion inicial del espacio
 		}
-		raiz= raiz->sgte;
 	}
 	return 0;
 }
@@ -682,7 +739,7 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
 	strcpy(bufferLogueo, texto);
 	bufferLogueo[configuracion.TAMANIO_PAGINA]='\0';
-	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe %s", aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagAEscribir * configuracion.TAMANIO_PAGINA), bufferLogueo);
+	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe: %s", aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagAEscribir * configuracion.TAMANIO_PAGINA), bufferLogueo);
 	return;
 }
 

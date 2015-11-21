@@ -379,10 +379,10 @@ config_SWAP cargarConfiguracionSWAP(char * ruta)
 	char linea[200];
 	char campo[50];
 	char valor[50];
-	char cargados[8]; //Vector que avisa si se cargo el dato, 0 PE , 1 AP, 2 QUANTUM
+	char cargados[9]; //Vector que avisa si se cargo el dato, 0 PE , 1 AP, 2 QUANTUM
 	int verifica; // Cuando vale 1 se cargaron todos los datos
 	int m=0;
-	for(m=0;m<8;m++) cargados[m]=0; //Lo inicializo en 0 sin datos cargados
+	for(m=0;m<9;m++) cargados[m]=0; //Lo inicializo en 0 sin datos cargados
 	archivoConfiguracion= fopen(ruta,"r");
 	if(archivoConfiguracion==NULL)
 	{
@@ -454,11 +454,30 @@ config_SWAP cargarConfiguracionSWAP(char * ruta)
 				config.CARACTER_RELLENO = valor[0];
 				cargados[7]=1;
 			}
+//CARGAR TIPO DE ASIGNACION********************************************************
+			if(strcmp(campo,"TIPO_ASIGNACION")==0)
+			{
+				if(strcmp(valor,"PRIMER")==0)
+				{
+					config.TIPO_ASIGNACION = 1;
+					cargados[8]=1;
+				}
+				if(strcmp(valor,"MEJOR")==0)
+				{
+					config.TIPO_ASIGNACION = 2;
+					cargados[8]=1;
+				}
+				if(strcmp(valor,"PEOR")==0)
+				{
+					config.TIPO_ASIGNACION = 3;
+					cargados[8]=1;
+				}
+			}
 		}
 	}
  //VERIFICACION DEL INGRESO DE TODOS LOS PARAMETROS***************************
 	verifica=1;
-	for(m=0;m<8;m++)
+	for(m=0;m<9;m++)
 	{
 		if(cargados[m]==0)
 		{

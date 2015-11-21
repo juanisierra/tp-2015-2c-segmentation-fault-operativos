@@ -53,6 +53,7 @@ typedef struct {
 	int RETARDO_COMPACTACION;
 	int COMPACTACION_INTELIGENTE;
 	char CARACTER_RELLENO;
+	int TIPO_ASIGNACION;
 } config_SWAP;
 
 void separarCampoYValor(char*linea,char* campo, char* valor);
