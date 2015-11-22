@@ -20,6 +20,7 @@
 FILE* archivo;
 config_SWAP configuracion;
 espacioLibre* libreRaiz;
+listaEscritura* escrituraRaiz;
 espacioOcupado* ocupadoRaiz;
 t_log* log;
 //********************************
@@ -694,15 +695,20 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la
 	fseek(archivo,((aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagALeer * configuracion.TAMANIO_PAGINA), SEEK_SET);//vamos la pagina a leer (sin el menos uno la pasamos)
 	fread(buffer, sizeof(char), configuracion.TAMANIO_PAGINA, archivo);//leemos
 	aLeer->leyo= aLeer->leyo +1;//aumentamos la cantidad de paginas leidas por el proceso
-	int i=0;
-	while(i < configuracion.TAMANIO_PAGINA)
-	{//sacamos los caracteres de relleno del buffer, logueamos y se lo mandamos al ADM
-		if(buffer[i]== configuracion.CARACTER_RELLENO)
-		{
-			buffer[i]='\0';
-			break;
-		}
-		i++;
+
+	int i= 0;
+	listaEscritura* aux=escrituraRaiz;
+	while(aux && ((aux->pid != aLeer->pid) || (aux->pagina != pagALeer)) )
+	{
+		aux= aux->sgte;
+	}
+	if(aux)
+	{
+		i= aux->posicion;
+	}
+	if(i < configuracion.TAMANIO_PAGINA)
+	{
+		buffer[i]='\0';
 	}
 	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
 	strcpy(bufferLogueo, buffer);
@@ -713,12 +719,42 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la
 
 void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien. pagAEscribir comienza en 0
 {//escribimos en el archivo de swap
-	int i=0;
+	listaEscritura* aux = escrituraRaiz;
+	while( aux && ((aux->pid != aEscribir->pid) || (aux->pagina != pagAEscribir)) )
+	{//voy al nodo de esta pagina
+		aux= aux->sgte;
+	}
+	if(!aux)
+	{//no habia un nodo para esta pagina de este proceso
+		aux= malloc(sizeof(listaEscritura));
+		if(!aux)
+		{
+			//
+		}
+		aux->pid= aEscribir->pid;
+		aux->pagina= pagAEscribir;
+		aux->sgte=NULL;
+		if(!escrituraRaiz)
+		{
+			escrituraRaiz=aux;
+		}
+		else
+		{
+			listaEscritura* ultimo = escrituraRaiz;
+			while(ultimo && ultimo->sgte)
+			{
+				ultimo= ultimo->sgte;
+			}
+			ultimo->sgte= aux;
+		}
+	}
 	fseek(archivo,((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) +  (pagAEscribir * configuracion.TAMANIO_PAGINA), SEEK_SET);
+	int i=0;
 	while(texto[i] && i < configuracion.TAMANIO_PAGINA)
 	{//voy al primer /0
 		i++;
 	}
+	aux->posicion= i;//guardo donde estaba el /0
 	while(i < configuracion.TAMANIO_PAGINA)
 	{// de ahi en adelante, escribo el caracter de relleno (tambien piso el /0)
 		texto[i]=configuracion.CARACTER_RELLENO;//rellamos es el caracter correspondiente
@@ -726,6 +762,8 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 	}
 	fwrite(texto, sizeof(char), configuracion.TAMANIO_PAGINA, archivo);
 	aEscribir->escribio= aEscribir->escribio +1;//el proceso lee una pagina y lo documentamos
+	texto[aux->posicion]='\0';
+	/*
 	i=0;
 	while(i < configuracion.TAMANIO_PAGINA)
 	{//para loguear, sacamos el relleno del texto
@@ -735,7 +773,7 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 			break;
 		}
 		i++;
-	}
+	}*/
 	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
 	strcpy(bufferLogueo, texto);
 	bufferLogueo[configuracion.TAMANIO_PAGINA]='\0';
@@ -743,7 +781,7 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 	return;
 }
 
-int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
+int interpretarMensaje(mensaje_ADM_SWAP mensaje, int socketcito)
 {//depende de la instruccion tomamos acciones
 	int resultado;
 	mensaje_SWAP_ADM aEnviar;
@@ -878,6 +916,8 @@ int main()
 {
 	libreRaiz=NULL;
 	ocupadoRaiz=NULL;
+	escrituraRaiz= NULL;
+
 	mensaje_ADM_SWAP mensaje;
 	log= log_create(ARCHIVOLOG, "Swap", 0, LOG_LEVEL_INFO);
 	log_info(log, "Proceso SWAP iniciado.");

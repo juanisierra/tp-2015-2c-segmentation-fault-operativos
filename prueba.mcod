@@ -1,14 +1,14 @@
 iniciar 2;
 leer 0;
 leer 1;
-escribir 0 "ho";
+escribir 0 "ho\";
 leer 0;
-escribir 1 "j";
+escribir 1 "\\j";
 leer 1;
 escribir 1 "";
 leer 1;
 escribir 0 "holaj";
-escribir 1 "1234";
+escribir 1 "1234\";
 leer 1;
 entrada-salida 10;
 leer 0;
