@@ -18,10 +18,10 @@
 
 //****** VARIABLES GLOBALES ******
 FILE* archivo;
-config_SWAP configuracion;
 espacioLibre* libreRaiz;
-listaEscritura* escrituraRaiz;
 espacioOcupado* ocupadoRaiz;
+listaEscritura* escrituraRaiz;
+config_SWAP configuracion;
 t_log* log;
 //********************************
 
@@ -99,7 +99,7 @@ int iniciarConfiguracion(void)
 		{
 			printf("Compactacion inteligente desactivada \n");
 		}
-		printf("Caracter de relleno: '%c' \n",configuracion.CARACTER_RELLENO);
+		printf("Caracter de relleno: %c \n",configuracion.CARACTER_RELLENO);
 		printf("Retardo de Compactacion: %d \n",configuracion.RETARDO_COMPACTACION);
 		if(configuracion.TIPO_ASIGNACION==1)
 		{
@@ -458,14 +458,14 @@ void borrarNodoOcupado(espacioOcupado* aBorrar)
 
 void borrarLectura(espacioOcupado* aBorrar)
 {
-	listaEscritura* aux= escrituraRaiz;
 	listaEscritura* liberar;
 	while(escrituraRaiz && escrituraRaiz->pid == aBorrar->pid)
-	{
+	{//si la raiz es un nodo a borrar, lo liberamos y avanzamos el puntero
 		liberar=escrituraRaiz;
 		escrituraRaiz= escrituraRaiz->sgte;
 		free(liberar);
 	}
+	listaEscritura* aux= escrituraRaiz;
 	while(aux)
 	{//sabemos que aux no es un nodo a borrar nunca, el siguiente quiza.
 		if(!aux->sgte)
@@ -473,13 +473,13 @@ void borrarLectura(espacioOcupado* aBorrar)
 			break;
 		}
 		if(aux->sgte->pid == aBorrar->pid)
-		{//borramos le nodo
+		{//borramos el nodo
 			liberar= aux->sgte;
 			aux->sgte= liberar->sgte;
 			free(liberar);
 		}
 		else
-		{
+		{//avanzamos en la lista
 			aux= aux->sgte;
 		}
 	}
