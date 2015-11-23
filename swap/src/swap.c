@@ -51,7 +51,7 @@ void eliminarListas(void)
 		free(ocupadoRaiz);
 		ocupadoRaiz= NULL;
 	}
-	if(escrituraRaiz)
+	if(escrituraRaiz)// si hay nodos escritura
 	{
 		listaEscritura* siguiente= escrituraRaiz->sgte;
 		while(siguiente)
@@ -455,7 +455,7 @@ void borrarNodoOcupado(espacioOcupado* aBorrar)
 	free(aBorrar);
 	return;
 }
-/*
+
 void borrarLectura(espacioOcupado* aBorrar)
 {
 	listaEscritura* aux= escrituraRaiz;
@@ -485,12 +485,12 @@ void borrarLectura(espacioOcupado* aBorrar)
 	}
 	return;
 }
-*/
+
 int liberarMemoria(espacioOcupado* aBorrar)
 {//se va un proceso y borramos su nodo ocupado y agregamos un libre
 	int atrasVar= atras(aBorrar);
 	int adelanteVar= adelante(aBorrar);
-	//borrarLectura(aBorrar);
+	borrarLectura(aBorrar);
 	log_info(log, "Se liberan %u bytes de memoria del proceso de pid %u desde el byte %u. El proceso leyo %u paginas y escribio %u.", (aBorrar->cantPag)*configuracion.TAMANIO_PAGINA, aBorrar->pid, (aBorrar->comienzo -1)*configuracion.TAMANIO_PAGINA, aBorrar->leyo, aBorrar->escribio);
 	if(atrasVar==0 && adelanteVar==0)//el proceso ocupa el archivo entero
 	{

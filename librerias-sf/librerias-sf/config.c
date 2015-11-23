@@ -451,7 +451,8 @@ config_SWAP cargarConfiguracionSWAP(char * ruta)
 //CARGAR CARACTER DE COMPACTACION********************************************************
 			if(strcmp(campo,"CARACTER_RELLENO")==0)
 			{
-				if(strcmp(valor,"nulo")==0)
+
+				if(valor[0]-92 == 0 && valor[1]== '0')
 				{
 					config.CARACTER_RELLENO ='\0';
 					cargados[7]=1;
