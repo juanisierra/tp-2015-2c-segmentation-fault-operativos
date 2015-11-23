@@ -51,6 +51,18 @@ void eliminarListas(void)
 		free(ocupadoRaiz);
 		ocupadoRaiz= NULL;
 	}
+	if(escrituraRaiz)
+	{
+		listaEscritura* siguiente= escrituraRaiz->sgte;
+		while(siguiente)
+		{
+			free(escrituraRaiz);
+			escrituraRaiz= siguiente;
+			siguiente= siguiente->sgte;
+		}
+		free(escrituraRaiz);
+		escrituraRaiz= NULL;
+	}
 	return;
 }
 
@@ -443,11 +455,42 @@ void borrarNodoOcupado(espacioOcupado* aBorrar)
 	free(aBorrar);
 	return;
 }
-
+/*
+void borrarLectura(espacioOcupado* aBorrar)
+{
+	listaEscritura* aux= escrituraRaiz;
+	listaEscritura* liberar;
+	while(escrituraRaiz && escrituraRaiz->pid == aBorrar->pid)
+	{
+		liberar=escrituraRaiz;
+		escrituraRaiz= escrituraRaiz->sgte;
+		free(liberar);
+	}
+	while(aux)
+	{//sabemos que aux no es un nodo a borrar nunca, el siguiente quiza.
+		if(!aux->sgte)
+		{//si aux es el ultimo nodo nos vamos
+			break;
+		}
+		if(aux->sgte->pid == aBorrar->pid)
+		{//borramos le nodo
+			liberar= aux->sgte;
+			aux->sgte= liberar->sgte;
+			free(liberar);
+		}
+		else
+		{
+			aux= aux->sgte;
+		}
+	}
+	return;
+}
+*/
 int liberarMemoria(espacioOcupado* aBorrar)
 {//se va un proceso y borramos su nodo ocupado y agregamos un libre
 	int atrasVar= atras(aBorrar);
 	int adelanteVar= adelante(aBorrar);
+	//borrarLectura(aBorrar);
 	log_info(log, "Se liberan %u bytes de memoria del proceso de pid %u desde el byte %u. El proceso leyo %u paginas y escribio %u.", (aBorrar->cantPag)*configuracion.TAMANIO_PAGINA, aBorrar->pid, (aBorrar->comienzo -1)*configuracion.TAMANIO_PAGINA, aBorrar->leyo, aBorrar->escribio);
 	if(atrasVar==0 && adelanteVar==0)//el proceso ocupa el archivo entero
 	{
@@ -695,15 +738,14 @@ char* leer(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la
 	fseek(archivo,((aLeer->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagALeer * configuracion.TAMANIO_PAGINA), SEEK_SET);//vamos la pagina a leer (sin el menos uno la pasamos)
 	fread(buffer, sizeof(char), configuracion.TAMANIO_PAGINA, archivo);//leemos
 	aLeer->leyo= aLeer->leyo +1;//aumentamos la cantidad de paginas leidas por el proceso
-
 	int i= 0;
 	listaEscritura* aux=escrituraRaiz;
 	while(aux && ((aux->pid != aLeer->pid) || (aux->pagina != pagALeer)) )
-	{
+	{//vamos al nodo de la pagina del proceso
 		aux= aux->sgte;
 	}
 	if(aux)
-	{
+	{//guardamos su posicion (si no habia pagina, i=0)
 		i= aux->posicion;
 	}
 	if(i < configuracion.TAMANIO_PAGINA)
@@ -729,7 +771,9 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 		aux= malloc(sizeof(listaEscritura));
 		if(!aux)
 		{
-			//
+			printf("fallo el malloc para la lista escritura en swap.c \n");
+			log_error(log, "Fallo el malloc para la lista de escritura");
+			cerrarSwap();
 		}
 		aux->pid= aEscribir->pid;
 		aux->pagina= pagAEscribir;
@@ -739,7 +783,7 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 			escrituraRaiz=aux;
 		}
 		else
-		{
+		{//agregamos al nodo al final de la lista
 			listaEscritura* ultimo = escrituraRaiz;
 			while(ultimo && ultimo->sgte)
 			{
@@ -762,18 +806,10 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 	}
 	fwrite(texto, sizeof(char), configuracion.TAMANIO_PAGINA, archivo);
 	aEscribir->escribio= aEscribir->escribio +1;//el proceso lee una pagina y lo documentamos
-	texto[aux->posicion]='\0';
-	/*
-	i=0;
-	while(i < configuracion.TAMANIO_PAGINA)
-	{//para loguear, sacamos el relleno del texto
-		if(texto[i]== configuracion.CARACTER_RELLENO)
-		{
-			texto[i]='\0';
-			break;
-		}
-		i++;
-	}*/
+	if(aux->posicion < configuracion.TAMANIO_PAGINA)
+	{
+		texto[aux->posicion]='\0';//para loguear sacamos el relleno
+	}
 	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
 	strcpy(bufferLogueo, texto);
 	bufferLogueo[configuracion.TAMANIO_PAGINA]='\0';

@@ -451,23 +451,31 @@ config_SWAP cargarConfiguracionSWAP(char * ruta)
 //CARGAR CARACTER DE COMPACTACION********************************************************
 			if(strcmp(campo,"CARACTER_RELLENO")==0)
 			{
-				config.CARACTER_RELLENO = valor[0];
-				cargados[7]=1;
+				if(strcmp(valor,"nulo")==0)
+				{
+					config.CARACTER_RELLENO ='\0';
+					cargados[7]=1;
+				}
+				else
+				{
+					config.CARACTER_RELLENO = valor[0];
+					cargados[7]=1;
+				}
 			}
 //CARGAR TIPO DE ASIGNACION********************************************************
 			if(strcmp(campo,"TIPO_ASIGNACION")==0)
 			{
-				if(strcmp(valor,"PRIMER")==0)
+				if(strcmp(valor,"FIRST")==0)
 				{
 					config.TIPO_ASIGNACION = 1;
 					cargados[8]=1;
 				}
-				if(strcmp(valor,"MEJOR")==0)
+				if(strcmp(valor,"BEST")==0)
 				{
 					config.TIPO_ASIGNACION = 2;
 					cargados[8]=1;
 				}
-				if(strcmp(valor,"PEOR")==0)
+				if(strcmp(valor,"WORST")==0)
 				{
 					config.TIPO_ASIGNACION = 3;
 					cargados[8]=1;
