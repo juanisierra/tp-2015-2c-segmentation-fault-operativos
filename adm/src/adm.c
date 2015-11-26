@@ -294,7 +294,7 @@ void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupcione
 }
 }
 
-int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
+int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta y sino devuelve la posicion en la tlb en la que esta
 {
 	int i;
 	if(TLB!=NULL && configuracion.TLB_HABILITADA==1)
@@ -624,7 +624,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 	}
 	recibirMensajeDeSwap(socketSWAP,&mensajeDeSWAP,configuracion.TAMANIO_MARCO);
 
-	printf("ASGINADOS: %d MARCO %d BYTE: %d\n",nodoProceso->marcosAsignados,aReemplazar,(aReemplazar*configuracion.TAMANIO_MARCO));
+	//printf("ASGINADOS: %d MARCO %d BYTE: %d\n",nodoProceso->marcosAsignados,aReemplazar,(aReemplazar*configuracion.TAMANIO_MARCO));
 	memcpy(&memoria[aReemplazar*configuracion.TAMANIO_MARCO],mensajeDeSWAP.contenidoPagina,configuracion.TAMANIO_MARCO);
 	if(mensajeDeSWAP.contenidoPagina!=NULL)
 	{
@@ -660,8 +660,11 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS,
 	int aux;
 	int ubicada = -1;
 	if(configuracion.TLB_HABILITADA==1) //BUSCA EN LA TLB Y SE FIJA SI ESTA O NO ALLI
-	{
-		ubicada= estaEnTLB(pid,numPag);
+	{	if(estaEnTLB(pid,numPag)>=0) {
+		ubicada= TLB[estaEnTLB(pid,numPag)].numMarco;
+	} else {
+		ubicada = -1;
+	}
 		if(ubicada>=0)
 		{
 			aciertosTLB++;
