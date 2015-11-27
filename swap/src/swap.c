@@ -149,6 +149,11 @@ void ocupar(int posicion, int espacio)
 		}
 		free(aux);
 	}
+    int tamanio=(espacio)*(configuracion.TAMANIO_PAGINA);
+    char* s = string_repeat('\0', tamanio);
+    fseek(archivo, (posicion -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
+    fwrite(s, sizeof(char), (espacio * configuracion.TAMANIO_PAGINA) , archivo);
+    free(s);
 	return;
 }
 
@@ -189,9 +194,9 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 al
 {//intercambia lo escrito en el swap para cuando movemos un nodo ocupado al desfragmentar
 	char buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
 	fseek(archivo, (inicioDe -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
-	fread(buffer, sizeof(char), strlen(buffer), archivo);//leemos
+	fread(buffer, sizeof(char), (cantPags * configuracion.TAMANIO_PAGINA) , archivo);//leemos
 	fseek(archivo, (inicioA -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
-	fwrite(buffer, sizeof(char), strlen(buffer), archivo);//escribimos
+	fwrite(buffer, sizeof(char), (cantPags * configuracion.TAMANIO_PAGINA) , archivo);//escribimos
 	return;//en el "nuevo" libre ahora hay basura
 }
 
@@ -280,10 +285,11 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 		if(alcanzanPaginas (cantPag)) //si las paginas libres totales alcanzan, que desfragmente
 		{
 			log_info(log, "Se inicia la compactacion del archivo");
-			printf("se desfragmenta el archivo... \n");
+			printf("se compacta el archivo... \n");
 			sleep(configuracion.RETARDO_COMPACTACION);//antes de compactar hacemos el sleep
 			desfragmentar();
 			log_info(log, "Finaliza la compactacion del archivo");
+			printf("finalizada la compactacion del archivo.\n");
 			inicio = hayEspacio(cantPag);
 		}
 		else
@@ -635,7 +641,7 @@ void escribir(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0
 	char bufferLogueo[configuracion.TAMANIO_PAGINA +1];//esto va a ser para meterle un \0 por las dudas
 	strcpy(bufferLogueo, texto);
 	bufferLogueo[configuracion.TAMANIO_PAGINA]='\0';
-	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe %s", aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagAEscribir * configuracion.TAMANIO_PAGINA), bufferLogueo);
+	log_info(log, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe: %s", aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->comienzo -1) * configuracion.TAMANIO_PAGINA) + (pagAEscribir * configuracion.TAMANIO_PAGINA), bufferLogueo);
 	return;
 }
 
@@ -693,6 +699,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		break;
 
 	case LEER:
+		sleep(configuracion.RETARDO_SWAP);
 		aLeer=ocupadoRaiz;
 		while(aLeer && aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
 		if(!aLeer)
@@ -718,6 +725,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje,int socketcito)
 		break;
 
 	case ESCRIBIR:
+		sleep(configuracion.RETARDO_SWAP);
 		aEscribir=ocupadoRaiz;
 		while(aEscribir && aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
 		aEnviar.contenidoPagina=NULL;
@@ -822,8 +830,7 @@ int main()
 			log_error(log,"Error en recibir pagina de ADM");
 			cerrarSwap();
 		}
-		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
-		sleep(configuracion.RETARDO_SWAP);
+		//printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
 		interpretarMensaje(mensaje,socketADM);
 		status=recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
 	}
