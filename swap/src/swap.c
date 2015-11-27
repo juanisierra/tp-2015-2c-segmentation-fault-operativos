@@ -183,7 +183,12 @@ void ocupar(int posicion, int espacio)
 		}
 		free(aux);
 	}
-	return;
+    int tamanio=(espacio)*(configuracion.TAMANIO_PAGINA);
+    char* s = string_repeat(configuracion.CARACTER_RELLENO, tamanio);
+    fseek(archivo, (posicion -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);
+    fwrite(s, sizeof(char), (espacio * configuracion.TAMANIO_PAGINA), archivo);
+    free(s);
+    return;
 }
 
 int hayEspacio(int espacio)//espacio esta en paginas
@@ -367,10 +372,11 @@ int asignarMemoria( uint32_t pid, uint32_t cantPag)
 		if(alcanzanPaginas (cantPag)) //si las paginas libres totales alcanzan, que desfragmente
 		{
 			log_info(log, "Se inicia la compactacion del archivo");
-			printf("se desfragmenta el archivo... \n");
+			printf("se compacta el archivo... \n");
 			sleep(configuracion.RETARDO_COMPACTACION);//antes de compactar hacemos el sleep
 			desfragmentar(cantPag);
 			log_info(log, "Finaliza la compactacion del archivo");
+			printf("finaliza la compactacion del archivo. \n");
 			inicio = hayEspacio(cantPag);
 		}
 		else
@@ -871,6 +877,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje, int socketcito)
 		break;
 
 	case LEER:
+		sleep(configuracion.RETARDO_SWAP);
 		aLeer=ocupadoRaiz;
 		while(aLeer && aLeer->pid != mensaje.pid) aLeer=aLeer->sgte;
 		if(!aLeer)
@@ -896,6 +903,7 @@ int interpretarMensaje(mensaje_ADM_SWAP mensaje, int socketcito)
 		break;
 
 	case ESCRIBIR:
+		sleep(configuracion.RETARDO_SWAP);
 		aEscribir=ocupadoRaiz;
 		while(aEscribir && aEscribir->pid != mensaje.pid) aEscribir=aEscribir->sgte;
 		aEnviar.contenidoPagina=NULL;
@@ -1002,8 +1010,8 @@ int main()
 			log_error(log,"Error en recibir pagina de ADM");
 			cerrarSwap();
 		}
-		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
-		sleep(configuracion.RETARDO_SWAP);// este es el retraso del swap para cada instruccion
+		//printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
+		sleep(configuracion.RETARDO_SWAP);
 		interpretarMensaje(mensaje,socketADM);
 		status=recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
 	}
