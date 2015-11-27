@@ -68,7 +68,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	{
 	case INICIAR:
 	{
-		//printf("Instruccion iniciar\tparametro:%d\n",parametro1);//***********************
+		printf("Instruccion iniciar\tparametro:%d\n",parametro1);//***********************
 		mensajeParaADM.texto=NULL;
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -87,7 +87,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 		break;
 	}
 	case LEER:
-	{	//printf("Instruccion leer\tparametro:%d ",parametro1);//*********************
+	{	printf("Instruccion leer\tparametro:%d ",parametro1);//*********************
 		mensajeParaADM.texto=NULL;
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -110,7 +110,7 @@ void ejecutarInstruccion(proceso_CPU* datos_CPU, instruccion_t instruccion, uint
 	}
 	case ESCRIBIR:
 	{
-		//printf("Instruccion escribir\tpag: %d\tescribe: %s\n",parametro1,parametro2);//********************
+		printf("Instruccion escribir\tpag: %d\tescribe: %s\n",parametro1,parametro2);//********************
 		mensajeParaADM.texto = strdup(parametro2); //duplicamos la cadena en el heap
 		pthread_mutex_lock(&mutexComADM);
 		enviarInstruccionAlADM(socketADM, &mensajeParaADM);
@@ -267,7 +267,11 @@ void hiloCalculo()
 		pthread_mutex_lock(&instruccionesEjec);
 		for(contador = 0; contador < configuracion.CANTIDAD_HILOS; contador++)
 		{
-			porcentajeUso = ((instruccionesEjecutadas[contador].contador)*100)/60;
+			if(configuracion.RETARDO>0) {
+				porcentajeUso = ((instruccionesEjecutadas[contador].contador)*configuracion.RETARDO*100)/60;
+			} else {
+				porcentajeUso = ((instruccionesEjecutadas[contador].contador)*100)/60;
+			}
 			instruccionesEjecutadas[contador].contador = 0; // reiniciamos las instrucciones ejecutadas
 			CPU.ip = contador;
 			CPU.socket = instruccionesEjecutadas[contador].socket;
