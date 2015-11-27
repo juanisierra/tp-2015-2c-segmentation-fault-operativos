@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <errno.h>
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
 #include <sys/types.h>
@@ -25,10 +26,13 @@ int fallosTLB;
 int indiceTLB;
 int indiceMarcos;
 int indiceClockM; //es el indice de lectura actual en clock m para reemplazo de paginas
+int zonaCritica;
+int flushMemoria;
 char* memoria;
 nodoListaTP* raizTP;
 tlb* TLB;
 tMarco* tMarcos;
+pthread_t hMPFlush;
 pthread_mutex_t MUTEXTLB;
 pthread_mutex_t MUTEXTM;
 pthread_mutex_t MUTEXLP;
@@ -98,17 +102,31 @@ int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
 		fallo=-1;
 	}
 	memoria=malloc((sizeof(char)*(configuracion.TAMANIO_MARCO))*configuracion.CANTIDAD_MARCOS);
-	printf("TAMANIO MEM: %d\n",((configuracion.TAMANIO_MARCO))*configuracion.CANTIDAD_MARCOS);
 	if(memoria==NULL) fallo =-1;
 	raizTP=NULL;
 	if(fallo==0) //printf("Tablas iniciadas\n");
 	return fallo;
 }
+nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
+{
+	nodoListaTP* aux;
+	aux=raizTP;
+	while(aux!=NULL)
+	{
+		if(aux->pid==pid)
+		{
+			return aux;
+		}
+		aux=aux->sgte;
+	}
+
+	return NULL;
+}
 void tlbFlush(void)
 {
 	int i=0;
 	if(configuracion.TLB_HABILITADA==1){
-		pthread_mutex_lock(&MUTEXTLB);
+		//pthread_mutex_lock(&MUTEXTLB);
 	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
 			{
 				TLB[i].pid=-1;
@@ -116,7 +134,7 @@ void tlbFlush(void)
 				TLB[i].nPag=0;
 				TLB[i].numMarco=-1;
 			}
-	pthread_mutex_unlock(&MUTEXTLB);
+	//pthread_mutex_unlock(&MUTEXTLB);
 	}
 	printf("TLB BORRADA\n");
 	return;
@@ -134,20 +152,27 @@ int marcosOcupadosMP()
 void MPFlush(void)
 {	int i;
 	nodoListaTP* aux;
+	nodoListaTP*nodo;
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
-
+	/*printf("1\n");
 	pthread_mutex_lock(&MUTEXLP);
+	printf("2\n");
 	pthread_mutex_lock(&MUTEXTM);
+	printf("3\n");
 	pthread_mutex_lock(&MUTEXTLB);
+	printf("4\n");
 	pthread_mutex_lock(&MUTEXLOG);
-
+	printf("5\n");
+	*/
 	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 	{
 
-			if(tMarcos[i].indice!=-1 && tMarcos[i].modif==1) //LA ENTRADA HAY QUE GUARDARLA EN SWAP PRIMERO
+			if(tMarcos[i].pid!=-1 && tMarcos[i].indice!=-1 && tMarcos[i].modif==1) //LA ENTRADA HAY QUE GUARDARLA EN SWAP PRIMERO
 			{	log_info(log,"Se envia el contenido del marco %d al SWAP. (Pagina: %d || PID: %d)",i,tMarcos[i].nPag,tMarcos[i].pid);
 				mensajeParaSWAP.pid=tMarcos[i].pid;
+				nodo=buscarProceso(tMarcos[i].pid);
+				nodo->cantPaginasAcc++;
 				mensajeParaSWAP.instruccion=ESCRIBIR;
 				mensajeParaSWAP.parametro=tMarcos[i].nPag;
 				mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
@@ -186,11 +211,12 @@ void MPFlush(void)
 		aux=aux->sgte;
 	}
 	printf("MEMORIA PRINCIPAL BORRADA\n");
-	pthread_mutex_unlock(&MUTEXLOG);
+	/*pthread_mutex_unlock(&MUTEXLOG);
 	pthread_mutex_unlock(&MUTEXLP);
 	pthread_mutex_unlock(&MUTEXTM);
 	pthread_mutex_unlock(&MUTEXTLB);
-
+*/
+	flushMemoria=0;
 	return;
 
 }
@@ -200,7 +226,7 @@ void logearTMarcos()
 	log_info(log,"\t\t\t\t******Estado de Tabla de Marcos*******");
 			for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 			{
-				if(tMarcos[i].indice!=-1)
+				if(tMarcos[i].indice!=-1 && tMarcos[i].pid!=-1)
 				{
 					if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1){
 				log_info(log,"Marco: %d \t\t PID: %d  \t\t Pagina: %d \t\t  Indice: %d",i,tMarcos[i].pid,tMarcos[i].nPag,tMarcos[i].indice);
@@ -225,12 +251,12 @@ int marcosLibres(void) //CUENTA MRACOS LIBRES PARA ERROR DE MARCO
 	return c;
 }
 void atenderDump(void)
-{
-	int pid;
-	pthread_mutex_lock(&MUTEXLP);
+{	int pid;
+	/*pthread_mutex_lock(&MUTEXLP);
 	pthread_mutex_lock(&MUTEXTM);
 	pthread_mutex_lock(&MUTEXTLB);
 	pthread_mutex_lock(&MUTEXLOG);
+	*/
 	pid=fork();
 	if(pid==-1)
 	{
@@ -258,10 +284,11 @@ void atenderDump(void)
 	} else {
 
 		wait(NULL); //ESPERA A LA FINALIZACION DEL HIJO
-		pthread_mutex_unlock(&MUTEXLOG); //ESPERA A QUE TERMINE EL DUMP PARA SEGUIR
+		/*pthread_mutex_unlock(&MUTEXLOG); //ESPERA A QUE TERMINE EL DUMP PARA SEGUIR
 		pthread_mutex_unlock(&MUTEXLP);
 		pthread_mutex_unlock(&MUTEXTM);
 		pthread_mutex_unlock(&MUTEXTLB);
+		*/
 		printf("DUMP REALIZADO CON EXITO\n");
 		return;
 	}
@@ -269,7 +296,6 @@ void atenderDump(void)
 void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupciones
 {	pthread_t hTLBFlush;
 
-	pthread_t hMPFlush;
 	switch(n){
 	case SIGUSR1:
 	pthread_mutex_lock(&MUTEXLOG);
@@ -282,8 +308,13 @@ void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupcione
 		pthread_mutex_lock(&MUTEXLOG);
 			log_info(log,"Se recibio senial de MPFlush");
 			pthread_mutex_unlock(&MUTEXLOG);
-	pthread_create(&hMPFlush,NULL,MPFlush,NULL);
-	pthread_join(hMPFlush,NULL);
+	if(zonaCritica==1) {
+			flushMemoria=1;
+	}
+	else {
+		pthread_create(&hMPFlush,NULL,MPFlush,NULL);
+			pthread_join(hMPFlush,NULL);
+	}
 	break;
 
 	case SIGPOLL:
@@ -295,7 +326,7 @@ void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupcione
 }
 }
 
-int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
+int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta y sino devuelve la posicion en la tlb en la que esta
 {
 	int i;
 	if(TLB!=NULL && configuracion.TLB_HABILITADA==1)
@@ -311,21 +342,7 @@ int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta
 	}
 	return -1;
 }
-nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
-{
-	nodoListaTP* aux;
-	aux=raizTP;
-	while(aux!=NULL)
-	{
-		if(aux->pid==pid)
-		{
-			return aux;
-		}
-		aux=aux->sgte;
-	}
 
-	return NULL;
-}
 int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si devuelve -1 es porqeu no hay tlb.
 {
 	int i=0;
@@ -504,7 +521,6 @@ void finalizarListaTP(void)
 
 int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memoria, sino -1 y -2 si hubo error, NO USA MUTEX!!!
 {
-	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
 	nodoListaTP* nodo;
 	tablaPag* tabla;
 	nodo=buscarProceso(pid);
@@ -574,6 +590,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 		pthread_mutex_lock(&MUTEXLOG);
 		log_info(log,"El marco se encuentra modificado. Se envia a SWAP");
 		pthread_mutex_unlock(&MUTEXLOG);
+		nodoProceso->cantPaginasAcc++;
 		mensajeParaSWAP.pid=tMarcos[aReemplazar].pid;
 		mensajeParaSWAP.instruccion=ESCRIBIR;
 		mensajeParaSWAP.parametro=tMarcos[aReemplazar].nPag;
@@ -613,6 +630,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 	pthread_mutex_lock(&MUTEXLOG);
 	log_info(log,"Se solicita al SWAP la pagina %d del proceso de PID: %d",pagina,pid);
 	pthread_mutex_unlock(&MUTEXLOG);
+	nodoProceso->cantPaginasAcc++;
 	mensajeParaSWAP.pid=pid;
 	mensajeParaSWAP.instruccion=LEER;
 	mensajeParaSWAP.parametro=pagina;
@@ -657,16 +675,14 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS,
 {
 	nodoListaTP* nodo;
 	nodo=buscarProceso(pid); //APUNTA AL NODO EN LA LISTA DE LA TABLAD E PAGINAS
-	nodo->cantPaginasAcc++;
 	int aux;
 	int ubicada = -1;
 	if(configuracion.TLB_HABILITADA==1) //BUSCA EN LA TLB Y SE FIJA SI ESTA O NO ALLI
-	{
-		if(estaEnTLB(pid,numPag)>=0) {
-				ubicada= TLB[estaEnTLB(pid,numPag)].numMarco;
-			} else {
-				ubicada = -1;
-			}
+	{	if(estaEnTLB(pid,numPag)>=0) {
+		ubicada= TLB[estaEnTLB(pid,numPag)].numMarco;
+	} else {
+		ubicada = -1;
+	}
 		if(ubicada>=0)
 		{
 			aciertosTLB++;
@@ -693,6 +709,7 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS,
 		}
 	}
 	ubicada=estaEnMemoria(pid,numPag); //VE SI ESTA CARGADA EN MEMORIA
+	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
 	if(ubicada>0)
 	{
 		if(configuracion.TLB_HABILITADA==1) agregarATLB(pid,numPag,ubicada);
@@ -739,12 +756,16 @@ void TasaAciertos(void)
 }
 
 int main()
-{	log= log_create(ARCHIVOLOG, "ADM", 0, LOG_LEVEL_INFO);
+{	zonaCritica=0;
+flushMemoria=0;
+	log= log_create(ARCHIVOLOG, "ADM", 0, LOG_LEVEL_INFO);
 	aciertosTLB=0;
 	fallosTLB=0;
 	indiceTLB=0;
 	indiceMarcos=0;
 	indiceClockM=0;
+	struct sigaction sa;
+	int cargadaEnMemoria=-1; //Lo usamos para ver si la pagina ya esta en memoria asi no se manda a swap aunque este modificada
 	int marcoAUsar;
 	nodoListaTP* nodo;
 	pthread_mutex_init(&MUTEXTLB,NULL);
@@ -794,9 +815,15 @@ int main()
 	{
 		pthread_create(&hTasaAciertos,NULL,TasaAciertos,NULL);
 	}
+
 	signal(SIGUSR1,rutinaInterrupciones);
 	signal(SIGUSR2,rutinaInterrupciones);
 	signal(SIGPOLL,rutinaInterrupciones);
+	/* sa.sa_handler = rutinaInterrupciones;
+	    sigemptyset(&sa.sa_mask);
+	    sa.sa_flags = SA_RESTART; // resetea las syscalls cortadas con el sigpoll
+sigaction(SIGPOLL, &sa, NULL);
+*/
 	mensaje_CPU_ADM mensajeARecibir;
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
@@ -806,13 +833,16 @@ int main()
 	{
 		//printf("Marcos ocupados: %d\n",marcosOcupadosMP());
 		status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
+		zonaCritica=1;
 		if(status==0) break;
-		//printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
-		//if(mensajeARecibir.tamTexto!=0) printf("  Mensaje: %s\n",mensajeARecibir.texto);
-		//if(mensajeARecibir.tamTexto==0) printf("\n");
+		printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
+		if(mensajeARecibir.tamTexto!=0) printf("  Mensaje: %s\n",mensajeARecibir.texto);
+		if(mensajeARecibir.tamTexto==0) printf("\n");
 		pthread_mutex_lock(&MUTEXLP);
+		printf("LOCKEO\n");
 		pthread_mutex_lock(&MUTEXTM);
 		pthread_mutex_lock(&MUTEXTLB);
+		printf("Recibi instruccion: %d",mensajeARecibir.instruccion);
 		if(mensajeARecibir.instruccion == INICIAR)
 		{
 			mensajeParaSWAP.pid=mensajeARecibir.pid;
@@ -867,15 +897,17 @@ int main()
 			}
 		}
 		if(mensajeARecibir.instruccion == ESCRIBIR)
-		{
+		{	cargadaEnMemoria=-1;
+		nodo=buscarProceso(mensajeARecibir.pid);
 			pthread_mutex_lock(&MUTEXLOG);
 			log_info(log,"Solicitud de escritura recibida. PID: %d  || N Pag: %d",mensajeARecibir.pid,mensajeARecibir.parametro);
 			pthread_mutex_unlock(&MUTEXLOG);
+			cargadaEnMemoria=estaEnMemoria(mensajeARecibir.pid,mensajeARecibir.parametro); //Veo si ya estaba en memoria asi no la mando a swap si esta modificada
 			marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
 			if(marcoAUsar!=-4)
 			{
-				if(tMarcos[marcoAUsar].modif==1 && tMarcos[marcoAUsar].indice!=-1 && tMarcos[marcoAUsar].pid!=-1)
-				{
+				if(tMarcos[marcoAUsar].modif==1 && tMarcos[marcoAUsar].indice!=-1 && tMarcos[marcoAUsar].pid!=-1 && cargadaEnMemoria<0) // si no era de este proceso
+				{	nodo->cantPaginasAcc++;
 					mensajeParaSWAP.pid=tMarcos[marcoAUsar].pid;
 					mensajeParaSWAP.instruccion=ESCRIBIR;
 					mensajeParaSWAP.parametro=tMarcos[marcoAUsar].nPag;
@@ -900,7 +932,7 @@ int main()
 					tMarcos[marcoAUsar].modif=1;
 					sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A ESCRIBIR
 				}
-				if(tMarcos[marcoAUsar].modif==0)
+				if(tMarcos[marcoAUsar].modif==0 || cargadaEnMemoria>=0) // Era de este proceso o no estaba modificada
 				{
 					if(mensajeARecibir.tamTexto<=configuracion.TAMANIO_MARCO)
 					{
@@ -961,8 +993,14 @@ int main()
 		mensajeDeSWAP.contenidoPagina=NULL;
 		mensajeParaSWAP.contenidoPagina=NULL;
 		pthread_mutex_unlock(&MUTEXLP);
+		printf("LIBERO\n");
 		pthread_mutex_unlock(&MUTEXTM);
 		pthread_mutex_unlock(&MUTEXTLB);
+		zonaCritica=0;
+		if(flushMemoria==1){
+			pthread_create(&hMPFlush,NULL,MPFlush,NULL);
+			pthread_join(hMPFlush,NULL);
+		}
 	}
 	if(configuracion.TLB_HABILITADA==1)
 	{

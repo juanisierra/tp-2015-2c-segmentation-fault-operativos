@@ -168,7 +168,7 @@ void hiloConsola(void)
 			if(aFinalizar==NULL) //LO BUSCA EN EL HILO DE BLOQUEOS
 			{
 				pthread_mutex_lock(&MUTEXPROCESOBLOQUEADO);
-				if(PCBBloqueado->info.pid==atoi(parametro))
+				if(PCBBloqueado!=NULL && PCBBloqueado->info.pid==atoi(parametro))
 				{
 					PCBBloqueado->info.ip=ultimaLinea(PCBBloqueado->info.path);
 					aFinalizar=PCBBloqueado;
@@ -179,7 +179,18 @@ void hiloConsola(void)
 			{
 				pthread_mutex_lock(&MUTEXLISTOS);
 				aFinalizar=buscarNodoPCB(raizListos,atoi(parametro));
-				if(aFinalizar!=NULL) aFinalizar->info.ip=ultimaLinea(aFinalizar->info.path);
+				if(aFinalizar!=NULL && aFinalizar->info.ip>0) aFinalizar->info.ip=ultimaLinea(aFinalizar->info.path);
+				if(aFinalizar!=NULL && aFinalizar->info.ip==0) { // Hay que eliminaro sin ejecutar nunca
+					if(raizListos==aFinalizar) raizListos=aFinalizar->ant;
+					if(aFinalizar->ant!=NULL) aFinalizar->ant->sgte=aFinalizar->sgte;
+					if(aFinalizar->sgte!=NULL) aFinalizar->sgte->ant=aFinalizar->ant;
+
+					pthread_mutex_lock(&MUTEXLOG);
+							log_info(log,"PCB %d Finalizado sin ejecutar",aFinalizar->info.pid);
+							pthread_mutex_unlock(&MUTEXLOG);
+							free(aFinalizar);
+							(aFinalizar)=NULL;
+				}
 				pthread_mutex_unlock(&MUTEXLISTOS);
 			}
 			if(aFinalizar==NULL)//No esta en listos, lo busca en bloqueados
@@ -402,6 +413,7 @@ int hiloEnvios (void)
 		pthread_mutex_lock(&MUTEXCPUS);
 		cpuAEnviar=primerCPULibre(raizCPUS);
 		cpuAEnviar->ejecutando=sacarNodoPCB(&raizListos);
+		if(cpuAEnviar->ejecutando!=NULL) {
 		cpuAEnviar->ejecutando->info.estado=EJECUTANDO;
 		gettimeofday(&(auxHora),NULL);
 		cpuAEnviar->ejecutando->info.t_espera=cpuAEnviar->ejecutando->info.t_espera + difftime(auxHora.tv_sec,cpuAEnviar->ejecutando->info.t_entrada_listo.tv_sec);
@@ -416,6 +428,11 @@ int hiloEnvios (void)
 		pthread_mutex_unlock(&MUTEXLOG);
 		enviarPCB(cpuAEnviar->socket,cpuAEnviar->ejecutando,quantum);
 		pthread_mutex_unlock(&MUTEXCPUS);
+		} else { // Si la cola estaba en null
+			sem_post(&SEMAFOROCPUSLIBRES);
+			pthread_mutex_unlock(&MUTEXLISTOS);
+			pthread_mutex_unlock(&MUTEXCPUS);
+		}
 	}
 }
 
