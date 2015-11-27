@@ -267,7 +267,11 @@ void hiloCalculo()
 		pthread_mutex_lock(&instruccionesEjec);
 		for(contador = 0; contador < configuracion.CANTIDAD_HILOS; contador++)
 		{
-			porcentajeUso = ((instruccionesEjecutadas[contador].contador)*100)/60;
+			if(configuracion.RETARDO>0) {
+				porcentajeUso = ((instruccionesEjecutadas[contador].contador)*configuracion.RETARDO*100)/60;
+			} else {
+				porcentajeUso = ((instruccionesEjecutadas[contador].contador)*100)/60;
+			}
 			instruccionesEjecutadas[contador].contador = 0; // reiniciamos las instrucciones ejecutadas
 			CPU.ip = contador;
 			CPU.socket = instruccionesEjecutadas[contador].socket;

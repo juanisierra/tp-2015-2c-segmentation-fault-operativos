@@ -103,6 +103,21 @@ int iniciarTablas (void) // Si devuelve -1 hubo fallo al inicializar la tabla
 	if(fallo==0) //printf("Tablas iniciadas\n");
 	return fallo;
 }
+nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
+{
+	nodoListaTP* aux;
+	aux=raizTP;
+	while(aux!=NULL)
+	{
+		if(aux->pid==pid)
+		{
+			return aux;
+		}
+		aux=aux->sgte;
+	}
+
+	return NULL;
+}
 void tlbFlush(void)
 {
 	int i=0;
@@ -133,6 +148,7 @@ int marcosOcupadosMP()
 void MPFlush(void)
 {	int i;
 	nodoListaTP* aux;
+	nodoListaTP*nodo;
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
 
@@ -144,9 +160,11 @@ void MPFlush(void)
 	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 	{
 
-			if(tMarcos[i].indice!=-1 && tMarcos[i].modif==1) //LA ENTRADA HAY QUE GUARDARLA EN SWAP PRIMERO
+			if(tMarcos[i].pid!=-1 && tMarcos[i].indice!=-1 && tMarcos[i].modif==1) //LA ENTRADA HAY QUE GUARDARLA EN SWAP PRIMERO
 			{	log_info(log,"Se envia el contenido del marco %d al SWAP. (Pagina: %d || PID: %d)",i,tMarcos[i].nPag,tMarcos[i].pid);
 				mensajeParaSWAP.pid=tMarcos[i].pid;
+				nodo=buscarProceso(tMarcos[i].pid);
+				nodo->cantPaginasAcc++;
 				mensajeParaSWAP.instruccion=ESCRIBIR;
 				mensajeParaSWAP.parametro=tMarcos[i].nPag;
 				mensajeParaSWAP.contenidoPagina=malloc(configuracion.TAMANIO_MARCO);
@@ -199,7 +217,7 @@ void logearTMarcos()
 	log_info(log,"\t\t\t\t******Estado de Tabla de Marcos*******");
 			for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 			{
-				if(tMarcos[i].indice!=-1)
+				if(tMarcos[i].indice!=-1 && tMarcos[i].pid!=-1)
 				{
 					if(configuracion.ALGORITMO_REEMPLAZO==0 || configuracion.ALGORITMO_REEMPLAZO==1){
 				log_info(log,"Marco: %d \t\t PID: %d  \t\t Pagina: %d \t\t  Indice: %d",i,tMarcos[i].pid,tMarcos[i].nPag,tMarcos[i].indice);
@@ -310,21 +328,7 @@ int estaEnTLB(int pid, int numPag) //DEVUELVE -1 si no esta y sino devuelve la p
 	}
 	return -1;
 }
-nodoListaTP* buscarProceso(int pid) //Retorna NULL si no lo encuentra
-{
-	nodoListaTP* aux;
-	aux=raizTP;
-	while(aux!=NULL)
-	{
-		if(aux->pid==pid)
-		{
-			return aux;
-		}
-		aux=aux->sgte;
-	}
 
-	return NULL;
-}
 int entradaTLBAReemplazar(void) //Devuelve que entrada hay que reemplazar, si devuelve -1 es porqeu no hay tlb.
 {
 	int i=0;
@@ -572,6 +576,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 		pthread_mutex_lock(&MUTEXLOG);
 		log_info(log,"El marco se encuentra modificado. Se envia a SWAP");
 		pthread_mutex_unlock(&MUTEXLOG);
+		nodoProceso->cantPaginasAcc++;
 		mensajeParaSWAP.pid=tMarcos[aReemplazar].pid;
 		mensajeParaSWAP.instruccion=ESCRIBIR;
 		mensajeParaSWAP.parametro=tMarcos[aReemplazar].nPag;
@@ -611,6 +616,7 @@ int reemplazarMarco(int pid,int pagina) //REEMPLAZA EL MARCO QUE HAYA QUE SACAR 
 	pthread_mutex_lock(&MUTEXLOG);
 	log_info(log,"Se solicita al SWAP la pagina %d del proceso de PID: %d",pagina,pid);
 	pthread_mutex_unlock(&MUTEXLOG);
+	nodoProceso->cantPaginasAcc++;
 	mensajeParaSWAP.pid=pid;
 	mensajeParaSWAP.instruccion=LEER;
 	mensajeParaSWAP.parametro=pagina;
@@ -655,7 +661,6 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS,
 {
 	nodoListaTP* nodo;
 	nodo=buscarProceso(pid); //APUNTA AL NODO EN LA LISTA DE LA TABLAD E PAGINAS
-	nodo->cantPaginasAcc++;
 	int aux;
 	int ubicada = -1;
 	if(configuracion.TLB_HABILITADA==1) //BUSCA EN LA TLB Y SE FIJA SI ESTA O NO ALLI
@@ -868,6 +873,7 @@ int main()
 		}
 		if(mensajeARecibir.instruccion == ESCRIBIR)
 		{	cargadaEnMemoria=-1;
+		nodo=buscarProceso(mensajeARecibir.pid);
 			pthread_mutex_lock(&MUTEXLOG);
 			log_info(log,"Solicitud de escritura recibida. PID: %d  || N Pag: %d",mensajeARecibir.pid,mensajeARecibir.parametro);
 			pthread_mutex_unlock(&MUTEXLOG);
@@ -876,7 +882,7 @@ int main()
 			if(marcoAUsar!=-4)
 			{
 				if(tMarcos[marcoAUsar].modif==1 && tMarcos[marcoAUsar].indice!=-1 && tMarcos[marcoAUsar].pid!=-1 && cargadaEnMemoria<0) // si no era de este proceso
-				{
+				{	nodo->cantPaginasAcc++;
 					mensajeParaSWAP.pid=tMarcos[marcoAUsar].pid;
 					mensajeParaSWAP.instruccion=ESCRIBIR;
 					mensajeParaSWAP.parametro=tMarcos[marcoAUsar].nPag;
