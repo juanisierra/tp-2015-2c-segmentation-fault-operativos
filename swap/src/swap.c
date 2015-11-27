@@ -18,10 +18,10 @@
 
 //****** VARIABLES GLOBALES ******
 FILE* archivo;
-espacioLibre* libreRaiz;
-espacioOcupado* ocupadoRaiz;
-listaEscritura* escrituraRaiz;
 config_SWAP configuracion;
+espacioLibre* libreRaiz;
+listaEscritura* escrituraRaiz;
+espacioOcupado* ocupadoRaiz;
 t_log* log;
 //********************************
 
@@ -99,7 +99,7 @@ int iniciarConfiguracion(void)
 		{
 			printf("Compactacion inteligente desactivada \n");
 		}
-		printf("Caracter de relleno: %c \n",configuracion.CARACTER_RELLENO);
+		printf("Caracter de relleno: '%c' \n",configuracion.CARACTER_RELLENO);
 		printf("Retardo de Compactacion: %d \n",configuracion.RETARDO_COMPACTACION);
 		if(configuracion.TIPO_ASIGNACION==1)
 		{
@@ -213,12 +213,12 @@ int hayEspacio(int espacio)//espacio esta en paginas
 			if(raiz->cantPag >= espacio)
 			{
 				if(raiz == libreRaiz)
-				{
+				{//es la primera iteracion
 					desperdicio= (raiz->cantPag - espacio);
 					mejor= raiz;
 				}
 				else
-				{
+				{//ya aca hay un desperdicio guardado
 					if(configuracion.TIPO_ASIGNACION == 2)
 					{//best fit
 						if((raiz->cantPag - espacio) < desperdicio)
@@ -269,9 +269,9 @@ void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 al
 {//intercambia lo escrito en el swap para cuando movemos un nodo ocupado al desfragmentar
 	char buffer[cantPags * configuracion.TAMANIO_PAGINA];//creamos el buffer
 	fseek(archivo, (inicioDe -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos al inicio de ocupado
-	fread(buffer, sizeof(char), strlen(buffer), archivo);//leemos
+	fread(buffer, sizeof(char), (cantPags * configuracion.TAMANIO_PAGINA) , archivo);//leemos
 	fseek(archivo, (inicioA -1) * configuracion.TAMANIO_PAGINA, SEEK_SET);//vamos a libre
-	fwrite(buffer, sizeof(char), strlen(buffer), archivo);//escribimos
+	fwrite(buffer, sizeof(char), (cantPags * configuracion.TAMANIO_PAGINA), archivo);//escribimos
 	return;//en el "nuevo" libre ahora hay basura
 }
 
@@ -460,7 +460,7 @@ void borrarLectura(espacioOcupado* aBorrar)
 {
 	listaEscritura* liberar;
 	while(escrituraRaiz && escrituraRaiz->pid == aBorrar->pid)
-	{//si la raiz es un nodo a borrar, lo liberamos y avanzamos el puntero
+	{
 		liberar=escrituraRaiz;
 		escrituraRaiz= escrituraRaiz->sgte;
 		free(liberar);
@@ -473,13 +473,13 @@ void borrarLectura(espacioOcupado* aBorrar)
 			break;
 		}
 		if(aux->sgte->pid == aBorrar->pid)
-		{//borramos el nodo
+		{//borramos le nodo
 			liberar= aux->sgte;
 			aux->sgte= liberar->sgte;
 			free(liberar);
 		}
 		else
-		{//avanzamos en la lista
+		{
 			aux= aux->sgte;
 		}
 	}
@@ -1002,7 +1002,8 @@ int main()
 			log_error(log,"Error en recibir pagina de ADM");
 			cerrarSwap();
 		}
-		//printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
+		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
+		sleep(configuracion.RETARDO_SWAP);// este es el retraso del swap para cada instruccion
 		interpretarMensaje(mensaje,socketADM);
 		status=recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
 	}
