@@ -51,11 +51,7 @@ typedef struct {
 	int TAMANIO_PAGINA;
 	int RETARDO_SWAP;
 	int RETARDO_COMPACTACION;
-	int COMPACTACION_INTELIGENTE;
-	char CARACTER_RELLENO;
-	int TIPO_ASIGNACION;
 } config_SWAP;
-
 void separarCampoYValor(char*linea,char* campo, char* valor);
 config_pl cargarConfiguracionPL(char * ruta);
 config_CPU cargarConfiguracionCPU(char * ruta);
