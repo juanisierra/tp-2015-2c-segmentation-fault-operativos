@@ -503,7 +503,6 @@ void finalizarListaTP(void)
 
 int estaEnMemoria(int pid,int nPag) //Retorna el numero de marco si esta en memoria, sino -1 y -2 si hubo error, NO USA MUTEX!!!
 {
-	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
 	nodoListaTP* nodo;
 	tablaPag* tabla;
 	nodo=buscarProceso(pid);
@@ -691,6 +690,7 @@ int ubicarPagina(int pid, int numPag) //RETORNA -4 SI NO PUEDE TENER MAS MARCOS,
 		}
 	}
 	ubicada=estaEnMemoria(pid,numPag); //VE SI ESTA CARGADA EN MEMORIA
+	sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA
 	if(ubicada>0)
 	{
 		if(configuracion.TLB_HABILITADA==1) agregarATLB(pid,numPag,ubicada);
@@ -743,6 +743,7 @@ int main()
 	indiceTLB=0;
 	indiceMarcos=0;
 	indiceClockM=0;
+	int cargadaEnMemoria=-1; //Lo usamos para ver si la pagina ya esta en memoria asi no se manda a swap aunque este modificada
 	int marcoAUsar;
 	nodoListaTP* nodo;
 	pthread_mutex_init(&MUTEXTLB,NULL);
@@ -805,12 +806,13 @@ int main()
 		//printf("Marcos ocupados: %d\n",marcosOcupadosMP());
 		status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
 		if(status==0) break;
-		//printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
-		//if(mensajeARecibir.tamTexto!=0) printf("  Mensaje: %s\n",mensajeARecibir.texto);
-		//if(mensajeARecibir.tamTexto==0) printf("\n");
+		printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
+		if(mensajeARecibir.tamTexto!=0) printf("  Mensaje: %s\n",mensajeARecibir.texto);
+		if(mensajeARecibir.tamTexto==0) printf("\n");
 		pthread_mutex_lock(&MUTEXLP);
 		pthread_mutex_lock(&MUTEXTM);
 		pthread_mutex_lock(&MUTEXTLB);
+		printf("Recibi instruccion: %d",mensajeARecibir.instruccion);
 		if(mensajeARecibir.instruccion == INICIAR)
 		{
 			mensajeParaSWAP.pid=mensajeARecibir.pid;
@@ -865,14 +867,15 @@ int main()
 			}
 		}
 		if(mensajeARecibir.instruccion == ESCRIBIR)
-		{
+		{	cargadaEnMemoria=-1;
 			pthread_mutex_lock(&MUTEXLOG);
 			log_info(log,"Solicitud de escritura recibida. PID: %d  || N Pag: %d",mensajeARecibir.pid,mensajeARecibir.parametro);
 			pthread_mutex_unlock(&MUTEXLOG);
+			cargadaEnMemoria=estaEnMemoria(mensajeARecibir.pid,mensajeARecibir.parametro); //Veo si ya estaba en memoria asi no la mando a swap si esta modificada
 			marcoAUsar=ubicarPagina(mensajeARecibir.pid,mensajeARecibir.parametro);
 			if(marcoAUsar!=-4)
 			{
-				if(tMarcos[marcoAUsar].modif==1 && tMarcos[marcoAUsar].indice!=-1 && tMarcos[marcoAUsar].pid!=-1)
+				if(tMarcos[marcoAUsar].modif==1 && tMarcos[marcoAUsar].indice!=-1 && tMarcos[marcoAUsar].pid!=-1 && cargadaEnMemoria<0) // si no era de este proceso
 				{
 					mensajeParaSWAP.pid=tMarcos[marcoAUsar].pid;
 					mensajeParaSWAP.instruccion=ESCRIBIR;
@@ -898,7 +901,7 @@ int main()
 					tMarcos[marcoAUsar].modif=1;
 					sleep(configuracion.RETARDO_MEMORIA); //ESPERA PORQUE ENTRO A MEMORIA A ESCRIBIR
 				}
-				if(tMarcos[marcoAUsar].modif==0)
+				if(tMarcos[marcoAUsar].modif==0 || cargadaEnMemoria>=0) // Era de este proceso o no estaba modificada
 				{
 					if(mensajeARecibir.tamTexto<=configuracion.TAMANIO_MARCO)
 					{

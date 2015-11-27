@@ -822,7 +822,8 @@ int main()
 			log_error(log,"Error en recibir pagina de ADM");
 			cerrarSwap();
 		}
-		//printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
+		printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
+		sleep(configuracion.RETARDO_SWAP);
 		interpretarMensaje(mensaje,socketADM);
 		status=recibirPaginaDeADM(socketADM,&mensaje,configuracion.TAMANIO_PAGINA);
 	}
