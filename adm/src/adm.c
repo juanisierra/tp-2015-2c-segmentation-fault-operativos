@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <errno.h>
 #include <stdio.h>
 #include <librerias-sf/sockets.h>
 #include <sys/types.h>
@@ -25,10 +26,13 @@ int fallosTLB;
 int indiceTLB;
 int indiceMarcos;
 int indiceClockM; //es el indice de lectura actual en clock m para reemplazo de paginas
+int zonaCritica;
+int flushMemoria;
 char* memoria;
 nodoListaTP* raizTP;
 tlb* TLB;
 tMarco* tMarcos;
+pthread_t hMPFlush;
 pthread_mutex_t MUTEXTLB;
 pthread_mutex_t MUTEXTM;
 pthread_mutex_t MUTEXLP;
@@ -122,7 +126,7 @@ void tlbFlush(void)
 {
 	int i=0;
 	if(configuracion.TLB_HABILITADA==1){
-		pthread_mutex_lock(&MUTEXTLB);
+		//pthread_mutex_lock(&MUTEXTLB);
 	for(i=0;i<configuracion.ENTRADAS_TLB;i++)
 			{
 				TLB[i].pid=-1;
@@ -130,7 +134,7 @@ void tlbFlush(void)
 				TLB[i].nPag=0;
 				TLB[i].numMarco=-1;
 			}
-	pthread_mutex_unlock(&MUTEXTLB);
+	//pthread_mutex_unlock(&MUTEXTLB);
 	}
 	printf("TLB BORRADA\n");
 	return;
@@ -151,12 +155,16 @@ void MPFlush(void)
 	nodoListaTP*nodo;
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
-
+	/*printf("1\n");
 	pthread_mutex_lock(&MUTEXLP);
+	printf("2\n");
 	pthread_mutex_lock(&MUTEXTM);
+	printf("3\n");
 	pthread_mutex_lock(&MUTEXTLB);
+	printf("4\n");
 	pthread_mutex_lock(&MUTEXLOG);
-
+	printf("5\n");
+	*/
 	for(i=0;i<configuracion.CANTIDAD_MARCOS;i++)
 	{
 
@@ -203,11 +211,12 @@ void MPFlush(void)
 		aux=aux->sgte;
 	}
 	printf("MEMORIA PRINCIPAL BORRADA\n");
-	pthread_mutex_unlock(&MUTEXLOG);
+	/*pthread_mutex_unlock(&MUTEXLOG);
 	pthread_mutex_unlock(&MUTEXLP);
 	pthread_mutex_unlock(&MUTEXTM);
 	pthread_mutex_unlock(&MUTEXTLB);
-
+*/
+	flushMemoria=0;
 	return;
 
 }
@@ -242,12 +251,12 @@ int marcosLibres(void) //CUENTA MRACOS LIBRES PARA ERROR DE MARCO
 	return c;
 }
 void atenderDump(void)
-{
-	int pid;
-	pthread_mutex_lock(&MUTEXLP);
+{	int pid;
+	/*pthread_mutex_lock(&MUTEXLP);
 	pthread_mutex_lock(&MUTEXTM);
 	pthread_mutex_lock(&MUTEXTLB);
 	pthread_mutex_lock(&MUTEXLOG);
+	*/
 	pid=fork();
 	if(pid==-1)
 	{
@@ -275,10 +284,11 @@ void atenderDump(void)
 	} else {
 
 		wait(NULL); //ESPERA A LA FINALIZACION DEL HIJO
-		pthread_mutex_unlock(&MUTEXLOG); //ESPERA A QUE TERMINE EL DUMP PARA SEGUIR
+		/*pthread_mutex_unlock(&MUTEXLOG); //ESPERA A QUE TERMINE EL DUMP PARA SEGUIR
 		pthread_mutex_unlock(&MUTEXLP);
 		pthread_mutex_unlock(&MUTEXTM);
 		pthread_mutex_unlock(&MUTEXTLB);
+		*/
 		printf("DUMP REALIZADO CON EXITO\n");
 		return;
 	}
@@ -286,7 +296,6 @@ void atenderDump(void)
 void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupciones
 {	pthread_t hTLBFlush;
 
-	pthread_t hMPFlush;
 	switch(n){
 	case SIGUSR1:
 	pthread_mutex_lock(&MUTEXLOG);
@@ -299,8 +308,13 @@ void rutinaInterrupciones(int n) //La rutina que se dispaa con las interrupcione
 		pthread_mutex_lock(&MUTEXLOG);
 			log_info(log,"Se recibio senial de MPFlush");
 			pthread_mutex_unlock(&MUTEXLOG);
-	pthread_create(&hMPFlush,NULL,MPFlush,NULL);
-	pthread_join(hMPFlush,NULL);
+	if(zonaCritica==1) {
+			flushMemoria=1;
+	}
+	else {
+		pthread_create(&hMPFlush,NULL,MPFlush,NULL);
+			pthread_join(hMPFlush,NULL);
+	}
 	break;
 
 	case SIGPOLL:
@@ -742,12 +756,15 @@ void TasaAciertos(void)
 }
 
 int main()
-{	log= log_create(ARCHIVOLOG, "ADM", 0, LOG_LEVEL_INFO);
+{	zonaCritica=0;
+flushMemoria=0;
+	log= log_create(ARCHIVOLOG, "ADM", 0, LOG_LEVEL_INFO);
 	aciertosTLB=0;
 	fallosTLB=0;
 	indiceTLB=0;
 	indiceMarcos=0;
 	indiceClockM=0;
+	struct sigaction sa;
 	int cargadaEnMemoria=-1; //Lo usamos para ver si la pagina ya esta en memoria asi no se manda a swap aunque este modificada
 	int marcoAUsar;
 	nodoListaTP* nodo;
@@ -798,9 +815,15 @@ int main()
 	{
 		pthread_create(&hTasaAciertos,NULL,TasaAciertos,NULL);
 	}
+
 	signal(SIGUSR1,rutinaInterrupciones);
 	signal(SIGUSR2,rutinaInterrupciones);
 	signal(SIGPOLL,rutinaInterrupciones);
+	/* sa.sa_handler = rutinaInterrupciones;
+	    sigemptyset(&sa.sa_mask);
+	    sa.sa_flags = SA_RESTART; // resetea las syscalls cortadas con el sigpoll
+sigaction(SIGPOLL, &sa, NULL);
+*/
 	mensaje_CPU_ADM mensajeARecibir;
 	mensaje_ADM_SWAP mensajeParaSWAP;
 	mensaje_SWAP_ADM mensajeDeSWAP;
@@ -810,11 +833,13 @@ int main()
 	{
 		//printf("Marcos ocupados: %d\n",marcosOcupadosMP());
 		status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
+		zonaCritica=1;
 		if(status==0) break;
 		printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
 		if(mensajeARecibir.tamTexto!=0) printf("  Mensaje: %s\n",mensajeARecibir.texto);
 		if(mensajeARecibir.tamTexto==0) printf("\n");
 		pthread_mutex_lock(&MUTEXLP);
+		printf("LOCKEO\n");
 		pthread_mutex_lock(&MUTEXTM);
 		pthread_mutex_lock(&MUTEXTLB);
 		printf("Recibi instruccion: %d",mensajeARecibir.instruccion);
@@ -968,8 +993,14 @@ int main()
 		mensajeDeSWAP.contenidoPagina=NULL;
 		mensajeParaSWAP.contenidoPagina=NULL;
 		pthread_mutex_unlock(&MUTEXLP);
+		printf("LIBERO\n");
 		pthread_mutex_unlock(&MUTEXTM);
 		pthread_mutex_unlock(&MUTEXTLB);
+		zonaCritica=0;
+		if(flushMemoria==1){
+			pthread_create(&hMPFlush,NULL,MPFlush,NULL);
+			pthread_join(hMPFlush,NULL);
+		}
 	}
 	if(configuracion.TLB_HABILITADA==1)
 	{
