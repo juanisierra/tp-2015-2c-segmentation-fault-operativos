@@ -835,14 +835,14 @@ sigaction(SIGPOLL, &sa, NULL);
 		status = recibirInstruccionDeCPU(socketCPU, &mensajeARecibir);
 		zonaCritica=1;
 		if(status==0) break;
-		printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
-		if(mensajeARecibir.tamTexto!=0) printf("  Mensaje: %s\n",mensajeARecibir.texto);
-		if(mensajeARecibir.tamTexto==0) printf("\n");
+		//printf("Recibo: Ins: %d Parametro: %d Pid: %d", mensajeARecibir.instruccion,mensajeARecibir.parametro,mensajeARecibir.pid);
+		//if(mensajeARecibir.tamTexto!=0) printf("  Mensaje: %s\n",mensajeARecibir.texto);
+		//if(mensajeARecibir.tamTexto==0) printf("\n");
 		pthread_mutex_lock(&MUTEXLP);
-		printf("LOCKEO\n");
+		//printf("LOCKEO\n");
 		pthread_mutex_lock(&MUTEXTM);
 		pthread_mutex_lock(&MUTEXTLB);
-		printf("Recibi instruccion: %d",mensajeARecibir.instruccion);
+		//printf("Recibi instruccion: %d",mensajeARecibir.instruccion);
 		if(mensajeARecibir.instruccion == INICIAR)
 		{
 			mensajeParaSWAP.pid=mensajeARecibir.pid;
@@ -993,7 +993,7 @@ sigaction(SIGPOLL, &sa, NULL);
 		mensajeDeSWAP.contenidoPagina=NULL;
 		mensajeParaSWAP.contenidoPagina=NULL;
 		pthread_mutex_unlock(&MUTEXLP);
-		printf("LIBERO\n");
+		//printf("LIBERO\n");
 		pthread_mutex_unlock(&MUTEXTM);
 		pthread_mutex_unlock(&MUTEXTLB);
 		zonaCritica=0;
