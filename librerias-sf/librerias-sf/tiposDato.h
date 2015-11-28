@@ -127,6 +127,14 @@ typedef struct espacioOcupado_t
 	uint32_t escribio;
 }espacioOcupado;
 
+typedef struct listaEscritura_t
+{
+	struct listaEscritura_t* sgte;
+	int pid;
+	int pagina;
+	int posicion;
+}listaEscritura;
+
 typedef struct tablaPag_t
 {
 	int valido; //0 si no esta en memoria 1 si si
