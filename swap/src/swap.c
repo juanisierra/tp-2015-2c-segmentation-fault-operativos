@@ -213,14 +213,16 @@ int hayEspacio(int espacio)//espacio esta en paginas
 	{// best o worst fit
 		int desperdicio;
 		espacioLibre* mejor=NULL;//mejor posicion
+		int primero=1;
 		while(raiz)
 		{
 			if(raiz->cantPag >= espacio)
 			{
-				if(raiz == libreRaiz)
-				{//es la primera iteracion
+				if(primero)
+				{//tomamos al primer espacio valido de referencia
 					desperdicio= (raiz->cantPag - espacio);
 					mejor= raiz;
+					primero=0;
 				}
 				else
 				{//ya aca hay un desperdicio guardado
