@@ -1,4 +1,6 @@
 # Tp Sistemas operativos 2015 2C - Grupo Segmentation Fault
+##Enunciado del tp:    
+https://github.com/sisoputnfrba/2015-2c-cache13-enunciado    
 
 ##Instalacion de Cache 13: Segmentation Fault    
 1- hacer el clone:    
